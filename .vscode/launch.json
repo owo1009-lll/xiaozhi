@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Open Vite App In Browser",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "start",
+        "http://127.0.0.1:5173"
+      ],
+      "preLaunchTask": "Start Vite Dev Server",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Open Production App In Browser",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "start",
+        "http://127.0.0.1:3000"
+      ],
+      "preLaunchTask": "Start Production Server",
+      "console": "integratedTerminal"
+    }
+  ]
+}

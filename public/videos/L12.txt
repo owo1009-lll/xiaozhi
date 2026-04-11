@@ -1,0 +1,8 @@
+file 'C:\Users\Administrator\Downloads\ToDesk\video-build\L12\01-_.mp4'
+file 'C:\Users\Administrator\Downloads\ToDesk\video-build\L12\02-_.mp4'
+file 'C:\Users\Administrator\Downloads\ToDesk\video-build\L12\03-_.mp4'
+file 'C:\Users\Administrator\Downloads\ToDesk\video-build\L12\04-_.mp4'
+file 'C:\Users\Administrator\Downloads\ToDesk\video-build\L12\05-_.mp4'
+file 'C:\Users\Administrator\Downloads\ToDesk\video-build\L12\06-_.mp4'
+file 'C:\Users\Administrator\Downloads\ToDesk\video-build\L12\07-_.mp4'
+file 'C:\Users\Administrator\Downloads\ToDesk\video-build\L12\08-_.mp4'

@@ -1,0 +1,35 @@
+Netlify 拖拽部署说明
+
+1. 可直接拖拽部署的目录：
+   C:\Users\Administrator\Downloads\ToDesk\netlify-drop
+
+2. 打开 Netlify 手动部署页面：
+   https://app.netlify.com/drop
+
+3. 将整个 netlify-drop 文件夹拖入页面，等待上传完成。
+
+4. 上传完成后，Netlify 会返回一个公网预览链接。
+
+本次拖拽包包含：
+- 最新前端页面
+- 本地音频资源
+- UCSI logo 图片
+- 12 个课时 MP4 视频资源
+- SPA 刷新路由规则文件 `_redirects`
+
+重要限制：
+- 这是静态拖拽部署包，适合团队预览页面和视频内容。
+- 依赖后端接口的功能在拖拽部署下不能保证可用。
+- 受影响的功能通常包括：
+  - AI 导师
+  - 教师后台数据写入与汇总
+  - 任何依赖 `/api/*` 的功能
+
+原因：
+- Netlify Drop 适合直接发布静态构建产物。
+- 需要后端运行时的功能，应该改成 Netlify Functions，或改用支持完整后端的部署平台。
+
+当前更适合的用途：
+- 团队预览网页 UI
+- 检查课程结构与视频播放
+- 手机端样式验收
