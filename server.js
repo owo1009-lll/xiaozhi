@@ -128,7 +128,7 @@ async function uploadDataUrlToDashScope(dataUrl, { model, fileNamePrefix }) {
   });
 }
 
-async function createDashScopeCompatibleResponse({ system, messages = [], maxTokens = 1000, modelOverride }) {
+async function createDashScopeCompatibleResponse({ system, messages = [], maxTokens = 1000, modelOverride, timeoutMs }) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is not configured.");
   }
@@ -175,6 +175,7 @@ async function createDashScopeCompatibleResponse({ system, messages = [], maxTok
 
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
+    signal: AbortSignal.timeout(Number(timeoutMs) || getTutorTimeoutMs()),
     headers: {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       "Content-Type": "application/json",
@@ -280,21 +281,30 @@ function getOpenAIModel() {
   return process.env.OPENAI_MODEL || "gpt-5-mini";
 }
 
+function getTutorModel() {
+  return process.env.OPENAI_TUTOR_MODEL || process.env.OPENAI_MODEL || "gpt-5-mini";
+}
+
+function getTutorTimeoutMs() {
+  const value = Number(process.env.OPENAI_TUTOR_TIMEOUT_MS || 20000);
+  return Number.isFinite(value) && value > 0 ? value : 20000;
+}
+
 function extractOpenAITextFromChatCompletion(response) {
   return safeString(response?.choices?.[0]?.message?.content).trim();
 }
 
-async function createOpenAITextResponse({ system, messages = [], maxTokens = 1000 }) {
+async function createOpenAITextResponse({ system, messages = [], maxTokens = 1000, modelOverride, timeoutMs }) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is not configured.");
   }
 
   if (isDashScopeCompatibleMode()) {
-    return createDashScopeCompatibleResponse({ system, messages, maxTokens });
+    return createDashScopeCompatibleResponse({ system, messages, maxTokens, modelOverride, timeoutMs });
   }
 
   const client = getOpenAIClient();
-  const model = getOpenAIModel();
+  const model = modelOverride || getOpenAIModel();
 
   if (isOpenAICompatibleMode()) {
     const supportsImages = /vl|vision/i.test(model);
@@ -637,6 +647,8 @@ app.get("/api/health", (req, res) => {
     hasOpenAIKey: Boolean(process.env.OPENAI_API_KEY),
     openaiBaseUrl: provider === "openai" ? (getOpenAIBaseUrl() || "https://api.openai.com/v1") : undefined,
     openaiCompatibleMode: provider === "openai" ? isOpenAICompatibleMode() : undefined,
+    tutorModel: provider === "openai" ? getTutorModel() : undefined,
+    tutorTimeoutMs: provider === "openai" ? getTutorTimeoutMs() : undefined,
     geminiBaseUrl: provider === "gemini"
       ? (process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com")
       : undefined,
@@ -849,7 +861,7 @@ app.get("/api/teacher/overview", async (req, res) => {
 
 app.post("/api/tutor", async (req, res) => {
   const { system, messages = [], maxTokens = 1000 } = req.body || {};
-  const safeMessages = Array.isArray(messages) ? messages.slice(-12) : [];
+  const safeMessages = Array.isArray(messages) ? messages.slice(-8) : [];
 
   try {
     if ((process.env.AI_PROVIDER || "openai").toLowerCase() === "gemini") {
@@ -867,15 +879,24 @@ app.post("/api/tutor", async (req, res) => {
     const text = await createOpenAITextResponse({
       system: system || "你是一位专业的大学音乐理论教师和 AI 辅导员。请用中文简洁、准确地回答。",
       messages: safeMessages,
-      maxTokens,
+      maxTokens: Math.min(Number(maxTokens) || 500, 500),
+      modelOverride: getTutorModel(),
+      timeoutMs: getTutorTimeoutMs(),
     });
 
     return res.json({ text: text || "抱歉，我暂时没有生成有效回答，请重试。" });
   } catch (error) {
     console.error("AI tutor request failed:", error);
-    return res.status(error.status || 500).json({
+    const detail = error.message || "Unknown error";
+    const status = error.status || (/timed out|timeout|aborted/i.test(detail) ? 504 : 500);
+    return res.status(status).json({
       error: "AI tutor request failed.",
-      detail: error.message || "Unknown error",
+      detail,
+      kind: status === 504
+        ? "timeout"
+        : /Failed to fetch|fetch failed|ECONNREFUSED|ENOTFOUND/i.test(detail)
+          ? "upstream_network"
+          : "upstream_error",
     });
   }
 });

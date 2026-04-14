@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { getPptLessonData } from "./pptLessonData";
+import { getPptLessonData, PPT_CHAPTERS } from "./pptLessonData";
 
 /* Audio */
 const ACx = typeof window !== "undefined" ? (window.AudioContext || window.webkitAudioContext) : null;
@@ -176,6 +176,668 @@ const CN = ["do","鍗嘾o","re","鍗噐e","mi","fa","鍗噁a","sol","鍗噑ol","
 const WK = [0,2,4,5,7,9,11];
 const BK = [1,3,6,8,10];
 function nFreq(n, o) { return 440 * Math.pow(2, (NT.indexOf(n) - 9) / 12 + (o - 4)); }
+
+const CHAPTERS = PPT_CHAPTERS;
+const ALL_LESSONS = CHAPTERS.flatMap((chapter) => chapter.ls);
+
+function Tag({ children, color = "#111111", bg = "#F5F5F5" }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "6px 10px",
+        borderRadius: 999,
+        fontSize: 11,
+        fontWeight: 600,
+        color,
+        background: bg,
+        border: "1px solid rgba(17,17,17,0.08)",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function PBar({ v = 0, max = 100, color = "#111111" }) {
+  const safeMax = Math.max(1, Number(max) || 100);
+  const percent = Math.max(0, Math.min(100, (Number(v) || 0) / safeMax * 100));
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: 8,
+        borderRadius: 999,
+        background: "rgba(17,17,17,0.08)",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          width: `${percent}%`,
+          height: "100%",
+          borderRadius: 999,
+          background: color,
+          transition: "width 0.25s ease",
+        }}
+      />
+    </div>
+  );
+}
+
+function Stars({ value = 0, onChange, size = 16 }) {
+  return (
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+      {[1, 2, 3, 4, 5].map((star) => {
+        const active = star <= value;
+        return (
+          <button
+            key={star}
+            type="button"
+            onClick={() => onChange?.(star)}
+            style={{
+              border: "none",
+              background: "transparent",
+              padding: 0,
+              margin: 0,
+              cursor: onChange ? "pointer" : "default",
+              fontSize: size,
+              lineHeight: 1,
+              color: active ? "#f59e0b" : "rgba(17,17,17,0.18)",
+            }}
+            aria-label={`评分 ${star} 星`}
+          >
+            ★
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function FeedbackBar({ ok, msg, onNext }) {
+  return (
+    <div
+      style={{
+        padding: "10px 14px",
+        borderRadius: 10,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        background: ok ? "#EAF8F1" : "#FDECEC",
+        border: `1px solid ${ok ? "#9AD9BC" : "#F1B5B5"}`,
+        marginTop: 10,
+      }}
+    >
+      <span style={{ fontSize: 12, color: ok ? "#0F6E56" : "#B42318", fontWeight: 600 }}>
+        {ok ? "回答正确：" : "需要修正："}
+        {msg}
+      </span>
+      {onNext ? (
+        <button
+          type="button"
+          onClick={onNext}
+          style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#fff", cursor: "pointer", fontSize: 12 }}
+        >
+          下一题
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function LessonCharts({ lessonId }) {
+  const lessonsWithCharts = new Set(["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"]);
+  if (!lessonsWithCharts.has(lessonId)) return null;
+
+  const barSets = {
+    L1: [26, 39, 52, 78, 100],
+    L2: [22, 31, 48, 66, 84],
+    L3: [18, 30, 45, 63, 82],
+    L4: [25, 40, 58, 74, 92],
+    L5: [24, 36, 51, 68, 88],
+    L6: [28, 41, 57, 73, 90],
+    L7: [19, 34, 49, 62, 81],
+    L8: [23, 38, 54, 70, 86],
+    L9: [20, 37, 55, 72, 91],
+    L10: [21, 35, 53, 69, 87],
+    L11: [24, 42, 59, 76, 94],
+    L12: [30, 45, 60, 80, 100],
+  };
+  const bars = barSets[lessonId] || [30, 48, 66, 84, 100];
+
+  return (
+    <div style={{ display: "grid", gap: 12 }}>
+      <div className="subtle-card" style={{ padding: 14 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>知识点分布图</div>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, minHeight: 124 }}>
+          {bars.map((value, index) => (
+            <div key={`${lessonId}-bar-${index}`} style={{ flex: 1, textAlign: "center" }}>
+              <div style={{ height: 96, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                <div style={{ width: "100%", maxWidth: 34, height: `${value}%`, borderRadius: 10, background: "#111111" }} />
+              </div>
+              <div style={{ fontSize: 10, color: "var(--color-text-tertiary)", marginTop: 6 }}>{`点 ${index + 1}`}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="subtle-card" style={{ padding: 14 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>学习重点提示</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          图表用于辅助理解当前课时的知识重心。建议先阅读课前预习，再结合图示完成课堂练习。
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InteractivePitchFrequencyWidgetCn() {
+  const noteItems = [
+    { label: "C3", freq: 130.81, tip: "频率较低，听感较沉稳。" },
+    { label: "G3", freq: 196.0, tip: "频率上升，音高更明亮。" },
+    { label: "C4", freq: 261.63, tip: "中央 C，常作为参考音。" },
+    { label: "G4", freq: 392.0, tip: "高音区更明显，频率继续升高。" },
+    { label: "C5", freq: 523.25, tip: "与 C4 构成八度，频率接近翻倍。" },
+  ];
+  const [activeIndex, setActiveIndex] = useState(2);
+
+  const playInteractiveNote = useCallback(async (index) => {
+    const item = noteItems[index];
+    if (!item) return;
+    setActiveIndex(index);
+    await unlockAudioSystem();
+    playTone(item.freq, 0.55, "piano", 0.28);
+  }, []);
+
+  const activeNote = noteItems[activeIndex];
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>音高与频率关系互动钢琴</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        点击不同音键试听，并观察频率柱状变化。
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, minHeight: 146 }}>
+          {noteItems.map((item, index) => {
+            const height = Math.max(36, Math.round(item.freq / 4));
+            const active = index === activeIndex;
+            return (
+              <button
+                key={item.label}
+                onClick={() => playInteractiveNote(index)}
+                style={{
+                  flex: 1,
+                  height: 140,
+                  borderRadius: 14,
+                  border: active ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
+                  background: "#ffffff",
+                  cursor: "pointer",
+                  padding: 10,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "flex-end",
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ width: "100%", height, borderRadius: 10, background: active ? "#111111" : "#D1D5DB" }} />
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#111111", marginTop: 10 }}>{item.label}</div>
+                <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 4 }}>{`${item.freq} Hz`}</div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="subtle-card" style={{ padding: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>当前选中音</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "#111111", marginBottom: 6 }}>{activeNote.label}</div>
+          <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+            {`频率：${activeNote.freq} Hz`}
+            <br />
+            规律：频率越高，听感中的音高越高。
+            <br />
+            说明：{activeNote.tip}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InteractiveVolumeAmplitudeWidgetCn() {
+  const levels = [
+    { label: "pp", amp: 0.18, volume: 0.1, desc: "很弱，振幅最小。" },
+    { label: "p", amp: 0.3, volume: 0.16, desc: "较弱，保持柔和。" },
+    { label: "mp", amp: 0.46, volume: 0.22, desc: "中弱，振幅抬升。" },
+    { label: "mf", amp: 0.64, volume: 0.3, desc: "中强，常规演奏力度。" },
+    { label: "f", amp: 0.82, volume: 0.4, desc: "较强，听感更饱满。" },
+  ];
+  const [activeIndex, setActiveIndex] = useState(2);
+
+  const playLevel = useCallback(async (index) => {
+    const item = levels[index];
+    if (!item) return;
+    setActiveIndex(index);
+    await unlockAudioSystem();
+    playTone(261.63, item.volume, "piano", 0.38);
+  }, []);
+
+  const activeLevel = levels[activeIndex];
+  const wavePoints = Array.from({ length: 25 }, (_, index) => {
+    const x = 12 + index * 11;
+    const y = 62 + Math.sin(index / 2) * activeLevel.amp * 28;
+    return `${x},${y.toFixed(1)}`;
+  }).join(" ");
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>音量与振幅互动示意</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1.05fr 0.95fr", gap: 14 }}>
+        <div className="subtle-card" style={{ padding: 14 }}>
+          <svg viewBox="0 0 280 130" style={{ width: "100%", height: 130 }}>
+            <line x1="10" y1="62" x2="270" y2="62" stroke="#d1d5db" strokeWidth="1.5" strokeDasharray="4 4" />
+            <polyline points={wavePoints} fill="none" stroke="#111111" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 8, marginTop: 8 }}>
+            {levels.map((level, index) => {
+              const active = index === activeIndex;
+              return (
+                <button
+                  key={level.label}
+                  onClick={() => playLevel(index)}
+                  style={{
+                    padding: "8px 0",
+                    borderRadius: 12,
+                    border: active ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
+                    background: active ? "#111111" : "#ffffff",
+                    color: active ? "#ffffff" : "#111111",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  {level.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="subtle-card" style={{ padding: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>当前力度</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "#111111", marginBottom: 6 }}>{activeLevel.label}</div>
+          <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+            {`振幅系数：${activeLevel.amp.toFixed(2)}`}
+            <br />
+            {`试听音量：${activeLevel.volume.toFixed(2)}`}
+            <br />
+            说明：{activeLevel.desc}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PitchExercise({ onScore }) {
+  const [target, setTarget] = useState(null);
+  const [fb, setFb] = useState(null);
+  const [correct, setCorrect] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [active, setActive] = useState(null);
+
+  const generate = useCallback(() => {
+    const allKeys = [...WK, ...BK];
+    const idx = allKeys[Math.floor(Math.random() * allKeys.length)];
+    setTarget(idx);
+    setFb(null);
+  }, []);
+
+  useEffect(() => { generate(); }, [generate]);
+
+  const handleKey = async (idx) => {
+    await unlockAudioSystem();
+    playTone(nFreq(NT[idx], 4));
+    setActive(idx);
+    setTimeout(() => setActive(null), 200);
+    if (target === null || fb) return;
+    const ok = idx === target;
+    const newC = correct + (ok ? 1 : 0);
+    const newT = total + 1;
+    setCorrect(newC);
+    setTotal(newT);
+    setFb({ ok, msg: ok ? `正确，答案是 ${NT[target]}` : `错误，正确答案是 ${NT[target]}` });
+    onScore?.(Math.min(100, Math.round((newC / newT) * 100)));
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+        <Tag>音高识别</Tag>
+        <Tag color="#085041" bg="#E1F5EE">{correct}/{total}</Tag>
+      </div>
+      {target !== null && (
+        <div style={{ textAlign: "center", padding: 14, background: "var(--color-background-secondary)", borderRadius: 8, marginBottom: 10 }}>
+          <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>找到这个音</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#534AB7" }}>{NT[target]}</div>
+        </div>
+      )}
+      <div style={{ position: "relative", height: 120, margin: "0 auto", width: WK.length * 36, userSelect: "none" }}>
+        {WK.map((ni, i) => (
+          <div key={ni} onClick={() => handleKey(ni)} style={{ position: "absolute", left: i * 36, top: 0, width: 34, height: 112, background: active === ni ? "#E1F5EE" : "#fff", border: "1px solid var(--color-border-secondary)", borderRadius: "0 0 5px 5px", cursor: "pointer", display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 5, fontSize: 10, color: "var(--color-text-tertiary)", zIndex: 1 }}>{NT[ni]}</div>
+        ))}
+        {BK.map((ni) => {
+          const wPos = WK.filter((w) => w < ni).length;
+          return (
+            <div key={ni} onClick={() => handleKey(ni)} style={{ position: "absolute", left: wPos * 36 - 12, top: 0, width: 24, height: 72, background: active === ni ? "#534AB7" : "#2C2C2A", borderRadius: "0 0 3px 3px", cursor: "pointer", zIndex: 2, display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 4, fontSize: 9, color: "#999" }}>{NT[ni]}</div>
+          );
+        })}
+      </div>
+      {fb && <FeedbackBar ok={fb.ok} msg={fb.msg} onNext={generate} />}
+    </div>
+  );
+}
+
+function IntervalExercise({ onScore }) {
+  const [q, setQ] = useState(null);
+  const [fb, setFb] = useState(null);
+  const [correct, setCorrect] = useState(0);
+  const [total, setTotal] = useState(0);
+
+  const generate = useCallback(() => {
+    const iv = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
+    const rootIdx = WK[Math.floor(Math.random() * WK.length)];
+    setQ({ iv, root: NT[rootIdx] });
+    setFb(null);
+  }, []);
+
+  useEffect(() => { generate(); }, [generate]);
+
+  const hear = async () => {
+    if (!q) return;
+    await unlockAudioSystem();
+    const f = nFreq(q.root, 4);
+    playTone(f, 0.5, "piano", 0.22);
+    setTimeout(() => playTone(f * Math.pow(2, q.iv.s / 12), 0.5, "piano", 0.22), 400);
+  };
+
+  const answer = (name) => {
+    if (!q || fb) return;
+    const ok = name === q.iv.n;
+    const newC = correct + (ok ? 1 : 0);
+    const newT = total + 1;
+    setCorrect(newC);
+    setTotal(newT);
+    setFb({ ok, msg: ok ? `正确，${q.iv.n}` : `错误，正确答案是 ${q.iv.n}` });
+    onScore?.(Math.min(100, Math.round((newC / newT) * 100)));
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+        <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>根音：<strong>{q && q.root}</strong></span>
+        <Tag color="#085041" bg="#E1F5EE">{correct}/{total}</Tag>
+      </div>
+      <div style={{ textAlign: "center", marginBottom: 10 }}>
+        <button onClick={hear} style={{ padding: "8px 20px", borderRadius: 14, background: "#534AB7", color: "#fff", border: "none", fontSize: 13, cursor: "pointer" }}>播放音程</button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(92px, 1fr))", gap: 6 }}>
+        {INTERVALS.map((iv) => (
+          <button key={iv.n} onClick={() => answer(iv.n)} disabled={!!fb} style={{ padding: "7px 4px", borderRadius: 6, border: "1px solid var(--color-border-tertiary)", background: "#fff", cursor: fb ? "default" : "pointer", fontSize: 12, fontWeight: 500, opacity: fb ? 0.6 : 1 }}>
+            {iv.n}
+            <div style={{ fontSize: 10, color: "var(--color-text-tertiary)" }}>{iv.s} 半音</div>
+          </button>
+        ))}
+      </div>
+      {fb && <FeedbackBar ok={fb.ok} msg={fb.msg} onNext={generate} />}
+    </div>
+  );
+}
+
+function ChordExercise({ onScore }) {
+  const [q, setQ] = useState(null);
+  const [fb, setFb] = useState(null);
+  const [correct, setCorrect] = useState(0);
+  const [total, setTotal] = useState(0);
+
+  const generate = useCallback(() => {
+    const ch = CHORDS[Math.floor(Math.random() * CHORDS.length)];
+    const ri = WK[Math.floor(Math.random() * WK.length)];
+    setQ({ ch, root: NT[ri], ri });
+    setFb(null);
+  }, []);
+
+  useEffect(() => { generate(); }, [generate]);
+
+  const playChord = async () => {
+    if (!q) return;
+    await unlockAudioSystem();
+    const f = nFreq(q.root, 4);
+    q.ch.iv.forEach((s, i) => setTimeout(() => playTone(f * Math.pow(2, s / 12), 0.7, "piano", 0.18), i * 60));
+  };
+
+  const answer = (name) => {
+    if (!q || fb) return;
+    const ok = name === q.ch.n;
+    const newC = correct + (ok ? 1 : 0);
+    const newT = total + 1;
+    setCorrect(newC);
+    setTotal(newT);
+    setFb({ ok, msg: ok ? `正确，${q.ch.n}` : `错误，正确答案是 ${q.ch.n}` });
+    onScore?.(Math.min(100, Math.round((newC / newT) * 100)));
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+        <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>根音：<strong>{q && q.root}</strong></span>
+        <Tag color="#0C447C" bg="#E6F1FB">{correct}/{total}</Tag>
+      </div>
+      <div style={{ textAlign: "center", marginBottom: 10 }}>
+        <button onClick={playChord} style={{ padding: "8px 20px", borderRadius: 14, background: "#185FA5", color: "#fff", border: "none", fontSize: 13, cursor: "pointer" }}>播放和弦</button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 6 }}>
+        {CHORDS.map((ch) => (
+          <button key={ch.n} onClick={() => answer(ch.n)} disabled={!!fb} style={{ padding: 8, borderRadius: 6, border: "1px solid var(--color-border-tertiary)", background: "#fff", cursor: fb ? "default" : "pointer", fontSize: 12, fontWeight: 500, opacity: fb ? 0.6 : 1 }}>
+            {ch.n}
+          </button>
+        ))}
+      </div>
+      {fb && <FeedbackBar ok={fb.ok} msg={fb.msg} onNext={generate} />}
+    </div>
+  );
+}
+
+function NotationExercise({ onScore }) {
+  const [clef, setClef] = useState(0);
+  const [note, setNote] = useState(null);
+  const [fb, setFb] = useState(null);
+  const [correct, setCorrect] = useState(0);
+  const [total, setTotal] = useState(0);
+  const trebleNotes = ["E4", "F4", "G4", "A4", "B4", "C5", "D5"];
+  const bassNotes = ["G2", "A2", "B2", "C3", "D3", "E3", "F3"];
+  const trebleY = { E4: 80, F4: 72, G4: 64, A4: 56, B4: 48, C5: 40, D5: 32 };
+  const bassY = { G2: 80, A2: 72, B2: 64, C3: 56, D3: 48, E3: 40, F3: 32 };
+
+  const generate = useCallback(() => {
+    const pool = clef === 0 ? trebleNotes : bassNotes;
+    setNote(pool[Math.floor(Math.random() * pool.length)]);
+    setFb(null);
+  }, [clef]);
+
+  useEffect(() => { generate(); }, [generate]);
+
+  const yPos = note ? ((clef === 0 ? trebleY : bassY)[note] || 48) : 48;
+
+  const answer = (letter) => {
+    if (!note || fb) return;
+    const ok = letter === note[0];
+    const newC = correct + (ok ? 1 : 0);
+    const newT = total + 1;
+    setCorrect(newC);
+    setTotal(newT);
+    setFb({ ok, msg: ok ? `正确，${note}` : `错误，正确答案是 ${note}` });
+    onScore?.(Math.min(100, Math.round((newC / newT) * 100)));
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center" }}>
+        {["高音谱号", "低音谱号"].map((label, i) => (
+          <button key={i} onClick={() => setClef(i)} style={{ flex: 1, padding: 6, borderRadius: 6, fontSize: 12, cursor: "pointer", background: i === clef ? "#FAEEDA" : "transparent", border: `1px solid ${i === clef ? "#EF9F27" : "var(--color-border-tertiary)"}` }}>{label}</button>
+        ))}
+        <Tag color="#633806" bg="#FAEEDA">{correct}/{total}</Tag>
+      </div>
+      <div style={{ background: "var(--color-background-secondary)", borderRadius: 8, padding: 12, textAlign: "center", marginBottom: 8 }}>
+        <svg width="220" height="92" viewBox="0 0 220 92">
+          {[16, 32, 48, 64, 80].map((y, i) => <line key={i} x1="24" y1={y} x2="200" y2={y} stroke="var(--color-border-secondary)" strokeWidth="0.7" />)}
+          <text x="6" y="54" fontSize="30" fill="var(--color-text-secondary)" fontFamily="serif">{clef === 0 ? "𝄞" : "𝄢"}</text>
+          {note ? (
+            <>
+              <ellipse cx="120" cy={yPos} rx="8" ry="5.5" fill="#854F0B" transform={`rotate(-10 120 ${yPos})`} />
+              <line x1="128" y1={yPos} x2="128" y2={yPos - 24} stroke="#854F0B" strokeWidth="1.5" />
+            </>
+          ) : null}
+        </svg>
+      </div>
+      <div style={{ display: "flex", gap: 4 }}>
+        {["C", "D", "E", "F", "G", "A", "B"].map((letter) => (
+          <button key={letter} onClick={() => answer(letter)} disabled={!!fb} style={{ flex: 1, padding: "9px 0", borderRadius: 6, fontSize: 15, fontWeight: 600, border: "1px solid var(--color-border-tertiary)", background: "#fff", cursor: fb ? "default" : "pointer", opacity: fb ? 0.6 : 1 }}>
+            {letter}
+          </button>
+        ))}
+      </div>
+      {fb && <FeedbackBar ok={fb.ok} msg={fb.msg} onNext={generate} />}
+    </div>
+  );
+}
+
+function TermsExercise({ onScore }) {
+  const [idx, setIdx] = useState(0);
+  const [show, setShow] = useState(false);
+  const [correct, setCorrect] = useState(0);
+  const [total, setTotal] = useState(0);
+  const term = TERMS[idx];
+
+  const next = (knew) => {
+    const newC = correct + (knew ? 1 : 0);
+    const newT = total + 1;
+    setCorrect(newC);
+    setTotal(newT);
+    onScore?.(Math.min(100, Math.round((newC / newT) * 100)));
+    setShow(false);
+    setIdx((prev) => (prev + 1) % TERMS.length);
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+        <Tag color="#3C3489" bg="#EEEDFE">术语卡片</Tag>
+        <Tag color="#085041" bg="#E1F5EE">{idx + 1}/{TERMS.length}</Tag>
+      </div>
+      <div onClick={() => setShow(true)} style={{ background: "var(--color-background-secondary)", borderRadius: 8, padding: 28, textAlign: "center", cursor: "pointer", marginBottom: 8, minHeight: 80 }}>
+        <div style={{ fontSize: 22, fontWeight: 700, color: "#534AB7" }}>{term.t}</div>
+        {show ? (
+          <div style={{ marginTop: 10 }}>
+            <div style={{ fontSize: 18, fontWeight: 600, color: "var(--color-text-primary)" }}>{term.c}</div>
+            <div style={{ fontSize: 13, color: "var(--color-text-secondary)", marginTop: 4 }}>{term.m}</div>
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, color: "var(--color-text-tertiary)", marginTop: 8 }}>点击翻转查看答案</div>
+        )}
+      </div>
+      {show ? (
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => next(false)} style={{ flex: 1, padding: 9, borderRadius: 6, border: "1px solid #F09595", background: "#FCEBEB", color: "#791F1F", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>不熟悉</button>
+          <button onClick={() => next(true)} style={{ flex: 1, padding: 9, borderRadius: 6, border: "1px solid #5DCAA5", background: "#E1F5EE", color: "#085041", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>已掌握</button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function RhythmExercise({ onScore }) {
+  const [pi, setPi] = useState(0);
+  const [taps, setTaps] = useState([]);
+  const [playing, setPlaying] = useState(false);
+  const [beat, setBeat] = useState(-1);
+  const [fb, setFb] = useState(null);
+  const [correct, setCorrect] = useState(0);
+  const [total, setTotal] = useState(0);
+  const timerRef = useRef(null);
+  const pat = RHYTHMS[pi];
+
+  const doPlay = async () => {
+    await unlockAudioSystem();
+    setPlaying(true);
+    setTaps([]);
+    setFb(null);
+    let i = 0;
+    timerRef.current = setInterval(() => {
+      setBeat(i);
+      if (pat.p[i]) playTone(800, 0.04, "square", 0.12);
+      i += 1;
+      if (i >= 8) {
+        clearInterval(timerRef.current);
+        setTimeout(() => {
+          setBeat(-1);
+          setPlaying(false);
+        }, 250);
+      }
+    }, 250);
+  };
+
+  const check = () => {
+    const filled = Array.from({ length: 8 }, (_, i) => taps[i] || 0);
+    const ok = filled.every((v, i) => v === pat.p[i]);
+    const newC = correct + (ok ? 1 : 0);
+    const newT = total + 1;
+    setCorrect(newC);
+    setTotal(newT);
+    setFb({ ok, msg: ok ? "节奏正确" : "节奏不匹配，请再听一遍" });
+    onScore?.(Math.min(100, Math.round((newC / newT) * 100)));
+  };
+
+  useEffect(() => () => clearInterval(timerRef.current), []);
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+        <span style={{ fontSize: 14, fontWeight: 600 }}>{pat.n}</span>
+        <Tag color="#085041" bg="#E1F5EE">{correct}/{total}</Tag>
+      </div>
+      <div style={{ textAlign: "center", marginBottom: 10 }}>
+        <button onClick={doPlay} disabled={playing} style={{ padding: "7px 20px", borderRadius: 14, background: "#993C1D", color: "#fff", border: "none", fontSize: 13, cursor: playing ? "default" : "pointer", opacity: playing ? 0.7 : 1 }}>
+          {playing ? "播放中..." : "听一遍"}
+        </button>
+      </div>
+      <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 4 }}>参考：</div>
+      <div style={{ display: "flex", gap: 3, marginBottom: 10 }}>
+        {pat.p.map((v, i) => <div key={i} style={{ flex: 1, height: 28, borderRadius: 4, background: beat === i ? "#D85A30" : v ? "#F0997B" : "var(--color-background-tertiary)", transition: "all 0.1s" }} />)}
+      </div>
+      <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 4 }}>你的点击：</div>
+      <div style={{ display: "flex", gap: 3, marginBottom: 10 }}>
+        {Array.from({ length: 8 }, (_, i) => (
+          <div key={i} onClick={() => { if (!playing) setTaps((prev) => { const next = [...prev]; next[i] = next[i] ? 0 : 1; return next; }); }} style={{ flex: 1, height: 28, borderRadius: 4, cursor: "pointer", background: taps[i] ? "#534AB7" : "var(--color-background-tertiary)", transition: "all 0.15s" }} />
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 5 }}>
+        <button onClick={check} disabled={playing} style={{ flex: 1, padding: 7, borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "#fff", cursor: "pointer", fontSize: 12 }}>检查</button>
+        <button onClick={() => { setPi((prev) => (prev + 1) % RHYTHMS.length); setTaps([]); setFb(null); }} style={{ flex: 1, padding: 7, borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "#fff", cursor: "pointer", fontSize: 12 }}>下一个</button>
+      </div>
+      {fb ? <FeedbackBar ok={fb.ok} msg={fb.msg} /> : null}
+    </div>
+  );
+}
+
+const EXERCISE_COMPONENTS = {
+  pitch: PitchExercise,
+  interval: IntervalExercise,
+  chord: ChordExercise,
+  notation: NotationExercise,
+  terms: TermsExercise,
+  rhythm: RhythmExercise,
+};
 
 /* Data */
 const INTERVALS = [
@@ -501,7 +1163,444 @@ function LessonLearningWorkspaceLegacy() {
   return null;
 }
 
-function LessonLearningWorkspace({ lesson, section, showTabs = true }) {
+function HomeworkImageUploader({
+  images,
+  onAddFiles,
+  onRemoveImage,
+  fileInputRef,
+  cameraInputRef,
+}) {
+  return (
+    <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>拍照上传与图片附件</div>
+          <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
+            手机端可直接拍照上传作业纸、节奏型或五线谱图片。
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button onClick={() => cameraInputRef.current?.click()} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>
+            拍照上传
+          </button>
+          <button onClick={() => fileInputRef.current?.click()} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", color: "#111111", cursor: "pointer" }}>
+            相册上传
+          </button>
+        </div>
+      </div>
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={onAddFiles} />
+      <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={onAddFiles} />
+      {images.length ? (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10 }}>
+          {images.map((image, index) => (
+            <div key={`${image.name}-${index}`} style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(17,17,17,0.1)", background: "#f8f8f8" }}>
+              <img src={image.dataUrl} alt={image.name || `作业图片${index + 1}`} style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
+              <div style={{ padding: 8, fontSize: 10, color: "var(--color-text-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {image.name || `图片 ${index + 1}`}
+              </div>
+              <button onClick={() => onRemoveImage(index)} style={{ position: "absolute", top: 8, right: 8, width: 24, height: 24, borderRadius: 999, border: "1px solid rgba(17,17,17,0.16)", background: "rgba(255,255,255,0.96)", cursor: "pointer", fontSize: 12 }}>
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ padding: 14, borderRadius: 10, background: "#f8f8f8", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          当前尚未上传图片。若作业需要书写节奏型、五线谱或手写分析，可直接拍照后提交。
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RhythmHomeworkEditorV2({ rhythmSubmission, onChange, onPlay }) {
+  const activeMeasure = rhythmSubmission?.activeMeasure || 0;
+  const measures = rhythmSubmission?.measures || [[], []];
+  const targetBeats = getMeterBeats(rhythmSubmission?.meter);
+
+  const appendSymbol = useCallback((symbol) => {
+    onChange((prev) => {
+      const nextMeasures = (prev.measures || [[], []]).map((measure) => [...measure]);
+      nextMeasures[prev.activeMeasure || 0].push({ ...symbol, tieToNext: false });
+      return { ...prev, measures: nextMeasures };
+    });
+  }, [onChange]);
+
+  const removeLastSymbol = useCallback(() => {
+    onChange((prev) => {
+      const nextMeasures = (prev.measures || [[], []]).map((measure) => [...measure]);
+      nextMeasures[prev.activeMeasure || 0].pop();
+      return { ...prev, measures: nextMeasures };
+    });
+  }, [onChange]);
+
+  const toggleTieOnLast = useCallback(() => {
+    onChange((prev) => {
+      const nextMeasures = (prev.measures || [[], []]).map((measure) => [...measure]);
+      const current = nextMeasures[prev.activeMeasure || 0];
+      if (!current.length) return prev;
+      const lastIndex = current.length - 1;
+      if (current[lastIndex].kind !== "note") return prev;
+      current[lastIndex] = { ...current[lastIndex], tieToNext: !current[lastIndex].tieToNext };
+      return { ...prev, measures: nextMeasures };
+    });
+  }, [onChange]);
+
+  const clearMeasure = useCallback(() => {
+    onChange((prev) => {
+      const nextMeasures = (prev.measures || [[], []]).map((measure) => [...measure]);
+      nextMeasures[prev.activeMeasure || 0] = [];
+      return { ...prev, measures: nextMeasures };
+    });
+  }, [onChange]);
+
+  const resetAll = useCallback(() => {
+    onChange((prev) => ({ ...prev, measures: [[], []], activeMeasure: 0 }));
+  }, [onChange]);
+
+  return (
+    <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>节奏编辑器</div>
+          <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
+            以小节为单位输入节奏，系统会检查每小节拍数是否完整。
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <select value={rhythmSubmission?.meter || "4/4"} onChange={(e) => onChange((prev) => ({ ...prev, meter: e.target.value }))} style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff" }}>
+            {["2/4", "3/4", "4/4", "6/8"].map((meter) => <option key={meter} value={meter}>{meter}</option>)}
+          </select>
+          {[0, 1].map((measureIndex) => (
+            <button key={measureIndex} onClick={() => onChange((prev) => ({ ...prev, activeMeasure: measureIndex }))} style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid rgba(17,17,17,0.12)", background: activeMeasure === measureIndex ? "#111111" : "#ffffff", color: activeMeasure === measureIndex ? "#ffffff" : "#111111", cursor: "pointer" }}>
+              第 {measureIndex + 1} 小节
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8, marginBottom: 10 }}>
+        {RHYTHM_SYMBOLS.map((symbol) => (
+          <button key={symbol.id} onClick={() => appendSymbol(symbol)} style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.1)", background: "#f8f8f8", cursor: "pointer", textAlign: "left" }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>{symbol.label}</div>
+            <div style={{ fontSize: 10, color: "var(--color-text-tertiary)", marginTop: 4 }}>{symbol.kind === "tie" ? "连接前后音" : `${symbol.duration} 拍`}</div>
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+        {measures.map((measure, index) => {
+          const currentBeats = calculateMeasureDuration(measure);
+          const status = currentBeats === targetBeats ? "完整" : currentBeats < targetBeats ? "未满" : "超拍";
+          const statusColor = currentBeats === targetBeats ? "#166534" : currentBeats < targetBeats ? "#92400e" : "#b91c1c";
+          return (
+            <div key={`measure-v2-${index}`} style={{ padding: 10, borderRadius: 10, border: activeMeasure === index ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)", background: activeMeasure === index ? "#fafafa" : "#ffffff" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#111111" }}>第 {index + 1} 小节</div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: statusColor }}>{`${currentBeats}/${targetBeats} 拍 · ${status}`}</div>
+              </div>
+              <div style={{ minHeight: 58, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {measure.length ? measure.map((item, itemIndex) => (
+                  <span key={`${item.id}-${itemIndex}`} style={{ padding: "6px 8px", borderRadius: 999, background: "#111111", color: "#ffffff", fontSize: 10 }}>
+                    {item.label}{item.tieToNext ? "~" : ""}
+                  </span>
+                )) : <span style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>当前小节尚未录入。</span>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+        <button onClick={() => onPlay?.(measures[activeMeasure] || [])} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>试听当前小节</button>
+        <button onClick={toggleTieOnLast} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>为最后一个音加连音</button>
+        <button onClick={removeLastSymbol} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>撤销上一步</button>
+        <button onClick={clearMeasure} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>清空当前小节</button>
+        <button onClick={resetAll} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#f5f5f5", cursor: "pointer" }}>重置两小节</button>
+      </div>
+    </div>
+  );
+}
+
+function StaffHomeworkEditorV2({ staffSubmission, onChange }) {
+  const noteSlots = Array.from({ length: 8 }, (_, slot) => {
+    const matched = (staffSubmission?.notes || []).find((item) => item.slot === slot);
+    return matched || null;
+  });
+
+  const placeNote = useCallback((row) => {
+    const pitch = STAFF_ROWS.find((item) => item.row === row)?.label;
+    if (!pitch) return;
+    onChange((prev) => {
+      const nextNotes = (prev.notes || []).filter((item) => item.slot !== prev.activeSlot);
+      nextNotes.push({
+        slot: prev.activeSlot,
+        row,
+        pitch,
+        accidental: prev.accidental || "natural",
+        noteValue: prev.noteValue || "quarter",
+        tieToNext: false,
+      });
+      return { ...prev, notes: nextNotes };
+    });
+  }, [onChange]);
+
+  const toggleTieForCurrent = useCallback(() => {
+    onChange((prev) => {
+      const nextNotes = (prev.notes || []).map((item) => item.slot === prev.activeSlot ? { ...item, tieToNext: !item.tieToNext } : item);
+      return { ...prev, notes: nextNotes };
+    });
+  }, [onChange]);
+
+  const removeCurrentSlot = useCallback(() => {
+    onChange((prev) => ({ ...prev, notes: (prev.notes || []).filter((item) => item.slot !== prev.activeSlot) }));
+  }, [onChange]);
+
+  const resetAll = useCallback(() => {
+    onChange((prev) => ({ ...prev, activeSlot: 0, accidental: "natural", noteValue: "quarter", notes: [] }));
+  }, [onChange]);
+
+  const sortedNotes = [...(staffSubmission?.notes || [])].sort((a, b) => a.slot - b.slot);
+
+  return (
+    <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>五线谱修正器</div>
+          <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
+            支持谱号、升降号、音值和连音弧的基础修正，适合大学乐理作业录入。
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <select value={staffSubmission?.clef || "treble"} onChange={(e) => onChange((prev) => ({ ...prev, clef: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)" }}>
+            <option value="treble">高音谱号</option>
+            <option value="bass">低音谱号</option>
+          </select>
+          <select value={staffSubmission?.accidental || "natural"} onChange={(e) => onChange((prev) => ({ ...prev, accidental: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)" }}>
+            <option value="natural">还原</option>
+            <option value="sharp">升号</option>
+            <option value="flat">降号</option>
+          </select>
+          <select value={staffSubmission?.noteValue || "quarter"} onChange={(e) => onChange((prev) => ({ ...prev, noteValue: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)" }}>
+            <option value="whole">全音符</option>
+            <option value="half">二分音符</option>
+            <option value="quarter">四分音符</option>
+          </select>
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+        {noteSlots.map((item, slot) => (
+          <button key={`slot-v2-${slot}`} onClick={() => onChange((prev) => ({ ...prev, activeSlot: slot }))} style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid rgba(17,17,17,0.12)", background: staffSubmission?.activeSlot === slot ? "#111111" : "#ffffff", color: staffSubmission?.activeSlot === slot ? "#ffffff" : "#111111", cursor: "pointer" }}>
+            音位 {slot + 1}{item ? ` · ${item.pitch}` : ""}
+          </button>
+        ))}
+      </div>
+      <svg viewBox="0 0 360 220" style={{ width: "100%", maxWidth: 540, height: "auto", display: "block", margin: "0 auto", background: "#fafafa", borderRadius: 12, border: "1px solid rgba(17,17,17,0.08)" }}>
+        {[0, 1, 2, 3, 4].map((line) => {
+          const y = 54 + line * 22;
+          return <line key={`staff-line-v2-${line}`} x1="32" y1={y} x2="328" y2={y} stroke="#111111" strokeWidth="1.3" />;
+        })}
+        <text x="20" y="68" fontSize="28" fill="#111111">{staffSubmission?.clef === "bass" ? "𝄢" : "𝄞"}</text>
+        {Array.from({ length: 8 }, (_, slot) => {
+          const x = 78 + slot * 30;
+          return <g key={`guide-v2-${slot}`}><line x1={x} y1="38" x2={x} y2="170" stroke="rgba(17,17,17,0.08)" strokeWidth="1" /><text x={x} y="192" textAnchor="middle" fontSize="10" fill={staffSubmission?.activeSlot === slot ? "#111111" : "#9ca3af"}>{slot + 1}</text></g>;
+        })}
+        {STAFF_ROWS.map((item) => {
+          const y = 32 + item.row * 12;
+          return <g key={`row-v2-${item.row}`} onClick={() => placeNote(item.row)} style={{ cursor: "pointer" }}><rect x="58" y={y - 6} width="250" height="12" fill="transparent" /><text x="332" y={y + 4} fontSize="10" fill="#6b7280">{item.label}</text></g>;
+        })}
+        {sortedNotes.map((note) => {
+          const x = 78 + note.slot * 30;
+          const y = 32 + note.row * 12;
+          const accidentalLabel = note.accidental === "sharp" ? "#" : note.accidental === "flat" ? "b" : "";
+          const isFilled = note.noteValue === "quarter";
+          const showStem = note.noteValue !== "whole";
+          return (
+            <g key={`note-v2-${note.slot}-${note.pitch}`}>
+              {accidentalLabel ? <text x={x - 14} y={y + 5} fontSize="13" fill="#111111">{accidentalLabel}</text> : null}
+              <ellipse cx={x} cy={y} rx="8" ry="6" fill={isFilled ? "#111111" : "#ffffff"} stroke="#111111" strokeWidth="1.3" />
+              {showStem ? <line x1={x + 7} y1={y} x2={x + 7} y2={y - 28} stroke="#111111" strokeWidth="1.4" /> : null}
+            </g>
+          );
+        })}
+        {sortedNotes.map((note) => {
+          if (!note.tieToNext) return null;
+          const next = sortedNotes.find((item) => item.slot === note.slot + 1);
+          if (!next) return null;
+          const x1 = 78 + note.slot * 30;
+          const x2 = 78 + next.slot * 30;
+          const y = Math.max(32 + note.row * 12, 32 + next.row * 12) + 16;
+          return <path key={`tie-v2-${note.slot}`} d={`M ${x1 - 4} ${y} Q ${(x1 + x2) / 2} ${y + 14} ${x2 + 4} ${y}`} fill="none" stroke="#111111" strokeWidth="1.3" />;
+        })}
+      </svg>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+        <button onClick={toggleTieForCurrent} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>为当前音位切换连音</button>
+        <button onClick={removeCurrentSlot} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>删除当前音位</button>
+        <button onClick={resetAll} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#f5f5f5", cursor: "pointer" }}>重置五线谱</button>
+      </div>
+    </div>
+  );
+}
+
+function HomeworkPianoEditor({ pianoSubmission, onChange }) {
+  const octave = pianoSubmission?.octave || 4;
+  const notes = pianoSubmission?.notes || [];
+
+  const addNote = useCallback(async (note) => {
+    await unlockAudioSystem();
+    playTone(nFreq(note, octave), 0.42, "piano", 0.24);
+    onChange((prev) => ({
+      ...prev,
+      notes: [...(prev.notes || []), { note, octave }].slice(-12),
+    }));
+  }, [octave, onChange]);
+
+  return (
+    <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>钢琴输入器</div>
+          <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
+            点击琴键录入音高序列，适用于音高、音级与基础键盘定位作业。
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <select value={octave} onChange={(e) => onChange((prev) => ({ ...prev, octave: Number(e.target.value) }))} style={{ padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)" }}>
+            {[3, 4, 5].map((value) => <option key={value} value={value}>{value} 组</option>)}
+          </select>
+          <button onClick={() => onChange((prev) => ({ ...prev, notes: (prev.notes || []).slice(0, -1) }))} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>
+            撤销
+          </button>
+          <button onClick={() => onChange((prev) => ({ ...prev, notes: [] }))} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#f5f5f5", cursor: "pointer" }}>
+            清空
+          </button>
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 8 }}>
+        {["C", "D", "E", "F", "G", "A", "B"].map((note) => (
+          <button key={note} onClick={() => addNote(note)} style={{ padding: "12px 8px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.1)", background: "#fafafa", color: "#111111", cursor: "pointer", fontWeight: 600 }}>
+            {note}{octave}
+          </button>
+        ))}
+      </div>
+      <div style={{ marginTop: 10, padding: 10, borderRadius: 10, background: "#f8f8f8", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+        {notes.length ? notes.map((item) => `${item.note}${item.octave}`).join(" - ") : "当前尚未录入钢琴音高。"}
+      </div>
+    </div>
+  );
+}
+
+function HomeworkVoiceInput({
+  transcript,
+  audioSubmission,
+  voiceSupported,
+  listening,
+  transcribing,
+  error,
+  onStartListening,
+  onStopListening,
+  onStartRecording,
+  onStopRecording,
+  onApplyTranscript,
+}) {
+  return (
+    <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>语音输入</div>
+          <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
+            支持浏览器实时识别与录音转写，适合术语解释、口头分析与作业补充说明。
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {voiceSupported ? (
+            <>
+              <button onClick={onStartListening} disabled={listening} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: listening ? "#f1f1f1" : "#111111", color: listening ? "#666666" : "#ffffff", cursor: listening ? "default" : "pointer" }}>
+                开始实时识别
+              </button>
+              <button onClick={onStopListening} disabled={!listening} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: !listening ? "default" : "pointer" }}>
+                停止识别
+              </button>
+            </>
+          ) : (
+            <span style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>当前浏览器不支持实时语音识别。</span>
+          )}
+          <button onClick={onStartRecording} disabled={transcribing} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: transcribing ? "default" : "pointer" }}>
+            开始录音
+          </button>
+          <button onClick={onStopRecording} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#f5f5f5", cursor: "pointer" }}>
+            结束录音并转写
+          </button>
+        </div>
+      </div>
+      <div style={{ padding: 10, borderRadius: 10, background: "#f8f8f8", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+        <div><strong>识别文本：</strong>{transcript.trim() || "尚未生成语音转写。"}</div>
+        <div style={{ marginTop: 6 }}><strong>录音文件：</strong>{audioSubmission?.name || "尚未录音"}</div>
+        {transcribing ? <div style={{ marginTop: 6, color: "#92400e" }}>正在转写录音，请稍候…</div> : null}
+        {error ? <div style={{ marginTop: 6, color: "#b91c1c" }}>{error}</div> : null}
+      </div>
+      <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }}>
+        <button onClick={onApplyTranscript} disabled={!transcript.trim()} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: !transcript.trim() ? "default" : "pointer" }}>
+          将转写内容写入文字说明
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function HomeworkEvaluationCard({ evaluation }) {
+  if (!evaluation) {
+    return (
+      <div style={{ padding: 12, borderRadius: 12, background: "#f8f8f8", border: "1px solid rgba(17,17,17,0.08)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+        提交作业后，这里会显示结构化课程评价与 AI 初评结果。
+      </div>
+    );
+  }
+
+  const scoreEntries = Object.entries(evaluation.scores || {});
+  return (
+    <div style={{ padding: 12, borderRadius: 12, background: "#f8f8f8", border: "1px solid rgba(17,17,17,0.08)" }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: "#111111", marginBottom: 8 }}>课程评价</div>
+      <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
+        {evaluation.overallComment || "暂无评价。"}
+      </div>
+      {scoreEntries.length ? (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginBottom: 10 }}>
+          {scoreEntries.map(([label, value]) => (
+            <div key={label} style={{ padding: 10, borderRadius: 10, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+              <div style={{ fontSize: 10, color: "var(--color-text-tertiary)", marginBottom: 4 }}>{label}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#111111" }}>{value}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {Array.isArray(evaluation.tags) && evaluation.tags.length ? (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+          {evaluation.tags.map((tag) => <Tag key={tag}>{tag}</Tag>)}
+        </div>
+      ) : null}
+      <div style={{ display: "grid", gap: 8 }}>
+        {Array.isArray(evaluation.strengths) && evaluation.strengths.length ? (
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 4 }}>优点</div>
+            <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>{evaluation.strengths.join("；")}</div>
+          </div>
+        ) : null}
+        {Array.isArray(evaluation.issues) && evaluation.issues.length ? (
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 4 }}>待修正问题</div>
+            <div style={{ fontSize: 11, color: "#b91c1c", lineHeight: 1.8 }}>{evaluation.issues.join("；")}</div>
+          </div>
+        ) : null}
+        {Array.isArray(evaluation.suggestions) && evaluation.suggestions.length ? (
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 4 }}>修改建议</div>
+            <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>{evaluation.suggestions.join("；")}</div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPageHint = null }) {
   const pptLessonData = getPptLessonData(lesson.id);
   const homeworkFileInputRef = useRef(null);
   const homeworkCameraInputRef = useRef(null);
@@ -548,16 +1647,134 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true }) {
   const correctCount = practiceAnswers.filter((item) => item.correct).length;
   const lessonSections = LESSON_LEARNING_SECTIONS[lesson.id] || [];
   const lessonContentItems = (pptLessonData?.knowledgePoints || []).map((item) => ({ h: item.title, b: item.detail })).filter((item) => item.h || item.b).length ? (pptLessonData?.knowledgePoints || []).map((item) => ({ h: item.title, b: item.detail })) : (LESSON_CONTENT[lesson.id] || []);
-  const lessonHomework = homeworkRequirement.helper;
   const homeworkRequirement = getHomeworkRequirement(lesson.id, lesson.t);
+  const lessonHomework = homeworkRequirement.helper;
   const studyMinutes = Math.max(1, Math.ceil((Date.now() - stats.startedAt) / 60000));
   const evaluationDimensions = getEvaluationDimensions(homeworkRequirement);
+  const homeworkChannelLabels = homeworkRequirement.channels.map((channel) => HOMEWORK_CHANNEL_LABELS[channel] || channel).join(" / ");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     setVoiceSupported(Boolean(Recognition));
   }, []);
+
+  const startSpeechRecognition = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) {
+      setVoiceError("当前浏览器不支持实时语音识别。");
+      return;
+    }
+    if (speechRecognitionRef.current) {
+      try { speechRecognitionRef.current.stop(); } catch {}
+    }
+    const recognition = new Recognition();
+    recognition.lang = "zh-CN";
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.onstart = () => {
+      setVoiceError("");
+      setVoiceListening(true);
+    };
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results || [])
+        .map((result) => result?.[0]?.transcript || "")
+        .join("")
+        .trim();
+      if (transcript) {
+        setVoiceTranscript((prev) => prev ? `${prev}\n${transcript}` : transcript);
+      }
+    };
+    recognition.onerror = () => {
+      setVoiceError("语音识别失败，请改用录音转写。");
+      setVoiceListening(false);
+    };
+    recognition.onend = () => {
+      setVoiceListening(false);
+      speechRecognitionRef.current = null;
+    };
+    speechRecognitionRef.current = recognition;
+    recognition.start();
+  }, []);
+
+  const stopSpeechRecognition = useCallback(() => {
+    try {
+      speechRecognitionRef.current?.stop();
+    } catch {}
+    setVoiceListening(false);
+  }, []);
+
+  const startAudioRecording = useCallback(async () => {
+    if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      setVoiceError("当前浏览器不支持录音功能。");
+      return;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new window.MediaRecorder(stream);
+      audioChunksRef.current = [];
+      setVoiceError("");
+      recorder.ondataavailable = (event) => {
+        if (event.data?.size) audioChunksRef.current.push(event.data);
+      };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((track) => track.stop());
+        mediaRecorderRef.current = null;
+        if (!audioChunksRef.current.length) {
+          setVoiceError("未捕获到录音内容。");
+          return;
+        }
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        const file = new File([blob], `homework-${Date.now()}.webm`, { type: blob.type || "audio/webm" });
+        const audioDataUrl = await fileToDataUrl(file);
+        setAudioSubmission({ name: file.name, mimeType: file.type, size: file.size, duration: null });
+        setAudioTranscribing(true);
+        try {
+          const response = await fetch("/api/transcribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              audioDataUrl,
+              fileName: file.name,
+              mimeType: file.type,
+            }),
+          });
+          const json = await response.json();
+          if (response.ok && json.text) {
+            setVoiceTranscript((prev) => prev ? `${prev}\n${json.text}` : json.text);
+          } else {
+            setVoiceError(json?.error || "录音转写失败，请稍后重试。");
+          }
+        } catch {
+          setVoiceError("录音转写失败，请稍后重试。");
+        } finally {
+          setAudioTranscribing(false);
+        }
+      };
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+    } catch {
+      setVoiceError("无法启动录音，请检查浏览器麦克风权限。");
+    }
+  }, []);
+
+  const stopAudioRecording = useCallback(() => {
+    try {
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== "inactive") recorder.stop();
+    } catch {
+      setVoiceError("结束录音失败，请重试。");
+    }
+  }, []);
+
+  const applyTranscriptToDraft = useCallback(() => {
+    const trimmed = voiceTranscript.trim();
+    if (!trimmed) return;
+    setHomeworkDraft((prev) => prev.trim() ? `${prev.trim()}\n${trimmed}` : trimmed);
+    setStats((prev) => ({ ...prev, interactions: prev.interactions + 1 }));
+  }, [voiceTranscript]);
 
   const recordError = useCallback((type, explanation) => {
     setStats((prev) => ({
@@ -664,12 +1881,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true }) {
     piano: hasPianoContent,
     voice: hasVoiceContent,
   };
-  const submissionTypes = [
-    homeworkDraft.trim() ? "鏂囧瓧璇存槑" : null,
-    homeworkImages.length ? "鎷嶇収涓婁紶" : null,
-    hasRhythmContent ? "鑺傚缂栬緫" : null,
-    hasStaffContent ? "五线谱修正" : null,
-  ].filter(Boolean);
+  const submissionTypes = [];
   submissionTypes.splice(
     0,
     submissionTypes.length,
@@ -910,15 +2122,15 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true }) {
   return (
     <div style={{ marginTop: 10, marginBottom: 14 }}>
       {showTabs && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-        <button onClick={() => setActiveSection("content")} style={sectionButtonStyle("content")}>鍐呭鍛堢幇</button>
-        <button onClick={() => setActiveSection("practice")} style={sectionButtonStyle("practice")}>璇惧爞缁冧範</button>
-        <button onClick={() => setActiveSection("homework")} style={sectionButtonStyle("homework")}>璇惧悗浣滀笟</button>
+        <button onClick={() => setActiveSection("content")} style={sectionButtonStyle("content")}>内容呈现</button>
+        <button onClick={() => setActiveSection("practice")} style={sectionButtonStyle("practice")}>课堂练习</button>
+        <button onClick={() => setActiveSection("homework")} style={sectionButtonStyle("homework")}>课后作业</button>
       </div>}
 
       {activeSection === "content" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(17,17,17,0.04)", border: "1px solid rgba(17,17,17,0.08)" }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 8 }}>{"\u8bfe\u65f6\u5185\u5bb9"}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 8 }}>内容呈现</div>
         <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
-          {"\u5f53\u524d\u677f\u5757\u53ea\u5c55\u793a\u8be5\u8bfe\u65f6\u7684\u6b63\u5f0f\u5185\u5bb9\u4e0e\u914d\u5957 PPT\uff0c\u4e0d\u518d\u91cd\u590d\u663e\u793a\u4ea4\u4e92\u8bf4\u660e\u3002"}
+          本页仅保留本课 PPT 课件，不再重复展示知识点长列表。
         </div>
         {pptLessonData && (
           <div style={{ marginBottom: 12, padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
@@ -930,32 +2142,18 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true }) {
             </div>
           </div>
         )}
-        <div style={{ display: "grid", gap: 12, marginBottom: 12 }}>
-          {lessonContentItems.map((item, index) => (
-            <div key={`${lesson.id}-content-${index}`} style={{ padding: 14, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>{item.h}</div>
-              <div style={{ display: "grid", gap: 8 }}>
-                {String(item.b || "").split(/\n+/).filter(Boolean).map((paragraph, paragraphIndex) => (
-                  <div key={`${lesson.id}-content-${index}-${paragraphIndex}`} style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.9 }}>
-                    {paragraph}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-        {pptLessonData && <PptContentEmbedFixed lessonId={lesson.id} />}
+        {pptLessonData && <PptContentEmbedFixed lessonId={lesson.id} pageHint={contentPageHint} />}
       </div>}
 
       {activeSection === "practice" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(17,17,17,0.04)", border: "1px solid rgba(17,17,17,0.08)" }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 8 }}>课堂练习</div>
         <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
-          系统会结合你在课时内容中的互动操作结果，提供 20 题连续课堂练习，并反馈当前掌握情况。
+          系统会结合你在内容呈现中的互动操作结果，提供 20 题连续课堂练习，并反馈当前掌握情况。
         </div>
         <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>互动检测</div>
           <div style={{ fontSize: 11, color: stats.errors > 0 ? "#b91c1c" : "var(--color-text-secondary)" }}>
-            {lastInterval ? `最近一次识别为 ${lastInterval.label}，${lastInterval.detail}` : "请先在课时内容里完成一次钢琴或互动操作，系统才会生成检测结果。"}
+            {lastInterval ? `最近一次识别为 ${lastInterval.label}，${lastInterval.detail}` : "请先在内容呈现里完成一次钢琴或互动操作，系统才会生成检测结果。"}
           </div>
         </div>
         <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
@@ -1231,15 +2429,15 @@ function InteractivePitchFrequencyWidget() {
   );
 }
 
-function PptContentEmbed({ lessonId }) {
-  return <PptContentEmbedFixed lessonId={lessonId} />;
+function PptContentEmbed({ lessonId, pageHint }) {
+  return <PptContentEmbedFixed lessonId={lessonId} pageHint={pageHint} />;
 }
 
-function PptContentEmbedCn({ lessonId }) {
-  return <PptContentEmbedFixed lessonId={lessonId} />;
+function PptContentEmbedCn({ lessonId, pageHint }) {
+  return <PptContentEmbedFixed lessonId={lessonId} pageHint={pageHint} />;
 }
 
-function PptContentEmbedFixed({ lessonId }) {
+function PptContentEmbedFixed({ lessonId, pageHint = null }) {
   const lessonData = getPptLessonData(lessonId);
   const [pageIndex, setPageIndex] = useState(0);
 
@@ -1266,6 +2464,12 @@ function PptContentEmbedFixed({ lessonId }) {
     setPageIndex(0);
   }, [lessonId]);
 
+  useEffect(() => {
+    if (pageHint == null || Number.isNaN(Number(pageHint))) return;
+    const nextIndex = Math.max(0, Math.min(slideNumbers.length - 1, Number(pageHint)));
+    setPageIndex(nextIndex);
+  }, [pageHint, slideNumbers.length]);
+
   if (!lessonData || slideNumbers.length === 0) return null;
 
   const currentSlideNo = slideNumbers[pageIndex];
@@ -1289,7 +2493,7 @@ function PptContentEmbedFixed({ lessonId }) {
           : (lessonId === "L9" || lessonId === "L10" || lessonId === "L11" || lessonId === "L12")
             ? "/ppt/MusicAI_L9_L10_L11_L12.pptx"
             : "/ppt/MusicAI_12_Lessons.pptx";
-  const imageSrc = `${imageRoot}/${encodeURIComponent(`幻灯片${currentSlideNo}.PNG`)}`;
+  const imageSrc = `${imageRoot}/slide-${currentSlideNo}.png`;
 
   return (
     <div className="section-card" style={{ marginTop: 12 }}>
@@ -1317,7 +2521,6 @@ function PptContentEmbedFixed({ lessonId }) {
         </div>
       </div>
       <div className="subtle-card" style={{ padding: 14 }}>
-        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginBottom: 10 }}>{`当前显示：PPT 第 ${currentSlideNo} 页`}</div>
         <img
           src={imageSrc}
           alt={`${lessonData.lessonTitle} - 幻灯片 ${currentSlideNo}`}
@@ -1341,8 +2544,7 @@ function LessonMediaHub({ lesson }) {
 function LessonSupportLinks({ onOpen }) {
   const items = [
     { id: "tutor", label: "AI 导师", desc: "针对当前课时提问，并获取讲解与纠错建议" },
-    { id: "create", label: "创作", desc: "把本课知识转化成旋律与节奏实践" },
-    { id: "lab", label: "实验室", desc: "进入音乐实验室做扩展探索" },
+    { id: "lab", label: "音乐创作实验室", desc: "进入音乐创作实验室做扩展探索" },
   ];
 
   return (
@@ -1361,9 +2563,146 @@ function LessonSupportLinks({ onOpen }) {
   );
 }
 
+function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect }) {
+  const nodes = items.slice(0, 6);
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const summarize = (text) => String(text || "").split(/\n+/).filter(Boolean).join(" ").slice(0, 34);
+  const layoutNodes = nodes.map((item, index) => {
+    const isLeft = index < Math.ceil(nodes.length / 2);
+    const leftPositions = [70, 180, 290];
+    const rightPositions = [95, 220, 345];
+    const laneIndex = isLeft ? index : index - Math.ceil(nodes.length / 2);
+    return {
+      ...item,
+      index,
+      isLeft,
+      x: isLeft ? 70 : 690,
+      y: (isLeft ? leftPositions : rightPositions)[laneIndex] || (90 + laneIndex * 120),
+      anchorX: isLeft ? 290 : 690,
+      anchorY: ((isLeft ? leftPositions : rightPositions)[laneIndex] || (90 + laneIndex * 120)) + 44,
+    };
+  });
+
+  return (
+    <div className="section-card">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>知识导图</div>
+          <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{chapterTitle}</div>
+        </div>
+        <Tag color="#111111" bg="#F3F4F6">{`${nodes.length} 个核心点`}</Tag>
+      </div>
+
+      <div style={{ borderRadius: 22, background: "linear-gradient(180deg, #fcfcfc 0%, #f5f5f5 100%)", border: "1px solid rgba(17,17,17,0.08)", overflowX: "auto" }}>
+        <div style={{ position: "relative", width: 980, minHeight: 470, margin: "0 auto", padding: "18px 0" }}>
+          <svg
+            width="980"
+            height="470"
+            viewBox="0 0 980 470"
+            style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id="mind-line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="rgba(17,17,17,0.18)" />
+                <stop offset="100%" stopColor="rgba(17,17,17,0.45)" />
+              </linearGradient>
+            </defs>
+            {layoutNodes.map((item) => {
+              const centerX = 490;
+              const centerY = 235;
+              const branchX = item.isLeft ? 380 : 600;
+              const branchY = item.anchorY;
+              return (
+                <g key={`line-${lessonTitle}-${item.index}`}>
+                  <path
+                    d={`M ${centerX} ${centerY} C ${item.isLeft ? 450 : 530} ${centerY}, ${item.isLeft ? 420 : 560} ${branchY}, ${branchX} ${branchY}`}
+                    fill="none"
+                    stroke={hoveredIndex === item.index ? "#111111" : "url(#mind-line-gradient)"}
+                    strokeWidth={hoveredIndex === item.index ? "4" : "3"}
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d={`M ${branchX} ${branchY} L ${item.anchorX} ${item.anchorY}`}
+                    fill="none"
+                    stroke={hoveredIndex === item.index ? "rgba(17,17,17,0.82)" : "rgba(17,17,17,0.22)"}
+                    strokeWidth={hoveredIndex === item.index ? "3.5" : "2.5"}
+                    strokeLinecap="round"
+                  />
+                </g>
+              );
+            })}
+          </svg>
+
+          <div
+            style={{
+              position: "absolute",
+              left: 380,
+              top: 150,
+              width: 220,
+              minHeight: 150,
+              padding: 18,
+              borderRadius: 24,
+              background: "linear-gradient(180deg, rgba(17,17,17,0.98), rgba(36,36,36,0.95))",
+              color: "#ffffff",
+              boxShadow: "0 18px 40px rgba(17,17,17,0.18)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+            }}
+          >
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.72)", marginBottom: 8 }}>中心主题</div>
+            <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.35, marginBottom: 10 }}>{lessonTitle}</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.74)", lineHeight: 1.7 }}>
+              围绕本课核心知识点，先理解概念关系，再进入内容呈现和课堂练习。
+            </div>
+          </div>
+
+          {layoutNodes.map((item) => (
+            <button
+              key={`${lessonTitle}-map-${item.index}`}
+              type="button"
+              onMouseEnter={() => setHoveredIndex(item.index)}
+              onMouseLeave={() => setHoveredIndex(null)}
+              onFocus={() => setHoveredIndex(item.index)}
+              onBlur={() => setHoveredIndex(null)}
+              onClick={() => onNodeSelect?.(item.index)}
+              style={{
+                position: "absolute",
+                left: item.x,
+                top: item.y,
+                width: 220,
+                padding: 14,
+                borderRadius: 18,
+                background: hoveredIndex === item.index ? "#111111" : "rgba(255,255,255,0.96)",
+                border: hoveredIndex === item.index ? "1px solid #111111" : "1px solid rgba(17,17,17,0.1)",
+                boxShadow: hoveredIndex === item.index ? "0 16px 32px rgba(17,17,17,0.14)" : "0 8px 24px rgba(17,17,17,0.06)",
+                textAlign: "left",
+                cursor: "pointer",
+                transition: "all 0.18s ease",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <div style={{ width: 24, height: 24, borderRadius: 999, background: hoveredIndex === item.index ? "#ffffff" : "#111111", color: hoveredIndex === item.index ? "#111111" : "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
+                  {item.index + 1}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: hoveredIndex === item.index ? "#ffffff" : "#111111", lineHeight: 1.4 }}>{item.h}</div>
+              </div>
+              <div style={{ fontSize: 12, color: hoveredIndex === item.index ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                {summarize(item.b)}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LessonView({ lesson, ratings, setRating, scores, setScore }) {
   const [tab, setTab] = useState("learn");
   const [labOpen, setLabOpen] = useState(false);
+  const [contentPageHint, setContentPageHint] = useState(null);
 
   const ExComponent = EXERCISE_COMPONENTS[lesson.ex];
   const pptLessonData = getPptLessonData(lesson.id);
@@ -1374,7 +2713,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
   const handleScore = (v) => setScore(lesson.id, v);
   const displayTabs = [
     { id: "learn", label: "课前预习" },
-    { id: "content", label: "课时内容" },
+    { id: "content", label: "内容呈现" },
     { id: "classroom", label: "课堂练习" },
     { id: "homework", label: "课后作业" },
   ];
@@ -1390,13 +2729,31 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
     });
   }, [lesson.id, lesson.t, tab, scores, ratings]);
 
+  useEffect(() => {
+    setContentPageHint(null);
+  }, [lesson.id]);
+
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        <Tag color="#3C3489" bg="#EEEDFE">{`第${lesson.n}课`}</Tag>
-        <Stars value={ratings[lesson.id] || 0} onChange={(v) => setRating(lesson.id, v)} size={16} />
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <Tag color="#3C3489" bg="#EEEDFE">{`第${lesson.n}课`}</Tag>
+            <Stars value={ratings[lesson.id] || 0} onChange={(v) => setRating(lesson.id, v)} size={16} />
+          </div>
+          <h2 style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 0" }}>{lesson.t}</h2>
+        </div>
+        <button
+          onClick={() => setTab("tutor")}
+          className="support-tile"
+          style={{ width: "min(280px, 100%)", textAlign: "left", padding: 16, flexShrink: 0 }}
+        >
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 6 }}>AI 导师</div>
+          <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
+            针对当前课时提问，获得概念讲解、作业答疑与错误纠正建议。
+          </div>
+        </button>
       </div>
-      <h2 style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 16px" }}>{lesson.t}</h2>
 
       <div className="chip-tabs">
         {displayTabs.map((item) => (
@@ -1411,57 +2768,40 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
       </div>
 
       {tab === "learn" && (
-        <div className="lesson-layout" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(280px, 360px)" }}>
-          <div className="lesson-main">
-            <div className="section-stack">
-              {contentItems.length ? contentItems.map((section, index) => (
-                <div key={`${lesson.id}-learn-${index}`} className="section-card">
-                  <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid var(--color-border-tertiary)" }}>{section.h}</div>
-                  <div style={{ fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.9, whiteSpace: "pre-wrap" }}>{section.b}</div>
-                  {lesson.id === "L1" && index === 0 && (
-                    <>
-                      <InteractivePitchFrequencyWidgetCn />
-                      <InteractiveVolumeAmplitudeWidgetCn />
-                    </>
-                  )}
-                </div>
-              )) : (
-                <div className="section-card">
-                  <div style={{ fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.9 }}>当前课时暂无独立预习文案，建议先阅读课时内容。</div>
-                </div>
-              )}
+        <div className="section-stack">
+          <KnowledgeMindMap
+            lessonTitle={lesson.t}
+            chapterTitle={pptLessonData?.chapter || ""}
+            items={contentItems}
+            onNodeSelect={(index) => {
+              setContentPageHint(index);
+              setTab("content");
+            }}
+          />
+          {lesson.id === "L1" && (
+            <div className="section-card">
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>互动预习</div>
+              <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+                先通过交互组件感知音高、频率和振幅，再进入“内容呈现”查看本课 PPT。
+              </div>
+              <InteractivePitchFrequencyWidgetCn />
+              <InteractiveVolumeAmplitudeWidgetCn />
             </div>
-          </div>
-          <div className="lesson-side">
-            {lesson.id !== "L1" && (
-              <div className="section-card">
-                <LessonCharts lessonId={lesson.id} />
-              </div>
-            )}
-            <div className="section-card" style={{ background: "linear-gradient(180deg, rgba(17,17,17,0.96), rgba(42,42,42,0.94))", color: "#ffffff" }}>
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>课前预习建议</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.74)", lineHeight: 1.8 }}>
-                先完成本页阅读与互动预习，再进入“课时内容”查看 PPT。
-                <br />
-                理解核心概念后，再进入课堂练习和课后作业。
-              </div>
+          )}
+          <div className="section-card">
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>预习建议</div>
+            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+              先阅读上方知识导图，明确本课的 5 到 6 个核心点。
+              <br />
+              再进入“内容呈现”查看 PPT 原课件，最后完成课堂练习与课后作业。
             </div>
           </div>
         </div>
       )}
 
       {tab === "content" && (
-        <div className="lesson-layout" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(280px, 360px)" }}>
-          <div className="lesson-main">
-            <LessonLearningWorkspace lesson={lesson} section="content" showTabs={false} />
-          </div>
-          <div className="lesson-side">
-            {lesson.id !== "L1" && (
-              <div className="section-card">
-                <LessonCharts lessonId={lesson.id} />
-              </div>
-            )}
-          </div>
+        <div className="section-stack">
+          <LessonLearningWorkspace lesson={lesson} section="content" showTabs={false} contentPageHint={contentPageHint} />
         </div>
       )}
 
@@ -1507,28 +2847,28 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
                 提交前检查术语是否准确，示例是否对应本课核心概念。
               </div>
             </div>
+            <button
+              onClick={() => setTab("lab")}
+              className="support-tile"
+              style={{ width: "100%", textAlign: "left" }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 6 }}>音乐创作实验室</div>
+              <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
+                让我们一起来创造音乐吧
+              </div>
+            </button>
           </div>
         </div>
       )}
 
       {tab === "tutor" && <AITutorV2 lessonId={lesson.id} lessonTitle={lesson.t} />}
 
-      {tab === "create" && (
-        <div>
-          <div className="section-card">
-            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 6 }}>旋律创作器</div>
-            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginBottom: 10 }}>点击网格放置音符，按播放试听，尝试运用本课乐理知识进行创作。</div>
-            <MusicCreatorV2 />
-          </div>
-        </div>
-      )}
-
       {tab === "lab" && (
         <div>
           <div className="section-card">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>{`音乐实验室 · ${lesson.labN}`}</div>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>{`音乐创作实验室 · ${lesson.labN}`}</div>
                 <div style={{ fontSize: 11, color: "var(--color-text-tertiary)" }}>互动音乐实验页面</div>
               </div>
               <button onClick={() => setLabOpen(!labOpen)} style={{ padding: "5px 12px", borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "var(--color-background-primary)", cursor: "pointer", fontSize: 11, fontWeight: 500 }}>
@@ -1562,8 +2902,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
 function LessonSupportLinksV2({ onOpen }) {
   const items = [
     { id: "tutor", label: "AI 导师", desc: "围绕当前课时提问，获得针对性的概念解释与答疑。" },
-    { id: "create", label: "音乐创作", desc: "把本课知识转成旋律、节奏与结构创作练习。" },
-    { id: "lab", label: "实验室", desc: "进入扩展实验页面，继续做音高、节奏或谱面探索。" },
+    { id: "lab", label: "音乐创作实验室", desc: "进入扩展实验页面，继续做音高、节奏或谱面探索。" },
   ];
 
   return (
@@ -1631,6 +2970,238 @@ function AssessmentPage({ scores, ratings }) {
             : avg < 40 ? "建议每天进行 15-20 分钟短时练习，重点巩固基础概念，并结合 AI 导师查漏补缺。"
             : avg < 70 ? "基础掌握较好，建议重点突破薄弱章节，并在创作与实验模块中实践乐理知识。"
             : "当前表现优秀，建议挑战综合题，并把所学知识迁移到创作与分析任务中。"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AITutorV2({ lessonId, lessonTitle }) {
+  const [msgs, setMsgs] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [imageDataUrl, setImageDataUrl] = useState("");
+  const [imageName, setImageName] = useState("");
+  const scrollRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+
+  const contentSections = LESSON_CONTENT[lessonId] || [];
+  const contextText = contentSections.map((section) => `${section.h}: ${section.b}`).join("\n\n");
+
+  useEffect(() => {
+    setMsgs([{
+      role: "assistant",
+      text: `你好，我是你的 AI 乐理导师。当前课程：${lessonTitle}\n\n你可以问我：\n• 解释本课核心概念\n• 某个知识点的详细说明\n• 出一道练习题\n• 这些知识在实际中怎么应用`,
+    }]);
+  }, [lessonId, lessonTitle]);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [msgs]);
+
+  const handlePickImage = useCallback(async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    const dataUrl = await fileToDataUrl(file);
+    setImageDataUrl(dataUrl);
+    setImageName(file.name);
+    event.target.value = "";
+  }, []);
+
+  const send = useCallback(async () => {
+    const text = input.trim();
+    if ((!text && !imageDataUrl) || loading) return;
+    const nextMsgs = [...msgs, { role: "user", text: text || "请结合我上传的图片进行讲解。", imageDataUrl, imageName }];
+    setMsgs(nextMsgs);
+    setInput("");
+    setLoading(true);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), imageDataUrl ? 35000 : 20000);
+    try {
+      const response = await fetch("/api/tutor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          maxTokens: imageDataUrl ? 500 : 350,
+          system: `你是一位大学乐理课程教师。当前课程：${lessonTitle}。\n请始终用中文回复，说明要清楚、准确、简洁。\n课程内容：\n${contextText}`,
+          messages: nextMsgs.map((item) => ({
+            role: item.role,
+            content: item.text,
+            imageDataUrl: item.imageDataUrl || undefined,
+            imageName: item.imageName || undefined,
+          })),
+        }),
+      });
+      const json = await response.json();
+      const replyText = response.ok
+        ? String(json?.text || "请求失败，请稍后重试。").trim()
+        : String(
+            json?.detail
+            || (json?.kind === "timeout" ? "AI 导师响应超时，请稍后重试。" : "")
+            || "AI 服务暂时不可用，请稍后重试。"
+          ).trim();
+      setMsgs((prev) => [...prev, { role: "assistant", text: replyText }]);
+      if (response.ok) {
+        setImageDataUrl("");
+        setImageName("");
+      }
+    } catch (error) {
+      const message = error?.name === "AbortError"
+        ? "AI 导师响应超时。纯文字提问通常需要 2 到 5 秒，带图片会更慢，请稍后重试。"
+        : "无法连接到 AI 服务。请确认当前网页后端已启动，或稍后重试。";
+      setMsgs((prev) => [...prev, { role: "assistant", text: message }]);
+    } finally {
+      window.clearTimeout(timeoutId);
+      setLoading(false);
+    }
+  }, [contextText, imageDataUrl, imageName, input, lessonTitle, loading, msgs]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: 460, border: "1px solid rgba(17,17,17,0.08)", borderRadius: 12, overflow: "hidden", background: "#ffffff" }}>
+      <div style={{ padding: "10px 14px", borderBottom: "1px solid rgba(17,17,17,0.08)", background: "#f8f8f8" }}>
+        <div style={{ fontSize: 14, fontWeight: 700 }}>AI 乐理导师</div>
+        <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
+          {lessonTitle} · 纯文字通常 2 到 5 秒，图片分析通常更慢
+        </div>
+      </div>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+        {msgs.map((msg, index) => (
+          <div key={`${msg.role}-${index}`} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
+            <div style={{ maxWidth: "82%", padding: "10px 12px", borderRadius: 12, background: msg.role === "user" ? "#111111" : "#f5f5f5", color: msg.role === "user" ? "#ffffff" : "#111111", fontSize: 12, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>
+              {msg.imageDataUrl ? <img src={msg.imageDataUrl} alt={msg.imageName || "上传图片"} style={{ display: "block", maxWidth: 220, borderRadius: 10, marginBottom: 8 }} /> : null}
+              {msg.text}
+            </div>
+          </div>
+        ))}
+        {loading ? <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>思考中…</div> : null}
+      </div>
+      <div style={{ padding: 10, borderTop: "1px solid rgba(17,17,17,0.08)", background: "#fafafa" }}>
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePickImage} />
+        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handlePickImage} />
+        {imageDataUrl ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: 8, borderRadius: 10, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+            <img src={imageDataUrl} alt={imageName || "预览"} style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8 }} />
+            <div style={{ flex: 1, minWidth: 0, fontSize: 11, color: "var(--color-text-secondary)" }}>{imageName || "已选择图片"}</div>
+            <button onClick={() => { setImageDataUrl(""); setImageName(""); }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.08)", background: "#f5f5f5", cursor: "pointer" }}>移除</button>
+          </div>
+        ) : null}
+        <div style={{ display: "flex", gap: 6 }}>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                send();
+              }
+            }}
+            placeholder="输入你的问题，或拍照上传后提问…"
+            style={{ flex: 1, padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", fontSize: 12, outline: "none" }}
+          />
+          <button onClick={() => cameraInputRef.current?.click()} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>拍照</button>
+          <button onClick={() => fileInputRef.current?.click()} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>相册</button>
+          <button onClick={send} disabled={loading || (!input.trim() && !imageDataUrl)} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: loading || (!input.trim() && !imageDataUrl) ? "default" : "pointer" }}>发送</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MusicCreatorV2() {
+  const COLS = 16;
+  const ROWS = 12;
+  const scaleNotes = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19];
+  const [grid, setGrid] = useState(() => Array.from({ length: ROWS }, () => Array(COLS).fill(false)));
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [col, setCol] = useState(-1);
+  const [bpm, setBpm] = useState(140);
+  const [timbre, setTimbre] = useState("piano");
+  const timerRef = useRef(null);
+
+  const noteInfo = scaleNotes.map((step) => ({ name: NT[step % 12], oct: 4 + Math.floor(step / 12) })).reverse();
+
+  const toggle = useCallback(async (r, c) => {
+    await unlockAudioSystem();
+    setGrid((prev) => {
+      const next = prev.map((row) => [...row]);
+      next[r][c] = !next[r][c];
+      if (next[r][c]) {
+        const info = noteInfo[r];
+        playTone(nFreq(info.name, info.oct), 0.25, timbre);
+      }
+      return next;
+    });
+  }, [noteInfo, timbre]);
+
+  const playSeq = useCallback(async () => {
+    await unlockAudioSystem();
+    if (isPlaying) {
+      clearInterval(timerRef.current);
+      setIsPlaying(false);
+      setCol(-1);
+      return;
+    }
+    setIsPlaying(true);
+    let currentCol = 0;
+    const stepMs = 60000 / bpm / 2;
+    timerRef.current = setInterval(() => {
+      setCol(currentCol);
+      for (let r = 0; r < ROWS; r += 1) {
+        if (grid[r][currentCol]) {
+          const info = noteInfo[r];
+          playTone(nFreq(info.name, info.oct), stepMs / 1000 * 1.5, timbre);
+        }
+      }
+      currentCol = (currentCol + 1) % COLS;
+    }, stepMs);
+  }, [bpm, grid, isPlaying, noteInfo, timbre]);
+
+  useEffect(() => () => clearInterval(timerRef.current), []);
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 6 }}>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={playSeq} style={{ padding: "6px 14px", borderRadius: 8, background: isPlaying ? "#b91c1c" : "#111111", color: "#ffffff", border: "none", cursor: "pointer" }}>
+            {isPlaying ? "停止" : "播放"}
+          </button>
+          <button onClick={() => setGrid(Array.from({ length: ROWS }, () => Array(COLS).fill(false)))} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>清空</button>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <label style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>BPM: {bpm}</label>
+          <input type="range" min="60" max="200" step="5" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} style={{ width: 80 }} />
+          <select value={timbre} onChange={(e) => setTimbre(e.target.value)} style={{ fontSize: 11, padding: "4px 6px", borderRadius: 6, border: "1px solid rgba(17,17,17,0.12)" }}>
+            <option value="piano">钢琴</option>
+            <option value="sine">正弦波</option>
+            <option value="triangle">三角波</option>
+            <option value="square">方波</option>
+          </select>
+        </div>
+      </div>
+      <div style={{ overflowX: "auto", paddingBottom: 6 }}>
+        <div style={{ display: "inline-flex", flexDirection: "column", gap: 1 }}>
+          {noteInfo.map((info, r) => (
+            <div key={`${info.name}${info.oct}-${r}`} style={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <div style={{ width: 32, fontSize: 9, color: "var(--color-text-tertiary)", textAlign: "right", paddingRight: 3, flexShrink: 0 }}>{info.name}{info.oct}</div>
+              {Array.from({ length: COLS }, (_, c) => (
+                <div
+                  key={c}
+                  onClick={() => toggle(r, c)}
+                  style={{
+                    width: 26,
+                    height: 22,
+                    borderRadius: 3,
+                    cursor: "pointer",
+                    background: grid[r][c] ? (col === c ? "#555555" : "#111111") : col === c ? "rgba(17,17,17,0.12)" : c % 4 === 0 ? "#f3f3f3" : "#ffffff",
+                    border: `1px solid ${grid[r][c] ? "#111111" : "rgba(17,17,17,0.08)"}`,
+                  }}
+                />
+              ))}
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -1792,7 +3363,36 @@ function TeacherDashboardPage() {
 
 /* Home */
 function HomePage({ setPage, scores }) {
-  return <ModernHomePage setPage={setPage} scores={scores} />;
+  return (
+    <div>
+      <div style={{ textAlign: "center", padding: "30px 16px 22px" }}>
+        <div style={{ fontSize: 11, fontWeight: 500, color: "#534AB7", letterSpacing: 2, marginBottom: 4 }}>AI 驱动 · 自主学习</div>
+        <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 6px" }}>乐理智学平台</h1>
+      </div>
+      {CHAPTERS.map((ch, ci) => {
+        const ca = Math.round(ch.ls.reduce((s, l) => s + (scores[l.id] || 0), 0) / ch.ls.length);
+        return (
+          <div key={ch.id} style={{ marginBottom: 8, background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: 10, padding: "12px 14px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 7, background: ch.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: ch.c }}>{ci + 1}</div>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>{ch.t}</span>
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 600, color: ch.c }}>{ca}%</span>
+            </div>
+            <PBar v={ca} max={100} color={ch.c} />
+            <div style={{ display: "flex", gap: 4, marginTop: 8, flexWrap: "wrap" }}>
+              {ch.ls.map((l) => (
+                <button key={l.id} onClick={() => setPage(l.id)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 5, border: "0.5px solid var(--color-border-tertiary)", background: (scores[l.id] || 0) > 50 ? ch.bg : "var(--color-background-secondary)", color: (scores[l.id] || 0) > 50 ? ch.c : "var(--color-text-secondary)", cursor: "pointer", fontWeight: 500 }}>
+                  第{l.n}课{(scores[l.id] || 0) > 0 ? ` ${scores[l.id]}%` : ""}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 /* App Shell */
@@ -1813,7 +3413,7 @@ function ModernHomePage({ setPage, scores }) {
           </div>
           <h1 style={{ fontSize: 34, fontWeight: 800, margin: "0 0 10px", letterSpacing: "-0.03em" }}>音乐理论智能学习平台</h1>
           <div style={{ maxWidth: 680, fontSize: 14, lineHeight: 1.85, color: "rgba(255,255,255,0.72)" }}>
-            每个单元下直接展示课时卡片，点击课时即可进入课前预习、课时内容、课堂练习与课后作业。
+            每个单元下直接展示课时卡片，点击课时即可进入课前预习、内容呈现、课堂练习与课后作业。
           </div>
         </div>
       </section>
