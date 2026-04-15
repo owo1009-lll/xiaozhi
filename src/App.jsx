@@ -1173,7 +1173,7 @@ const LESSON_QUIZ_BANK = {
   L9: { id: "L9-Q1", lessonId: "L9", chapterId: "ch5", knowledgePointId: "L9_K1_timeSignatureMeter", difficulty: "basic", prompt: "3/4 拍每小节通常有几拍？", options: ["2 拍", "3 拍", "4 拍"], answer: "3 拍", explanation: "3/4 拍表示每小节三拍。" },
   L10: { id: "L10-Q1", lessonId: "L10", chapterId: "ch5", knowledgePointId: "L10_K1_noteGrouping", difficulty: "basic", prompt: "附点会让原音符时值增加多少？", options: ["增加一半", "增加一倍", "减少一半"], answer: "增加一半", explanation: "附点增加原时值的一半。" },
   L11: { id: "L11-Q1", lessonId: "L11", chapterId: "ch5", knowledgePointId: "L11_K1_syncopationTypes", difficulty: "medium", prompt: "切分音最核心的听觉效果是什么？", options: ["重音迁移", "速度变慢", "音高升高"], answer: "重音迁移", explanation: "切分音打破原有强弱关系。" },
-  L12: { id: "L12-Q1", lessonId: "L12", chapterId: "ch5", knowledgePointId: "L12_K1_review", difficulty: "core", prompt: "综合复习最重要的目标是什么？", options: ["只背术语", "整合知识并应用", "只做听辨"], answer: "整合知识并应用", explanation: "综合复习重在整合与迁移。" },
+  L12: { id: "L12-Q1", lessonId: "L12", chapterId: "ch5", knowledgePointId: "L1_K1_pitchProperties", difficulty: "core", prompt: "综合诊断中最重要的目标是什么？", options: ["只背术语", "整合知识并应用", "只做听辨"], answer: "整合知识并应用", explanation: "综合诊断重在整合知识、定位薄弱点并推动迁移应用。" },
 };
 
 const LESSON_PRACTICE_EXTRA = {
@@ -1188,7 +1188,7 @@ const LESSON_PRACTICE_EXTRA = {
   L9: { id: "L9-Q2", lessonId: "L9", chapterId: "ch5", knowledgePointId: "L9_K1_timeSignatureMeter", difficulty: "basic", prompt: "4/4 拍第一拍通常是什么属性？", options: ["弱拍", "次强拍", "强拍"], answer: "强拍", explanation: "4/4 的第一拍通常是强拍。" },
   L10: { id: "L10-Q2", lessonId: "L10", chapterId: "ch5", knowledgePointId: "L10_K2_crossBarTies", difficulty: "medium", prompt: "连音线连接同音高音符时作用是什么？", options: ["改变音高", "时值相加", "改成休止"], answer: "时值相加", explanation: "连音线会把时值相加。" },
   L11: { id: "L11-Q2", lessonId: "L11", chapterId: "ch5", knowledgePointId: "L11_K2_classicSyncopation", difficulty: "core", prompt: "切分最明显的感受是什么？", options: ["拍感平均", "重音迁移", "音高更高"], answer: "重音迁移", explanation: "切分音最核心的是重音迁移。" },
-  L12: { id: "L12-Q2", lessonId: "L12", chapterId: "ch5", knowledgePointId: "L12_K2_review", difficulty: "core", prompt: "综合复习最有效的复盘方式是什么？", options: ["只做会的题", "按错误类型复盘", "跳过基础"], answer: "按错误类型复盘", explanation: "按错误类型复盘更容易找到薄弱项。" },
+  L12: { id: "L12-Q2", lessonId: "L12", chapterId: "ch5", knowledgePointId: "L9_K1_timeSignatureMeter", difficulty: "core", prompt: "综合诊断后最有效的复盘方式是什么？", options: ["只做会的题", "按错误类型复盘", "跳过基础"], answer: "按错误类型复盘", explanation: "按错误类型复盘更容易找到薄弱知识点并安排后续练习。" },
 };
 
 function ensureQuestionOptions(values = [], fallbackValues = []) {
@@ -2932,10 +2932,10 @@ function LessonSupportLinks({ onOpen }) {
 }
 
 function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect }) {
-  const nodes = items.slice(0, 6);
+  const nodes = items.slice(0, 4);
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth <= 860 : false));
-  const summarize = (text) => String(text || "").split(/\n+/).filter(Boolean).join(" ").slice(0, 34);
+  const summarize = (text) => String(text || "").split(/\n+/).filter(Boolean).join(" ").slice(0, isMobile ? 18 : 24);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -2968,7 +2968,7 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>知识导图</div>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{chapterTitle}</div>
         </div>
-        <Tag color="#111111" bg="#F3F4F6">{`${nodes.length} 个核心点`}</Tag>
+        <Tag color="#111111" bg="#F3F4F6">{`${nodes.length} 个预习主线`}</Tag>
       </div>
 
       {isMobile ? (
@@ -2985,7 +2985,7 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.72)", marginBottom: 8 }}>中心主题</div>
             <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.35, marginBottom: 10 }}>{lessonTitle}</div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.74)", lineHeight: 1.7 }}>
-              按顺序阅读 5 到 6 个核心点，点击任一节点可直接跳到对应内容页。
+              先看 4 个主节点建立整体框架，再进入课时内容查看完整 PPT。
             </div>
           </div>
 
@@ -3022,6 +3022,9 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
                   </div>
                   <div style={{ fontSize: 12, color: active ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)", lineHeight: 1.8 }}>
                     {summarize(item.b)}
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: active ? "rgba(255,255,255,0.88)" : "#111111", marginTop: 8 }}>
+                    点击进入对应课时内容
                   </div>
                 </button>
               );
@@ -3090,7 +3093,7 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.72)", marginBottom: 8 }}>中心主题</div>
               <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.35, marginBottom: 10 }}>{lessonTitle}</div>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.74)", lineHeight: 1.7 }}>
-                围绕本课核心知识点，先理解概念关系，再进入内容呈现和课堂练习。
+                先看 4 个主节点建立框架，再进入课时内容和课堂练习。
               </div>
             </div>
 
@@ -3126,6 +3129,9 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
                 </div>
                 <div style={{ fontSize: 12, color: hoveredIndex === item.index ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)", lineHeight: 1.8 }}>
                   {summarize(item.b)}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: hoveredIndex === item.index ? "rgba(255,255,255,0.88)" : "#111111", marginTop: 10 }}>
+                  点击进入对应课时内容
                 </div>
               </button>
             ))}
@@ -3232,10 +3238,31 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
           )}
           <div className="section-card">
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>预习建议</div>
-            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-              先阅读上方知识导图，明确本课的 5 到 6 个核心点。
-              <br />
-              再进入“内容呈现”查看 PPT 原课件，最后完成课堂练习与课后作业。
+            <div style={{ display: "grid", gap: 10 }}>
+              <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                先看导图中的 4 个主节点建立主线，再进入课时内容查看完整 PPT，最后做课堂练习检验理解。
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
+                {[
+                  { no: "01", title: "看导图", desc: "先抓住本课主线", active: true },
+                  { no: "02", title: "进课时内容", desc: "查看完整 PPT", active: false },
+                  { no: "03", title: "做课堂练习", desc: "检验薄弱点", active: false },
+                ].map((step) => (
+                  <div key={step.no} style={{ border: step.active ? "1px solid rgba(17,17,17,0.18)" : "1px solid rgba(17,17,17,0.08)", background: step.active ? "rgba(17,17,17,0.04)" : "#ffffff", borderRadius: 14, padding: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-tertiary)", marginBottom: 6 }}>{step.no}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{step.title}</div>
+                    <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.6 }}>{step.desc}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <button onClick={() => setTab("content")} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #111111", background: "#111111", color: "#ffffff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                  进入课时内容
+                </button>
+                <button onClick={() => setTab("classroom")} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#f6f6f6", color: "#111111", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                  直接去课堂练习
+                </button>
+              </div>
             </div>
           </div>
           <div className="section-card">
@@ -3463,12 +3490,18 @@ function AITutorV2({ lessonId, lessonTitle }) {
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const imageStageTimerRef = useRef([]);
 
   const contentSections = getKnowledgePointsForLesson(lessonId).map((item) => ({
     h: item.title,
     b: item.subConcepts?.join("；") || "",
   }));
-  const contextText = contentSections.map((section) => `${section.h}: ${section.b}`).join("\n\n");
+  const contextText = lessonId === "L12"
+    ? "本课是综合诊断课。请整合前 11 课的核心知识点，重点帮助学生定位薄弱知识点、解释错误原因、给出复习顺序与下一步建议。"
+    : contentSections.map((section) => `${section.h}: ${section.b}`).join("\n\n");
+  const tutorSystem = lessonId === "L12"
+    ? `你是一位大学乐理课程教师。当前课程：${lessonTitle}。\n请始终用中文回复，说明要清楚、准确、简洁。\n这是综合诊断课，不要逐条背诵全部知识点；请优先说明综合诊断目的、如何整合前 11 课知识点、如何定位薄弱项，以及下一步复习建议。\n课程内容：\n${contextText}`
+    : `你是一位大学乐理课程教师。当前课程：${lessonTitle}。\n请始终用中文回复，说明要清楚、准确、简洁。\n课程内容：\n${contextText}`;
 
   useEffect(() => {
     setMsgs([{
@@ -3480,6 +3513,11 @@ function AITutorV2({ lessonId, lessonTitle }) {
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [msgs]);
+
+  useEffect(() => () => {
+    imageStageTimerRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    imageStageTimerRef.current = [];
+  }, []);
 
   const handlePickImage = useCallback(async (event) => {
     const file = event.target.files?.[0];
@@ -3501,7 +3539,19 @@ function AITutorV2({ lessonId, lessonTitle }) {
     setInput("");
     setLoading(true);
     setResponseMeta(null);
-    setLoadingStage(imageDataUrl ? "正在分析图片并生成解释…" : "正在整理问题并生成解释…");
+    imageStageTimerRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    imageStageTimerRef.current = [];
+    if (imageDataUrl) {
+      setLoadingStage("正在上传并识别图片中的乐谱、题目或课件内容…");
+      imageStageTimerRef.current.push(window.setTimeout(() => {
+        setLoadingStage("正在结合当前课时内容生成讲解、纠错和复习建议…");
+      }, 2200));
+      imageStageTimerRef.current.push(window.setTimeout(() => {
+        setLoadingStage("图片分析通常比纯文字更慢，请稍候，系统仍在继续处理…");
+      }, 6500));
+    } else {
+      setLoadingStage("正在整理问题并生成解释…");
+    }
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), imageDataUrl ? 30000 : 18000);
     try {
@@ -3512,7 +3562,7 @@ function AITutorV2({ lessonId, lessonTitle }) {
         signal: controller.signal,
         body: JSON.stringify({
           maxTokens: imageDataUrl ? 280 : 220,
-          system: `你是一位大学乐理课程教师。当前课程：${lessonTitle}。\n请始终用中文回复，说明要清楚、准确、简洁。\n课程内容：\n${contextText}`,
+          system: tutorSystem,
           messages: requestMessages.map((item) => ({
             role: item.role,
             content: item.text,
@@ -3555,17 +3605,19 @@ function AITutorV2({ lessonId, lessonTitle }) {
       setMsgs((prev) => [...prev, { role: "assistant", text: message }]);
     } finally {
       window.clearTimeout(timeoutId);
+      imageStageTimerRef.current.forEach((timerId) => window.clearTimeout(timerId));
+      imageStageTimerRef.current = [];
       setLoading(false);
       setLoadingStage("");
     }
-  }, [contextText, imageDataUrl, imageName, input, lessonId, lessonTitle, loading, msgs, studentProfile.studentId]);
+  }, [contextText, imageDataUrl, imageName, input, lessonId, lessonTitle, loading, msgs, studentProfile.studentId, tutorSystem]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: 460, border: "1px solid rgba(17,17,17,0.08)", borderRadius: 12, overflow: "hidden", background: "#ffffff" }}>
       <div style={{ padding: "10px 14px", borderBottom: "1px solid rgba(17,17,17,0.08)", background: "#f8f8f8" }}>
         <div style={{ fontSize: 14, fontWeight: 700 }}>AI 乐理导师</div>
         <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
-          {lessonTitle} · 纯文字通常 2 到 5 秒，图片分析通常更慢
+          {lessonTitle} · 纯文字通常 2 到 5 秒；图片会经过压缩、识别和课时匹配，等待时间会更长
         </div>
         {responseMeta ? (
           <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 4 }}>
@@ -3598,7 +3650,7 @@ function AITutorV2({ lessonId, lessonTitle }) {
           </div>
         ) : null}
         <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 8, lineHeight: 1.6 }}>
-          建议先用一句短问题提问。带图片时系统会先压缩图片，再交给视觉模型分析。
+          建议先用一句短问题提问。带图片时系统会依次完成“压缩上传 → 内容识别 → 结合本课讲解”，等待时间会明显长于纯文字。
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           <input

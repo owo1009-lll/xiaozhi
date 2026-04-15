@@ -18,7 +18,7 @@ function asArray(value) {
 
 function cyclePick(items = [], index = 0, fallback = "") {
   const source = unique(items).filter(Boolean);
-  if (source.length === 0) return fallback;
+  if (!source.length) return fallback;
   return source[index % source.length];
 }
 
@@ -45,7 +45,7 @@ function buildFactPool(point) {
 
 function getPeerPoints(point, lessonPoints) {
   const lessonPeers = lessonPoints.filter((item) => item.id !== point.id);
-  if (lessonPeers.length > 0) return lessonPeers;
+  if (lessonPeers.length) return lessonPeers;
   return KNOWLEDGE_POINTS.filter((item) => item.id !== point.id);
 }
 
@@ -72,8 +72,8 @@ function isReviewPoint(point) {
   return point.lessonId === "L12" || /综合复习/.test(point.title);
 }
 
-function getEvidenceWeight(point, strongOrMedium = "strong") {
-  return isReviewPoint(point) ? "medium" : strongOrMedium;
+function getEvidenceWeight(point, defaultWeight = "strong") {
+  return isReviewPoint(point) ? "medium" : defaultWeight;
 }
 
 function createQuestion({
@@ -95,7 +95,7 @@ function createQuestion({
     difficulty,
     questionType,
     evidenceWeight: getEvidenceWeight(point, evidenceWeight),
-    source: "curated-generated-v3",
+    source: "curated-generated-v4",
     reviewStatus: "pending",
     reviewNotes: "",
     prompt,
@@ -250,6 +250,7 @@ export function getQuestionsForLesson(lessonId) {
           id: `${item.id}-diagnostic-${index + 1}`,
           lessonId,
           source: `${item.source}-diagnostic`,
+          evidenceWeight: "medium",
         })),
     );
   }

@@ -11,7 +11,8 @@
     "build:lesson-video": "node scripts/build-lesson-videos.cjs",
     "build:lesson-videos": "node scripts/build-lesson-videos.cjs --all",
     "test:ai-tutor": "node scripts/run-ai-tutor-regression.mjs",
-    "test:composite-students": "node scripts/run-composite-student-simulation.mjs"
+    "test:composite-students": "node scripts/run-composite-student-simulation.mjs",
+    "test:platform-deep": "node scripts/run-platform-deep-validation.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.4",
