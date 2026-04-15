@@ -2238,6 +2238,17 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
     return () => window.clearInterval(timer);
   }, [homeworkRunning, homeworkRemaining]);
 
+  useEffect(() => {
+    if (!showHomeworkDialog || typeof window === "undefined") return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape" && !homeworkReviewing) {
+        setShowHomeworkDialog(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showHomeworkDialog, homeworkReviewing]);
+
   const formattedHomeworkTime = `${String(Math.floor(homeworkRemaining / 60)).padStart(2, "0")}:${String(homeworkRemaining % 60).padStart(2, "0")}`;
 
   const openHomeworkSubmit = useCallback(() => {
@@ -2463,31 +2474,6 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
           </div>
         </div>
         <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 12, fontWeight: 600 }}>掌握度变化</div>
-            <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>已完成 {practiceAnswers.filter(Boolean).length} / {practiceQuestions.length} 题</div>
-          </div>
-          <div style={{ display: "grid", gap: 8 }}>
-            {(lessonKnowledgeSummary.rows || []).map((item) => {
-              const barWidth = `${Math.max(6, Math.round(Number(item.pL || 0) * 100))}%`;
-              const delta = Number(item.latestDelta || 0);
-              const deltaLabel = delta > 0 ? `+${delta.toFixed(3)}` : delta.toFixed(3);
-              const deltaColor = delta > 0 ? "#166534" : delta < 0 ? "#b91c1c" : "var(--color-text-secondary)";
-              return (
-                <div key={item.id} style={{ padding: 10, borderRadius: 10, background: "#f8f8f8" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "#111111" }}>{item.title}</div>
-                    <div style={{ fontSize: 11, color: deltaColor }}>P(L) {Number(item.pL || 0).toFixed(3)} · Δ {deltaLabel}</div>
-                  </div>
-                  <div style={{ height: 8, borderRadius: 999, background: "rgba(17,17,17,0.08)", overflow: "hidden" }}>
-                    <div style={{ width: barWidth, height: "100%", borderRadius: 999, background: "#111111" }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>互动检测</div>
           <div style={{ fontSize: 11, color: stats.errors > 0 ? "#b91c1c" : "var(--color-text-secondary)" }}>
             {lastInterval ? `最近一次识别为 ${lastInterval.label}，${lastInterval.detail}` : "请先在内容呈现里完成一次钢琴或互动操作，系统才会生成检测结果。"}
@@ -2659,8 +2645,8 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             </div>
           </div>
         </div>
-        {showHomeworkDialog && <div style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.36)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-          <div style={{ width: "min(640px, 100%)", background: "#ffffff", borderRadius: 16, padding: 18, boxShadow: "0 24px 80px rgba(0,0,0,0.18)" }}>
+        {showHomeworkDialog && <div onClick={() => { if (!homeworkReviewing) setShowHomeworkDialog(false); }} style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.36)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div onClick={(event) => event.stopPropagation()} style={{ width: "min(640px, 100%)", background: "#ffffff", borderRadius: 16, padding: 18, boxShadow: "0 24px 80px rgba(0,0,0,0.18)" }}>
             <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>确认提交课后作业</div>
             <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
               当前剩余时间 {formattedHomeworkTime}，提交后将生成 AI 初评结果，并同步到教师后台。
@@ -2786,6 +2772,7 @@ function PptContentEmbedCn({ lessonId, pageHint }) {
 function PptContentEmbedFixed({ lessonId, pageHint = null }) {
   const lessonData = getPptLessonData(lessonId);
   const [pageIndex, setPageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const slideNumbers = useMemo(() => {
     if (!lessonData?.lessonNumber) return [];
@@ -2815,6 +2802,15 @@ function PptContentEmbedFixed({ lessonId, pageHint = null }) {
     const nextIndex = Math.max(0, Math.min(slideNumbers.length - 1, Number(pageHint)));
     setPageIndex(nextIndex);
   }, [pageHint, slideNumbers.length]);
+
+  useEffect(() => {
+    if (!lightboxOpen || typeof window === "undefined") return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setLightboxOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [lightboxOpen]);
 
   if (!lessonData || slideNumbers.length === 0) return null;
 
@@ -2871,14 +2867,40 @@ function PptContentEmbedFixed({ lessonId, pageHint = null }) {
           src={imageSrc}
           alt={`${lessonData.lessonTitle} - 幻灯片 ${currentSlideNo}`}
           loading="lazy"
-          style={{ width: "100%", display: "block", borderRadius: 12, border: "1px solid rgba(17,17,17,0.08)", background: "#f6f6f6" }}
+          onClick={() => setLightboxOpen(true)}
+          style={{ width: "100%", display: "block", borderRadius: 12, border: "1px solid rgba(17,17,17,0.08)", background: "#f6f6f6", cursor: "zoom-in" }}
         />
       </div>
-      <div style={{ marginTop: 10 }}>
+      <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>点击当前幻灯片可放大查看</div>
         <a href={sourcePpt} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "#185FA5", textDecoration: "none" }}>
           打开原始 PPT
         </a>
       </div>
+      {lightboxOpen ? (
+        <div
+          onClick={() => setLightboxOpen(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 1200, background: "rgba(10,10,10,0.86)", display: "flex", alignItems: "center", justifyContent: "center", padding: 18 }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{ position: "relative", width: "min(1200px, 100%)", maxHeight: "94vh", display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(false)}
+              style={{ position: "absolute", top: -8, right: -8, width: 36, height: 36, borderRadius: 999, border: "1px solid rgba(255,255,255,0.22)", background: "rgba(17,17,17,0.88)", color: "#ffffff", cursor: "pointer", fontSize: 16, zIndex: 2 }}
+            >
+              ×
+            </button>
+            <img
+              src={imageSrc}
+              alt={`${lessonData.lessonTitle} - 幻灯片 ${currentSlideNo} 放大查看`}
+              style={{ maxWidth: "100%", maxHeight: "94vh", width: "auto", height: "auto", display: "block", borderRadius: 14, background: "#ffffff" }}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -3119,6 +3141,8 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
   const [labOpen, setLabOpen] = useState(false);
   const [contentPageHint, setContentPageHint] = useState(null);
   const [bktVersion, setBktVersion] = useState(0);
+  const [homeworkGuideOpen, setHomeworkGuideOpen] = useState(false);
+  const [homeworkContactOpen, setHomeworkContactOpen] = useState(false);
 
   const ExComponent = EXERCISE_COMPONENTS[lesson.ex];
   const pptLessonData = getPptLessonData(lesson.id);
@@ -3233,39 +3257,59 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
       )}
 
       {tab === "classroom" && (
-        <div className="lesson-layout" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(280px, 360px)" }}>
-          <div className="lesson-main">
-            <LessonLearningWorkspace lesson={lesson} section="practice" showTabs={false} onBktChange={() => setBktVersion((prev) => prev + 1)} />
-            <div className="section-card">
-              {ExComponent && <ExComponent onScore={handleScore} />}
+        <div className="section-stack">
+          {(scores[lesson.id] || 0) > 0 && (
+            <div className="section-card" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>得分</span>
+              <div style={{ flex: 1 }}><PBar v={scores[lesson.id]} max={100} color="#534AB7" /></div>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#534AB7" }}>{scores[lesson.id]}%</span>
+            </div>
+          )}
+          <LessonLearningWorkspace lesson={lesson} section="practice" showTabs={false} onBktChange={() => setBktVersion((prev) => prev + 1)} />
+          <div className="section-card">
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>练习说明</div>
+            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+              先完成本节小测与互动练习，再继续下方练习模块。
+              <br />
+              系统会记录错误类型，供课后作业与教师后台汇总使用。
             </div>
           </div>
-          <div className="lesson-side">
-            {(scores[lesson.id] || 0) > 0 && (
-              <div className="section-card" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>得分</span>
-                <div style={{ flex: 1 }}><PBar v={scores[lesson.id]} max={100} color="#534AB7" /></div>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#534AB7" }}>{scores[lesson.id]}%</span>
-              </div>
-            )}
-            <div className="section-card">
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>练习说明</div>
-              <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-                先完成本节小测与互动练习，再继续下方练习模块。
-                <br />
-                系统会记录错误类型，供课后作业与教师后台汇总使用。
-              </div>
-            </div>
+          <div className="section-card">
+            {ExComponent && <ExComponent onScore={handleScore} />}
           </div>
         </div>
       )}
 
       {tab === "homework" && (
-        <div className="lesson-layout" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(280px, 360px)" }}>
-          <div className="lesson-main">
-            <LessonLearningWorkspace lesson={lesson} section="homework" showTabs={false} onBktChange={() => setBktVersion((prev) => prev + 1)} />
+        <div className="section-stack">
+          <div className="section-card" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => setHomeworkGuideOpen((prev) => !prev)}
+              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: homeworkGuideOpen ? "#111111" : "#ffffff", color: homeworkGuideOpen ? "#ffffff" : "#111111", cursor: "pointer" }}
+            >
+              {homeworkGuideOpen ? "收起作业规范" : "查看作业规范"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setHomeworkContactOpen((prev) => !prev)}
+              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: homeworkContactOpen ? "#111111" : "#ffffff", color: homeworkContactOpen ? "#ffffff" : "#111111", cursor: "pointer" }}
+            >
+              {homeworkContactOpen ? "收起联系说明" : "查看联系说明"}
+            </button>
+            <button
+              onClick={() => setTab("lab")}
+              className="support-tile"
+              style={{ width: "min(320px, 100%)", textAlign: "left", padding: 12, marginLeft: "auto" }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 6 }}>音乐创作实验室</div>
+              <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
+                让我们一起来创造音乐吧
+              </div>
+            </button>
           </div>
-          <div className="lesson-side">
+
+          {homeworkGuideOpen ? (
             <div className="section-card">
               <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>作业规范</div>
               <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
@@ -3274,17 +3318,20 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
                 提交前检查术语是否准确，示例是否对应本课核心概念。
               </div>
             </div>
-            <button
-              onClick={() => setTab("lab")}
-              className="support-tile"
-              style={{ width: "100%", textAlign: "left" }}
-            >
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 6 }}>音乐创作实验室</div>
-              <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
-                让我们一起来创造音乐吧
+          ) : null}
+
+          {homeworkContactOpen ? (
+            <div className="section-card">
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>联系说明</div>
+              <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                如果课堂练习、作业上传或 AI 导师出现问题，先刷新页面并重新进入本课。
+                <br />
+                若问题仍然存在，请记录课时名称、操作步骤和报错现象，交由教师统一反馈处理。
               </div>
-            </button>
-          </div>
+            </div>
+          ) : null}
+
+          <LessonLearningWorkspace lesson={lesson} section="homework" showTabs={false} onBktChange={() => setBktVersion((prev) => prev + 1)} />
         </div>
       )}
 
