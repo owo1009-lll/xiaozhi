@@ -15,6 +15,21 @@ const ANALYTICS_FILE = path.join(DATA_DIR, "teacher-analytics.json");
 const BKT_SUMMARY_FILE = path.join(DATA_DIR, "teacher-bkt-summary.json");
 
 app.use(express.json({ limit: "25mb" }));
+app.use((req, res, next) => {
+  const compatibilityPrefixes = [
+    "/health",
+    "/analytics",
+    "/transcribe",
+    "/homework-review",
+    "/teacher/",
+    "/tutor",
+    "/bkt/",
+  ];
+  if (!req.url.startsWith("/api/") && compatibilityPrefixes.some((prefix) => req.url === prefix || req.url.startsWith(prefix))) {
+    req.url = `/api${req.url}`;
+  }
+  next();
+});
 
 function safeString(value, fallback = "") {
   return typeof value === "string" ? value : fallback;
