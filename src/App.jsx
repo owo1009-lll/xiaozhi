@@ -1,5 +1,22 @@
 ﻿import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { getPptLessonData, PPT_CHAPTERS } from "./pptLessonData";
+import { getKnowledgePointsForLesson } from "./musicaiKnowledge";
+import {
+  appendErrorRecord,
+  appendSessionRecord,
+  appendTutorHistory,
+  buildKnowledgeMirrorPayload,
+  chooseAdaptivePracticeQuestions,
+  clearVirtualStudentsFromLocalStorage,
+  createVirtualStudents,
+  getKnowledgeMapping,
+  getRecommendationFromSummary,
+  initializeKnowledgeStore,
+  setKnowledgeMapping,
+  summarizeLessonKnowledge,
+  updateKnowledgePointEvidence,
+  writeVirtualStudentsToLocalStorage,
+} from "./musicaiBkt";
 
 /* Audio */
 const ACx = typeof window !== "undefined" ? (window.AudioContext || window.webkitAudioContext) : null;
@@ -897,6 +914,27 @@ async function reportStudentAnalytics(payload) {
   } catch {}
 }
 
+async function syncKnowledgeSummary(lessonId) {
+  try {
+    const profile = getStudentProfile();
+    initializeKnowledgeStore(profile.studentId);
+    const payload = buildKnowledgeMirrorPayload(profile.studentId, lessonId);
+    await fetch("/api/bkt/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...payload,
+        userId: profile.studentId,
+        studentLabel: profile.studentLabel,
+      }),
+    });
+  } catch {}
+}
+
+function createKnowledgeMappingKey(lessonId, signature) {
+  return `${lessonId}:${String(signature || "").slice(0, 120)}`;
+}
+
 const HOMEWORK_METER_MAP = {
   L4: "4/4",
   L9: "2/4",
@@ -1120,12 +1158,60 @@ const LESSON_PRACTICE_EXTRA = {
 };
 
 function createLessonPracticePool(lessonId, lessonTitle) {
-  const primary = LESSON_QUIZ_BANK[lessonId];
-  const extra = LESSON_PRACTICE_EXTRA[lessonId];
+  const lessonPoints = getKnowledgePointsForLesson(lessonId);
+  const primary = LESSON_QUIZ_BANK[lessonId]
+    ? { id: `${lessonId}-core-1`, knowledgePointId: lessonPoints[0]?.id || "", difficulty: "basic", ...LESSON_QUIZ_BANK[lessonId] }
+    : null;
+  const extra = LESSON_PRACTICE_EXTRA[lessonId]
+    ? { id: `${lessonId}-core-2`, knowledgePointId: lessonPoints[1]?.id || lessonPoints[0]?.id || "", difficulty: "medium", ...LESSON_PRACTICE_EXTRA[lessonId] }
+    : null;
   const focus = HOMEWORK_FOCUS[lessonId] || lessonTitle;
-  const pool = [primary, extra].filter(Boolean);
+  const generated = lessonPoints.flatMap((point, index) => {
+    const firstConcept = point.subConcepts?.[0] || point.easy?.[0] || point.title;
+    const firstExercise = point.exerciseTypes?.[0] || "AI 导师问答";
+    const conceptOptions = [
+      firstConcept,
+      lessonPoints[(index + 1) % lessonPoints.length]?.subConcepts?.[0],
+      lessonPoints[(index + 2) % lessonPoints.length]?.subConcepts?.[0],
+    ].filter(Boolean).slice(0, 3);
+    const typeOptions = [
+      firstExercise,
+      lessonPoints[(index + 1) % lessonPoints.length]?.exerciseTypes?.[0],
+      lessonPoints[(index + 2) % lessonPoints.length]?.exerciseTypes?.[0],
+    ].filter((item, optionIndex, array) => item && array.indexOf(item) === optionIndex).slice(0, 3);
+    return [
+      {
+        id: `${point.id}-concept`,
+        lessonId,
+        chapterId: point.chapterId,
+        knowledgePointId: point.id,
+        difficulty: "basic",
+        prompt: `下列哪一项与“${point.title}”直接相关？`,
+        options: conceptOptions,
+        answer: conceptOptions[0],
+        explanation: `${point.title}的核心内容包括：${firstConcept}。`,
+      },
+      {
+        id: `${point.id}-exercise`,
+        lessonId,
+        chapterId: point.chapterId,
+        knowledgePointId: point.id,
+        difficulty: "medium",
+        prompt: `学习“${point.title}”时，平台优先推荐哪类练习？`,
+        options: typeOptions,
+        answer: typeOptions[0],
+        explanation: `${point.title}当前优先对应：${firstExercise}。`,
+      },
+    ].filter((item) => Array.isArray(item.options) && item.options.length >= 2);
+  });
+  const pool = [primary, extra, ...generated].filter(Boolean);
   if (!pool.length) {
     pool.push({
+      id: `${lessonId}-fallback`,
+      lessonId,
+      chapterId: "",
+      knowledgePointId: lessonPoints[0]?.id || "",
+      difficulty: "basic",
       prompt: `${lessonTitle} 的核心知识点是什么？`,
       options: [focus, "节拍器", "随机作答"],
       answer: focus,
@@ -1600,8 +1686,10 @@ function HomeworkEvaluationCard({ evaluation }) {
   );
 }
 
-function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPageHint = null }) {
+function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPageHint = null, onBktChange = null }) {
   const pptLessonData = getPptLessonData(lesson.id);
+  const studentProfile = useMemo(() => getStudentProfile(), []);
+  const userId = studentProfile.studentId;
   const homeworkFileInputRef = useRef(null);
   const homeworkCameraInputRef = useRef(null);
   const speechRecognitionRef = useRef(null);
@@ -1633,6 +1721,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
   const [homeworkEvaluation, setHomeworkEvaluation] = useState(null);
   const [homeworkReviewing, setHomeworkReviewing] = useState(false);
   const [showHomeworkDialog, setShowHomeworkDialog] = useState(false);
+  const [labelingState, setLabelingState] = useState({ pending: false, message: "" });
   const [stats, setStats] = useState(() => ({
     startedAt: Date.now(),
     interactions: 0,
@@ -1641,10 +1730,22 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
     lastExplanation: "\u5148\u70b9\u51fb\u94a2\u7434\u952e\uff0c\u7cfb\u7edf\u4f1a\u6839\u636e\u4e24\u4e2a\u97f3\u7684\u8ddd\u79bb\u7ed9\u51fa\u97f3\u7a0b\u5ea6\u6570\u89e3\u91ca\u3002",
   }));
 
-  const practicePool = createLessonPracticePool(lesson.id, lesson.t);
-  const practiceQuestions = Array.from({ length: 20 }, (_, idx) => practicePool[(practiceRound * 20 + idx) % practicePool.length]);
+  useEffect(() => {
+    initializeKnowledgeStore(userId);
+  }, [userId]);
+
+  const practicePool = useMemo(() => createLessonPracticePool(lesson.id, lesson.t), [lesson.id, lesson.t]);
+  const adaptivePool = useMemo(() => chooseAdaptivePracticeQuestions(userId, lesson.id, practicePool), [userId, lesson.id, practicePool]);
+  const practiceQuestions = useMemo(
+    () => {
+      const source = adaptivePool.length ? adaptivePool : practicePool;
+      return Array.from({ length: 20 }, (_, idx) => source[(practiceRound * 20 + idx) % source.length]);
+    },
+    [adaptivePool, practicePool, practiceRound],
+  );
   const currentPractice = practiceQuestions[practiceIndex];
   const correctCount = practiceAnswers.filter((item) => item.correct).length;
+  const lessonKnowledgeSummary = useMemo(() => summarizeLessonKnowledge(userId, lesson.id), [userId, lesson.id, practiceAnswers, homeworkEvaluation, homeworkSubmitted]);
   const lessonSections = LESSON_LEARNING_SECTIONS[lesson.id] || [];
   const lessonContentItems = (pptLessonData?.knowledgePoints || []).map((item) => ({ h: item.title, b: item.detail })).filter((item) => item.h || item.b).length ? (pptLessonData?.knowledgePoints || []).map((item) => ({ h: item.title, b: item.detail })) : (LESSON_CONTENT[lesson.id] || []);
   const homeworkRequirement = getHomeworkRequirement(lesson.id, lesson.t);
@@ -1785,6 +1886,38 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
     }));
   }, []);
 
+  const lessonKnowledgePoints = useMemo(() => getKnowledgePointsForLesson(lesson.id), [lesson.id]);
+
+  const resolveKnowledgePointForText = useCallback(async (signature, fallbackId = lessonKnowledgePoints[0]?.id || "") => {
+    const mappingKey = createKnowledgeMappingKey(lesson.id, signature);
+    const cached = getKnowledgeMapping(mappingKey);
+    if (cached?.knowledgePointId) return cached.knowledgePointId;
+    try {
+      setLabelingState({ pending: true, message: "正在匹配知识点..." });
+      const response = await fetch("/api/bkt/label", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lessonId: lesson.id,
+          content: signature,
+          candidates: lessonKnowledgePoints.map((item) => ({ id: item.id, title: item.title })),
+        }),
+      });
+      const json = await response.json();
+      const knowledgePointId = json?.knowledgePointId || fallbackId;
+      setKnowledgeMapping(mappingKey, {
+        knowledgePointId,
+        confidence: Number(json?.confidence || 0.35),
+        reason: json?.reason || "知识点已缓存。",
+      });
+      return knowledgePointId;
+    } catch {
+      return fallbackId;
+    } finally {
+      setLabelingState({ pending: false, message: "" });
+    }
+  }, [lesson.id, lessonKnowledgePoints]);
+
   const handleKeyPress = useCallback(async (idx) => {
     await unlockAudioSystem();
     playTone(nFreq(NT[idx], 4), 0.45, "piano", 0.26);
@@ -1806,7 +1939,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
     });
   }, [recordError]);
 
-  const answerPractice = useCallback((option) => {
+  const answerPractice = useCallback(async (option) => {
     if (!currentPractice || practiceAnswers[practiceIndex]) return;
     const ok = option === currentPractice.answer;
     const nextAnswers = [...practiceAnswers];
@@ -1823,8 +1956,41 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
       explanation: currentPractice.explanation,
     });
     setStats((prev) => ({ ...prev, interactions: prev.interactions + 1, lastExplanation: currentPractice.explanation }));
-    if (!ok) recordError("课堂练习题", currentPractice.explanation);
-  }, [currentPractice, practiceAnswers, practiceIndex, recordError]);
+
+    let knowledgePointId = currentPractice.knowledgePointId || "";
+    if (!knowledgePointId) {
+      knowledgePointId = await resolveKnowledgePointForText(currentPractice.prompt);
+    }
+    if (knowledgePointId) {
+      updateKnowledgePointEvidence(userId, knowledgePointId, ok ? "correct" : "incorrect", {
+        lessonId: lesson.id,
+        source: "classroom-practice",
+        prompt: currentPractice.prompt,
+        difficulty: currentPractice.difficulty || "medium",
+      });
+      appendSessionRecord(userId, {
+        lessonId: lesson.id,
+        chapterId: lessonKnowledgePoints[0]?.chapterId || "",
+        action: "classroom-practice",
+        knowledgePointId,
+        correct: ok,
+        prompt: currentPractice.prompt,
+      });
+      await syncKnowledgeSummary(lesson.id);
+      onBktChange?.();
+    }
+
+    if (!ok) {
+      appendErrorRecord(userId, {
+        lessonId: lesson.id,
+        knowledgePointId,
+        type: "课堂练习题",
+        prompt: currentPractice.prompt,
+        explanation: currentPractice.explanation,
+      });
+      recordError("课堂练习题", currentPractice.explanation);
+    }
+  }, [currentPractice, practiceAnswers, practiceIndex, recordError, resolveKnowledgePointForText, userId, lesson.id, lessonKnowledgePoints, onBktChange]);
 
   const nextPracticeQuestion = useCallback(() => {
     setPracticeResult(null);
@@ -1948,6 +2114,15 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
     setHomeworkRemaining(30 * 60);
     setHomeworkRunning(false);
   }, [lesson.id]);
+
+  useEffect(() => {
+    syncKnowledgeSummary(lesson.id);
+    appendSessionRecord(userId, {
+      lessonId: lesson.id,
+      chapterId: lessonKnowledgePoints[0]?.chapterId || "",
+      action: "lesson-open",
+    });
+  }, [lesson.id, userId, lessonKnowledgePoints]);
 
   useEffect(() => {
     if (activeSection === "homework" && !homeworkSubmitted && homeworkRemaining > 0) {
@@ -2090,12 +2265,41 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         submissionTypes,
         lastExplanation: "课后作业已提交并完成 AI 初评。",
       });
+
+      const scoreValues = Object.values(evaluation?.scores || {}).map((value) => Number(value || 0));
+      const averageEvaluationScore = scoreValues.length
+        ? scoreValues.reduce((sum, value) => sum + value, 0) / scoreValues.length
+        : 75;
+      const homeworkObservation = averageEvaluationScore >= 80 ? "correct" : averageEvaluationScore < 65 ? "incorrect" : "neutral";
+      const matchedKnowledgePointId = await resolveKnowledgePointForText(
+        `${lessonHomework}\n${homeworkDraft}\n${voiceTranscript}`.trim(),
+        lessonKnowledgePoints[0]?.id || "",
+      );
+      if (matchedKnowledgePointId && homeworkObservation !== "neutral") {
+        updateKnowledgePointEvidence(userId, matchedKnowledgePointId, homeworkObservation, {
+          lessonId: lesson.id,
+          source: "homework-review",
+          prompt: lessonHomework,
+          score: averageEvaluationScore,
+          difficulty: averageEvaluationScore >= 80 ? "hard" : "medium",
+        });
+        await syncKnowledgeSummary(lesson.id);
+        onBktChange?.();
+      }
+      appendSessionRecord(userId, {
+        lessonId: lesson.id,
+        chapterId: lessonKnowledgePoints[0]?.chapterId || "",
+        action: "homework-submit",
+        knowledgePointId: matchedKnowledgePointId,
+        score: Number(averageEvaluationScore.toFixed(1)),
+        submissionTypes,
+      });
     } catch {
       setHomeworkFeedback("作业提交失败，请检查网络后重试。");
     } finally {
       setHomeworkReviewing(false);
     }
-  }, [lesson.id, lesson.t, lessonHomework, homeworkDraft, homeworkImages, homeworkRhythm, homeworkStaff, homeworkPiano, voiceTranscript, audioSubmission, homeworkRequirement, evaluationDimensions, studyMinutes, stats, homeworkRemaining, submissionTypes]);
+  }, [lesson.id, lesson.t, lessonHomework, homeworkDraft, homeworkImages, homeworkRhythm, homeworkStaff, homeworkPiano, voiceTranscript, audioSubmission, homeworkRequirement, evaluationDimensions, studyMinutes, stats, homeworkRemaining, submissionTypes, resolveKnowledgePointForText, lessonKnowledgePoints, userId, onBktChange]);
 
   const openLessonHomeworkSubmit = useCallback(() => {
     if (!homeworkHasContent) {
@@ -2151,6 +2355,16 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
           系统会结合你在内容呈现中的互动操作结果，提供 20 题连续课堂练习，并反馈当前掌握情况。
         </div>
         <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>知识点掌握摘要</div>
+          <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+            已掌握较好：{lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "尚未形成稳定强项"}
+            <br />
+            当前薄弱点：{lessonKnowledgeSummary.weak.map((item) => item.title).join(" / ") || "暂无"}
+            <br />
+            下一步建议：{getRecommendationFromSummary(lessonKnowledgeSummary)}
+          </div>
+        </div>
+        <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>互动检测</div>
           <div style={{ fontSize: 11, color: stats.errors > 0 ? "#b91c1c" : "var(--color-text-secondary)" }}>
             {lastInterval ? `最近一次识别为 ${lastInterval.label}，${lastInterval.detail}` : "请先在内容呈现里完成一次钢琴或互动操作，系统才会生成检测结果。"}
@@ -2188,6 +2402,15 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 8 }}>课后作业</div>
         <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
           系统会依据本课知识点生成作业建议，并记录学习时长、错误类型和交互数据，辅助教师后续复核。
+        </div>
+        <div style={{ marginBottom: 12, padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111", marginBottom: 6 }}>自适应建议</div>
+          已掌握较好：{lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "尚未形成稳定强项"}
+          <br />
+          当前薄弱点：{lessonKnowledgeSummary.weak.map((item) => item.title).join(" / ") || "暂无"}
+          <br />
+          下一步建议：{getRecommendationFromSummary(lessonKnowledgeSummary)}
+          {labelingState.pending ? <><br />知识点匹配中：{labelingState.message}</> : null}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
           <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
@@ -2703,6 +2926,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
   const [tab, setTab] = useState("learn");
   const [labOpen, setLabOpen] = useState(false);
   const [contentPageHint, setContentPageHint] = useState(null);
+  const [bktVersion, setBktVersion] = useState(0);
 
   const ExComponent = EXERCISE_COMPONENTS[lesson.ex];
   const pptLessonData = getPptLessonData(lesson.id);
@@ -2717,6 +2941,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
     { id: "classroom", label: "课堂练习" },
     { id: "homework", label: "课后作业" },
   ];
+  const lessonKnowledgeSummary = useMemo(() => summarizeLessonKnowledge(getStudentProfile().studentId, lesson.id), [lesson.id, bktVersion]);
 
   useEffect(() => {
     reportStudentAnalytics({
@@ -2796,19 +3021,29 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
               再进入“内容呈现”查看 PPT 原课件，最后完成课堂练习与课后作业。
             </div>
           </div>
+          <div className="section-card">
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>知识点掌握摘要</div>
+            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+              已掌握较好：{lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "尚未形成稳定强项"}
+              <br />
+              当前薄弱点：{lessonKnowledgeSummary.weak.map((item) => item.title).join(" / ") || "暂无"}
+              <br />
+              下一步建议：{getRecommendationFromSummary(lessonKnowledgeSummary)}
+            </div>
+          </div>
         </div>
       )}
 
       {tab === "content" && (
         <div className="section-stack">
-          <LessonLearningWorkspace lesson={lesson} section="content" showTabs={false} contentPageHint={contentPageHint} />
+          <LessonLearningWorkspace lesson={lesson} section="content" showTabs={false} contentPageHint={contentPageHint} onBktChange={() => setBktVersion((prev) => prev + 1)} />
         </div>
       )}
 
       {tab === "classroom" && (
         <div className="lesson-layout" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(280px, 360px)" }}>
           <div className="lesson-main">
-            <LessonLearningWorkspace lesson={lesson} section="practice" showTabs={false} />
+            <LessonLearningWorkspace lesson={lesson} section="practice" showTabs={false} onBktChange={() => setBktVersion((prev) => prev + 1)} />
             <div className="section-card">
               {ExComponent && <ExComponent onScore={handleScore} />}
             </div>
@@ -2836,7 +3071,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
       {tab === "homework" && (
         <div className="lesson-layout" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(280px, 360px)" }}>
           <div className="lesson-main">
-            <LessonLearningWorkspace lesson={lesson} section="homework" showTabs={false} />
+            <LessonLearningWorkspace lesson={lesson} section="homework" showTabs={false} onBktChange={() => setBktVersion((prev) => prev + 1)} />
           </div>
           <div className="lesson-side">
             <div className="section-card">
@@ -2977,6 +3212,7 @@ function AssessmentPage({ scores, ratings }) {
 }
 
 function AITutorV2({ lessonId, lessonTitle }) {
+  const studentProfile = useMemo(() => getStudentProfile(), []);
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -2986,7 +3222,10 @@ function AITutorV2({ lessonId, lessonTitle }) {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
-  const contentSections = LESSON_CONTENT[lessonId] || [];
+  const contentSections = getKnowledgePointsForLesson(lessonId).map((item) => ({
+    h: item.title,
+    b: item.subConcepts?.join("；") || "",
+  }));
   const contextText = contentSections.map((section) => `${section.h}: ${section.b}`).join("\n\n");
 
   useEffect(() => {
@@ -3047,6 +3286,13 @@ function AITutorV2({ lessonId, lessonTitle }) {
       if (response.ok) {
         setImageDataUrl("");
         setImageName("");
+        appendTutorHistory(studentProfile.studentId, {
+          lessonId,
+          lessonTitle,
+          prompt: text || "请结合我上传的图片进行讲解。",
+          reply: replyText,
+          imageUploaded: Boolean(imageDataUrl),
+        });
       }
     } catch (error) {
       const message = error?.name === "AbortError"
@@ -3057,7 +3303,7 @@ function AITutorV2({ lessonId, lessonTitle }) {
       window.clearTimeout(timeoutId);
       setLoading(false);
     }
-  }, [contextText, imageDataUrl, imageName, input, lessonTitle, loading, msgs]);
+  }, [contextText, imageDataUrl, imageName, input, lessonId, lessonTitle, loading, msgs, studentProfile.studentId]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: 460, border: "1px solid rgba(17,17,17,0.08)", borderRadius: 12, overflow: "hidden", background: "#ffffff" }}>
@@ -3210,18 +3456,29 @@ function MusicCreatorV2() {
 
 function TeacherDashboardPage() {
   const [data, setData] = useState(null);
+  const [bktData, setBktData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [simulating, setSimulating] = useState(false);
 
   useEffect(() => {
     let active = true;
     const load = async () => {
       setLoading(true);
       try {
-        const response = await fetch("/api/teacher/overview");
-        const json = await response.json();
-        if (active) setData(json);
+        const [analyticsResponse, bktResponse] = await Promise.all([
+          fetch("/api/teacher/overview"),
+          fetch("/api/teacher/bkt-overview"),
+        ]);
+        const [analyticsJson, bktJson] = await Promise.all([analyticsResponse.json(), bktResponse.json()]);
+        if (active) {
+          setData(analyticsJson);
+          setBktData(bktJson);
+        }
       } catch {
-        if (active) setData(null);
+        if (active) {
+          setData(null);
+          setBktData(null);
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -3240,6 +3497,39 @@ function TeacherDashboardPage() {
     return <div style={{ fontSize: 13, color: "#b91c1c" }}>教师后台数据加载失败。</div>;
   }
 
+  const regenerateVirtualStudents = async () => {
+    setSimulating(true);
+    try {
+      const localStudents = createVirtualStudents();
+      writeVirtualStudentsToLocalStorage(localStudents);
+      await fetch("/api/bkt/simulate", { method: "POST" });
+      const [analyticsResponse, bktResponse] = await Promise.all([
+        fetch("/api/teacher/overview"),
+        fetch("/api/teacher/bkt-overview"),
+      ]);
+      setData(await analyticsResponse.json());
+      setBktData(await bktResponse.json());
+    } finally {
+      setSimulating(false);
+    }
+  };
+
+  const clearVirtualStudents = async () => {
+    setSimulating(true);
+    try {
+      clearVirtualStudentsFromLocalStorage();
+      await fetch("/api/bkt/reset", { method: "POST" });
+      const [analyticsResponse, bktResponse] = await Promise.all([
+        fetch("/api/teacher/overview"),
+        fetch("/api/teacher/bkt-overview"),
+      ]);
+      setData(await analyticsResponse.json());
+      setBktData(await bktResponse.json());
+    } finally {
+      setSimulating(false);
+    }
+  };
+
   const metricCard = (label, value) => (
     <div className="section-card" style={{ padding: 16 }}>
       <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 6 }}>{label}</div>
@@ -3255,6 +3545,25 @@ function TeacherDashboardPage() {
         {metricCard("学生数", data.summary.totalStudents)}
         {metricCard("平均得分", `${data.summary.averageScore}%`)}
         {metricCard("已提交作业", data.summary.totalHomeworkSubmitted)}
+      </div>
+
+      <div className="section-card" style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>知识点级 BKT 测试面板</div>
+            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+              可生成 12 名虚拟学生，用于验证 24 个知识点的掌握度分布、自适应推荐和教师后台统计。
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={regenerateVirtualStudents} disabled={simulating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: simulating ? "default" : "pointer" }}>
+              {simulating ? "处理中..." : "生成虚拟学生"}
+            </button>
+            <button onClick={clearVirtualStudents} disabled={simulating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", color: "#111111", cursor: simulating ? "default" : "pointer" }}>
+              清空模拟数据
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="lesson-layout" style={{ marginBottom: 18 }}>
@@ -3287,6 +3596,43 @@ function TeacherDashboardPage() {
           </div>
         </div>
       </div>
+
+      {bktData?.ok ? (
+        <div className="lesson-layout" style={{ marginBottom: 18 }}>
+          <div className="section-card">
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>知识点掌握概览</div>
+            <div style={{ display: "grid", gap: 8 }}>
+              {bktData.students?.slice(0, 12).map((student) => (
+                <div key={`${student.userId}-${student.lessonId}`} className="subtle-card" style={{ padding: "10px 12px" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#111111" }}>{student.studentLabel}</div>
+                  <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                    课时：{student.lessonId}，平均掌握度：{student.averageMastery}
+                    <br />
+                    薄弱点：{student.weakPoints?.map((item) => item.title).join(" / ") || "暂无"}
+                    <br />
+                    建议：{student.recommendation || "继续观察"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="section-card">
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>班级薄弱知识点排行</div>
+            <div style={{ display: "grid", gap: 8 }}>
+              {bktData.weakKnowledgePoints?.slice(0, 12).map((item) => (
+                <div key={item.id} className="subtle-card" style={{ padding: "10px 12px" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#111111" }}>{item.title}</div>
+                  <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                    所属课时：{item.lessonId}，平均掌握度：{item.averageMastery}
+                    <br />
+                    掌握率：{Math.round(Number(item.masteryRate || 0) * 100)}%，参与学生：{item.learners}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="section-card">
         <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>最近学习记录</div>

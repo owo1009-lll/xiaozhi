@@ -4,6 +4,7 @@ import OpenAI from "openai";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { BKT_PARAMS, KNOWLEDGE_POINTS, KNOWLEDGE_POINTS_BY_LESSON } from "./src/musicaiKnowledge.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,11 +12,16 @@ const app = express();
 const port = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, "data");
 const ANALYTICS_FILE = path.join(DATA_DIR, "teacher-analytics.json");
+const BKT_SUMMARY_FILE = path.join(DATA_DIR, "teacher-bkt-summary.json");
 
 app.use(express.json({ limit: "25mb" }));
 
 function safeString(value, fallback = "") {
   return typeof value === "string" ? value : fallback;
+}
+
+function nowIso() {
+  return new Date().toISOString();
 }
 
 function getOpenAIBaseUrl() {
@@ -633,6 +639,167 @@ async function writeAnalyticsStore(store) {
   await fs.writeFile(ANALYTICS_FILE, JSON.stringify(store, null, 2), "utf8");
 }
 
+async function readBktSummaryStore() {
+  try {
+    const raw = await fs.readFile(BKT_SUMMARY_FILE, "utf8");
+    const parsed = JSON.parse(raw);
+    return {
+      records: Array.isArray(parsed.records) ? parsed.records : [],
+      mappings: parsed.mappings && typeof parsed.mappings === "object" ? parsed.mappings : {},
+      simulatedStudents: Array.isArray(parsed.simulatedStudents) ? parsed.simulatedStudents : [],
+    };
+  } catch {
+    return { records: [], mappings: {}, simulatedStudents: [] };
+  }
+}
+
+async function writeBktSummaryStore(store) {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(BKT_SUMMARY_FILE, JSON.stringify(store, null, 2), "utf8");
+}
+
+function summarizeKnowledgeStates(knowledgeStates = []) {
+  const rows = getArray(knowledgeStates);
+  const sorted = [...rows].sort((a, b) => Number(a.pL || 0) - Number(b.pL || 0));
+  return {
+    averageMastery: rows.length
+      ? Number((rows.reduce((sum, item) => sum + Number(item.pL || 0), 0) / rows.length).toFixed(3))
+      : BKT_PARAMS.pL0,
+    strongPoints: [...rows]
+      .sort((a, b) => Number(b.pL || 0) - Number(a.pL || 0))
+      .slice(0, 2)
+      .map((item) => ({ id: item.id, title: item.title, pL: Number(item.pL || 0) })),
+    weakPoints: sorted.slice(0, 3).map((item) => ({ id: item.id, title: item.title, pL: Number(item.pL || 0) })),
+  };
+}
+
+function buildTeacherBktOverview(records = []) {
+  const normalized = getArray(records);
+  const studentMap = new Map();
+  const pointMap = new Map();
+
+  for (const record of normalized) {
+    const knowledgeStates = getArray(record.knowledgeStates);
+    const summary = summarizeKnowledgeStates(knowledgeStates);
+    studentMap.set(record.userId, {
+      userId: record.userId,
+      studentLabel: record.studentLabel || record.userId,
+      lessonId: record.lessonId,
+      averageMastery: summary.averageMastery,
+      weakPoints: summary.weakPoints,
+      recommendation: safeString(record.recommendation),
+      updatedAt: safeString(record.updatedAt),
+      source: safeString(record.source),
+    });
+
+    for (const state of knowledgeStates) {
+      const current = pointMap.get(state.id) || {
+        id: state.id,
+        title: safeString(state.title, state.id),
+        lessonId: safeString(state.lessonId),
+        chapterId: safeString(state.chapterId),
+        learners: 0,
+        averageMastery: 0,
+        masteredCount: 0,
+      };
+      current.learners += 1;
+      current.averageMastery += Number(state.pL || 0);
+      current.masteredCount += state.mastered ? 1 : 0;
+      pointMap.set(state.id, current);
+    }
+  }
+
+  const students = [...studentMap.values()].sort((a, b) => Number(a.averageMastery || 0) - Number(b.averageMastery || 0));
+  const weakKnowledgePoints = [...pointMap.values()]
+    .map((item) => ({
+      ...item,
+      averageMastery: item.learners ? Number((item.averageMastery / item.learners).toFixed(3)) : BKT_PARAMS.pL0,
+      masteryRate: item.learners ? Number((item.masteredCount / item.learners).toFixed(3)) : 0,
+    }))
+    .sort((a, b) => Number(a.averageMastery || 0) - Number(b.averageMastery || 0));
+
+  return {
+    summary: {
+      totalStudents: students.length,
+      totalKnowledgePoints: weakKnowledgePoints.length,
+      averageMastery: students.length
+        ? Number((students.reduce((sum, item) => sum + Number(item.averageMastery || 0), 0) / students.length).toFixed(3))
+        : BKT_PARAMS.pL0,
+      lowMasteryStudents: students.filter((item) => Number(item.averageMastery || 0) < 0.45).length,
+    },
+    students,
+    weakKnowledgePoints: weakKnowledgePoints.slice(0, 24),
+  };
+}
+
+function createVirtualStudentBktProfiles() {
+  const groups = [
+    { prefix: "excellent", label: "优等型", range: [0.82, 0.96] },
+    { prefix: "steady", label: "中等稳定型", range: [0.56, 0.78] },
+    { prefix: "imbalanced", label: "偏科型", range: [0.35, 0.9] },
+    { prefix: "lowengage", label: "低参与型", range: [0.18, 0.46] },
+  ];
+
+  const records = [];
+  let index = 1;
+  for (const group of groups) {
+    for (let offset = 0; offset < 3; offset += 1) {
+      const userId = `virtual-${String(index).padStart(2, "0")}`;
+      for (const [lessonId, points] of Object.entries(KNOWLEDGE_POINTS_BY_LESSON)) {
+        const knowledgeStates = points.map((point, pointIndex) => {
+          const rhythmBias = /节奏|音值|附点|连音|切分/.test(point.title);
+          const notationBias = /谱号|谱表|记谱|五线谱|装饰音/.test(point.title);
+          let pL;
+          if (group.prefix === "imbalanced") {
+            if (offset % 2 === 0) {
+              pL = rhythmBias ? 0.84 : notationBias ? 0.32 : 0.58;
+            } else {
+              pL = notationBias ? 0.85 : rhythmBias ? 0.34 : 0.57;
+            }
+          } else {
+            const [min, max] = group.range;
+            pL = min + (((index + pointIndex) % 7) / 6) * (max - min);
+          }
+          pL = Number(Math.max(0.05, Math.min(0.98, pL)).toFixed(3));
+          const totalAttempts = group.prefix === "lowengage" ? 1 + ((index + pointIndex) % 2) : 4 + ((index + pointIndex) % 4);
+          const correctAttempts = Math.max(0, Math.round(totalAttempts * pL));
+          return {
+            id: point.id,
+            title: point.title,
+            lessonId: point.lessonId,
+            chapterId: point.chapterId,
+            pL,
+            difficulty: pL >= 0.75 ? "hard" : pL >= 0.45 ? "medium" : "easy",
+            totalAttempts,
+            correctAttempts,
+            consecutiveCorrect: pL >= 0.75 ? 2 : 0,
+            consecutiveIncorrect: pL < 0.45 ? 2 : 0,
+            lastPracticed: new Date(Date.now() - (pointIndex * 3600 * 1000)).toISOString(),
+            mastered: pL >= 0.8,
+          };
+        });
+        const summary = summarizeKnowledgeStates(knowledgeStates);
+        records.push({
+          userId,
+          studentLabel: `${group.label}学生 ${offset + 1}`,
+          lessonId,
+          source: "virtual-student",
+          recommendation: summary.weakPoints[0]
+            ? `优先巩固“${summary.weakPoints[0].title}”，再进入下一课时。`
+            : "继续完成当前学习任务。",
+          strongPoints: summary.strongPoints,
+          weakPoints: summary.weakPoints,
+          averageMastery: summary.averageMastery,
+          knowledgeStates,
+          updatedAt: nowIso(),
+        });
+      }
+      index += 1;
+    }
+  }
+  return records;
+}
+
 app.get("/api/health", (req, res) => {
   const provider = (process.env.AI_PROVIDER || "openai").toLowerCase();
   res.json({
@@ -710,6 +877,147 @@ app.post("/api/analytics", async (req, res) => {
 
   await writeAnalyticsStore(store);
   res.json({ ok: true });
+});
+
+app.post("/api/bkt/sync", async (req, res) => {
+  const payload = req.body || {};
+  if (!payload.userId || !payload.lessonId) {
+    return res.status(400).json({ error: "userId and lessonId are required." });
+  }
+
+  const store = await readBktSummaryStore();
+  const knowledgeStates = getArray(payload.knowledgeStates)
+    .filter((item) => item && typeof item === "object" && item.id)
+    .map((item) => ({
+      id: String(item.id),
+      title: safeString(item.title),
+      lessonId: safeString(item.lessonId || payload.lessonId),
+      chapterId: safeString(item.chapterId),
+      pL: Number(item.pL || 0),
+      difficulty: safeString(item.difficulty, "medium"),
+      totalAttempts: Number(item.totalAttempts || 0),
+      correctAttempts: Number(item.correctAttempts || 0),
+      consecutiveCorrect: Number(item.consecutiveCorrect || 0),
+      consecutiveIncorrect: Number(item.consecutiveIncorrect || 0),
+      mastered: Boolean(item.mastered),
+      lastPracticed: safeString(item.lastPracticed),
+    }));
+
+  const summary = summarizeKnowledgeStates(knowledgeStates);
+  const record = {
+    userId: String(payload.userId),
+    studentLabel: safeString(payload.studentLabel, payload.userId),
+    lessonId: String(payload.lessonId),
+    source: safeString(payload.source, "frontend-localstorage"),
+    recommendation: safeString(payload.recommendation, ""),
+    averageMastery: Number(payload.averageMastery || summary.averageMastery),
+    strongPoints: getArray(payload.strongPoints).length ? getArray(payload.strongPoints) : summary.strongPoints,
+    weakPoints: getArray(payload.weakPoints).length ? getArray(payload.weakPoints) : summary.weakPoints,
+    knowledgeStates,
+    updatedAt: nowIso(),
+  };
+
+  const existingIndex = store.records.findIndex((item) => item.userId === record.userId && item.lessonId === record.lessonId);
+  if (existingIndex >= 0) {
+    store.records[existingIndex] = { ...store.records[existingIndex], ...record };
+  } else {
+    store.records.push(record);
+  }
+
+  await writeBktSummaryStore(store);
+  return res.json({ ok: true, record });
+});
+
+app.post("/api/bkt/reset", async (req, res) => {
+  const store = await readBktSummaryStore();
+  store.records = store.records.filter((item) => !String(item.userId || "").startsWith("virtual-"));
+  store.simulatedStudents = [];
+  await writeBktSummaryStore(store);
+  return res.json({ ok: true });
+});
+
+app.post("/api/bkt/simulate", async (req, res) => {
+  const store = await readBktSummaryStore();
+  store.records = store.records.filter((item) => !String(item.userId || "").startsWith("virtual-"));
+  const simulatedRecords = createVirtualStudentBktProfiles();
+  store.records.push(...simulatedRecords);
+  store.simulatedStudents = [...new Set(simulatedRecords.map((item) => item.userId))];
+  await writeBktSummaryStore(store);
+  return res.json({
+    ok: true,
+    generatedStudents: store.simulatedStudents.length,
+    records: simulatedRecords.length,
+  });
+});
+
+app.get("/api/teacher/bkt-overview", async (req, res) => {
+  const store = await readBktSummaryStore();
+  return res.json({
+    ok: true,
+    ...buildTeacherBktOverview(store.records),
+    simulatedStudents: store.simulatedStudents,
+  });
+});
+
+app.post("/api/bkt/label", async (req, res) => {
+  const { lessonId, content = "", candidates = [] } = req.body || {};
+  if (!lessonId) {
+    return res.status(400).json({ error: "lessonId is required." });
+  }
+
+  const normalizedCandidates = getArray(candidates).filter((item) => item && item.id);
+  const lessonCandidates = normalizedCandidates.length
+    ? normalizedCandidates
+    : (KNOWLEDGE_POINTS_BY_LESSON[lessonId] || []).map((point) => ({ id: point.id, title: point.title }));
+
+  if (!lessonCandidates.length) {
+    return res.status(404).json({ error: "No knowledge point candidates found." });
+  }
+
+  const cacheStore = await readBktSummaryStore();
+  const mappingKey = `${lessonId}:${safeString(content).slice(0, 120)}`;
+  if (cacheStore.mappings[mappingKey]) {
+    return res.json({ ok: true, ...cacheStore.mappings[mappingKey], cached: true });
+  }
+
+  let result = null;
+  try {
+    if (process.env.OPENAI_API_KEY) {
+      const prompt = JSON.stringify({
+        lessonId,
+        content,
+        candidates: lessonCandidates,
+      });
+      const text = await createOpenAITextResponse({
+        system: "你是一名乐理教学系统的知识点标注器。请只返回 JSON，字段包含 knowledgePointId、confidence、reason。",
+        messages: [{ role: "user", content: prompt }],
+        maxTokens: 300,
+      });
+      const parsed = parseJsonObject(text);
+      if (parsed?.knowledgePointId) {
+        result = {
+          knowledgePointId: String(parsed.knowledgePointId),
+          confidence: Number(parsed.confidence || 0.6),
+          reason: safeString(parsed.reason, "AI 自动标注"),
+        };
+      }
+    }
+  } catch (error) {
+    console.error("BKT knowledge labeling failed:", error);
+  }
+
+  if (!result || !lessonCandidates.some((item) => item.id === result.knowledgePointId)) {
+    const fallback = lessonCandidates[0];
+    result = {
+      knowledgePointId: String(fallback.id),
+      confidence: 0.35,
+      reason: "已回退到本课默认主知识点。",
+    };
+  }
+
+  cacheStore.mappings[mappingKey] = result;
+  await writeBktSummaryStore(cacheStore);
+  return res.json({ ok: true, ...result, cached: false });
 });
 
 app.post("/api/transcribe", async (req, res) => {
