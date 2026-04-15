@@ -3156,6 +3156,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
     { id: "content", label: "内容呈现" },
     { id: "classroom", label: "课堂练习" },
     { id: "homework", label: "课后作业" },
+    { id: "tutor", label: "AI 导师" },
   ];
   const lessonKnowledgeSummary = useMemo(() => summarizeLessonKnowledge(getStudentProfile().studentId, lesson.id), [lesson.id, bktVersion]);
 
@@ -3187,7 +3188,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
         <button
           onClick={() => setTab("tutor")}
           className="support-tile"
-          style={{ width: "min(280px, 100%)", textAlign: "left", padding: 16, flexShrink: 0 }}
+          style={{ width: "min(240px, 100%)", textAlign: "left", padding: 14, flexShrink: 0 }}
         >
           <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 6 }}>AI 导师</div>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
