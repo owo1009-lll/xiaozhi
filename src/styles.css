@@ -786,18 +786,42 @@ textarea {
 
 @media (max-width: 860px) {
   .page-shell {
-    padding: 12px;
-    gap: 12px;
+    padding: 0;
+    gap: 0;
+  }
+
+  .main-shell {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    min-height: 100vh;
+  }
+
+  .topbar-shell {
+    padding: 12px 14px;
+    gap: 10px;
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .content-shell {
-    padding: 18px;
+    padding: 14px;
   }
 
   .home-hero,
   .chapter-panel {
     padding: 20px;
     border-radius: 20px;
+  }
+
+  .section-card,
+  .subtle-card,
+  .panel-card {
+    border-radius: 16px;
+  }
+
+  .metric-grid {
+    grid-template-columns: 1fr;
   }
 }
 

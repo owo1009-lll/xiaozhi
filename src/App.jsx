@@ -2912,7 +2912,17 @@ function LessonSupportLinks({ onOpen }) {
 function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect }) {
   const nodes = items.slice(0, 6);
   const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth <= 860 : false));
   const summarize = (text) => String(text || "").split(/\n+/).filter(Boolean).join(" ").slice(0, 34);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handleResize = () => setIsMobile(window.innerWidth <= 860);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const layoutNodes = nodes.map((item, index) => {
     const isLeft = index < Math.ceil(nodes.length / 2);
     const leftPositions = [70, 180, 290];
@@ -2939,108 +2949,167 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
         <Tag color="#111111" bg="#F3F4F6">{`${nodes.length} 个核心点`}</Tag>
       </div>
 
-      <div style={{ borderRadius: 22, background: "linear-gradient(180deg, #fcfcfc 0%, #f5f5f5 100%)", border: "1px solid rgba(17,17,17,0.08)", overflowX: "auto" }}>
-        <div style={{ position: "relative", width: 980, minHeight: 470, margin: "0 auto", padding: "18px 0" }}>
-          <svg
-            width="980"
-            height="470"
-            viewBox="0 0 980 470"
-            style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
-            aria-hidden="true"
-          >
-            <defs>
-              <linearGradient id="mind-line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="rgba(17,17,17,0.18)" />
-                <stop offset="100%" stopColor="rgba(17,17,17,0.45)" />
-              </linearGradient>
-            </defs>
-            {layoutNodes.map((item) => {
-              const centerX = 490;
-              const centerY = 235;
-              const branchX = item.isLeft ? 380 : 600;
-              const branchY = item.anchorY;
-              return (
-                <g key={`line-${lessonTitle}-${item.index}`}>
-                  <path
-                    d={`M ${centerX} ${centerY} C ${item.isLeft ? 450 : 530} ${centerY}, ${item.isLeft ? 420 : 560} ${branchY}, ${branchX} ${branchY}`}
-                    fill="none"
-                    stroke={hoveredIndex === item.index ? "#111111" : "url(#mind-line-gradient)"}
-                    strokeWidth={hoveredIndex === item.index ? "4" : "3"}
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d={`M ${branchX} ${branchY} L ${item.anchorX} ${item.anchorY}`}
-                    fill="none"
-                    stroke={hoveredIndex === item.index ? "rgba(17,17,17,0.82)" : "rgba(17,17,17,0.22)"}
-                    strokeWidth={hoveredIndex === item.index ? "3.5" : "2.5"}
-                    strokeLinecap="round"
-                  />
-                </g>
-              );
-            })}
-          </svg>
-
+      {isMobile ? (
+        <div style={{ borderRadius: 22, background: "linear-gradient(180deg, #fcfcfc 0%, #f5f5f5 100%)", border: "1px solid rgba(17,17,17,0.08)", padding: 14 }}>
           <div
             style={{
-              position: "absolute",
-              left: 380,
-              top: 150,
-              width: 220,
-              minHeight: 150,
-              padding: 18,
-              borderRadius: 24,
+              padding: 16,
+              borderRadius: 18,
               background: "linear-gradient(180deg, rgba(17,17,17,0.98), rgba(36,36,36,0.95))",
               color: "#ffffff",
-              boxShadow: "0 18px 40px rgba(17,17,17,0.18)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
+              marginBottom: 14,
             }}
           >
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.72)", marginBottom: 8 }}>中心主题</div>
-            <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.35, marginBottom: 10 }}>{lessonTitle}</div>
+            <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.35, marginBottom: 10 }}>{lessonTitle}</div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.74)", lineHeight: 1.7 }}>
-              围绕本课核心知识点，先理解概念关系，再进入内容呈现和课堂练习。
+              按顺序阅读 5 到 6 个核心点，点击任一节点可直接跳到对应内容页。
             </div>
           </div>
 
-          {layoutNodes.map((item) => (
-            <button
-              key={`${lessonTitle}-map-${item.index}`}
-              type="button"
-              onMouseEnter={() => setHoveredIndex(item.index)}
-              onMouseLeave={() => setHoveredIndex(null)}
-              onFocus={() => setHoveredIndex(item.index)}
-              onBlur={() => setHoveredIndex(null)}
-              onClick={() => onNodeSelect?.(item.index)}
+          <div style={{ position: "relative", paddingLeft: 24, display: "grid", gap: 12 }}>
+            <div style={{ position: "absolute", left: 11, top: 6, bottom: 6, width: 2, background: "rgba(17,17,17,0.12)" }} />
+            {nodes.map((item, index) => {
+              const active = hoveredIndex === index;
+              return (
+                <button
+                  key={`${lessonTitle}-mobile-map-${index}`}
+                  type="button"
+                  onMouseEnter={() => setHoveredIndex(index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  onFocus={() => setHoveredIndex(index)}
+                  onBlur={() => setHoveredIndex(null)}
+                  onClick={() => onNodeSelect?.(index)}
+                  style={{
+                    position: "relative",
+                    padding: 14,
+                    borderRadius: 16,
+                    background: active ? "#111111" : "rgba(255,255,255,0.96)",
+                    border: active ? "1px solid #111111" : "1px solid rgba(17,17,17,0.1)",
+                    boxShadow: active ? "0 12px 28px rgba(17,17,17,0.14)" : "0 8px 20px rgba(17,17,17,0.06)",
+                    textAlign: "left",
+                    cursor: "pointer",
+                  }}
+                >
+                  <div style={{ position: "absolute", left: -21, top: 18, width: 12, height: 12, borderRadius: 999, background: active ? "#111111" : "#ffffff", border: "2px solid #111111" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: 999, background: active ? "#ffffff" : "#111111", color: active ? "#111111" : "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
+                      {index + 1}
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: active ? "#ffffff" : "#111111", lineHeight: 1.4 }}>{item.h}</div>
+                  </div>
+                  <div style={{ fontSize: 12, color: active ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                    {summarize(item.b)}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div style={{ borderRadius: 22, background: "linear-gradient(180deg, #fcfcfc 0%, #f5f5f5 100%)", border: "1px solid rgba(17,17,17,0.08)", overflowX: "auto" }}>
+          <div style={{ position: "relative", width: 980, minHeight: 470, margin: "0 auto", padding: "18px 0" }}>
+            <svg
+              width="980"
+              height="470"
+              viewBox="0 0 980 470"
+              style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+              aria-hidden="true"
+            >
+              <defs>
+                <linearGradient id="mind-line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="rgba(17,17,17,0.18)" />
+                  <stop offset="100%" stopColor="rgba(17,17,17,0.45)" />
+                </linearGradient>
+              </defs>
+              {layoutNodes.map((item) => {
+                const centerX = 490;
+                const centerY = 235;
+                const branchX = item.isLeft ? 380 : 600;
+                const branchY = item.anchorY;
+                return (
+                  <g key={`line-${lessonTitle}-${item.index}`}>
+                    <path
+                      d={`M ${centerX} ${centerY} C ${item.isLeft ? 450 : 530} ${centerY}, ${item.isLeft ? 420 : 560} ${branchY}, ${branchX} ${branchY}`}
+                      fill="none"
+                      stroke={hoveredIndex === item.index ? "#111111" : "url(#mind-line-gradient)"}
+                      strokeWidth={hoveredIndex === item.index ? "4" : "3"}
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d={`M ${branchX} ${branchY} L ${item.anchorX} ${item.anchorY}`}
+                      fill="none"
+                      stroke={hoveredIndex === item.index ? "rgba(17,17,17,0.82)" : "rgba(17,17,17,0.22)"}
+                      strokeWidth={hoveredIndex === item.index ? "3.5" : "2.5"}
+                      strokeLinecap="round"
+                    />
+                  </g>
+                );
+              })}
+            </svg>
+
+            <div
               style={{
                 position: "absolute",
-                left: item.x,
-                top: item.y,
+                left: 380,
+                top: 150,
                 width: 220,
-                padding: 14,
-                borderRadius: 18,
-                background: hoveredIndex === item.index ? "#111111" : "rgba(255,255,255,0.96)",
-                border: hoveredIndex === item.index ? "1px solid #111111" : "1px solid rgba(17,17,17,0.1)",
-                boxShadow: hoveredIndex === item.index ? "0 16px 32px rgba(17,17,17,0.14)" : "0 8px 24px rgba(17,17,17,0.06)",
-                textAlign: "left",
-                cursor: "pointer",
-                transition: "all 0.18s ease",
+                minHeight: 150,
+                padding: 18,
+                borderRadius: 24,
+                background: "linear-gradient(180deg, rgba(17,17,17,0.98), rgba(36,36,36,0.95))",
+                color: "#ffffff",
+                boxShadow: "0 18px 40px rgba(17,17,17,0.18)",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <div style={{ width: 24, height: 24, borderRadius: 999, background: hoveredIndex === item.index ? "#ffffff" : "#111111", color: hoveredIndex === item.index ? "#111111" : "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
-                  {item.index + 1}
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.72)", marginBottom: 8 }}>中心主题</div>
+              <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.35, marginBottom: 10 }}>{lessonTitle}</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.74)", lineHeight: 1.7 }}>
+                围绕本课核心知识点，先理解概念关系，再进入内容呈现和课堂练习。
+              </div>
+            </div>
+
+            {layoutNodes.map((item) => (
+              <button
+                key={`${lessonTitle}-map-${item.index}`}
+                type="button"
+                onMouseEnter={() => setHoveredIndex(item.index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                onFocus={() => setHoveredIndex(item.index)}
+                onBlur={() => setHoveredIndex(null)}
+                onClick={() => onNodeSelect?.(item.index)}
+                style={{
+                  position: "absolute",
+                  left: item.x,
+                  top: item.y,
+                  width: 220,
+                  padding: 14,
+                  borderRadius: 18,
+                  background: hoveredIndex === item.index ? "#111111" : "rgba(255,255,255,0.96)",
+                  border: hoveredIndex === item.index ? "1px solid #111111" : "1px solid rgba(17,17,17,0.1)",
+                  boxShadow: hoveredIndex === item.index ? "0 16px 32px rgba(17,17,17,0.14)" : "0 8px 24px rgba(17,17,17,0.06)",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  transition: "all 0.18s ease",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 999, background: hoveredIndex === item.index ? "#ffffff" : "#111111", color: hoveredIndex === item.index ? "#111111" : "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
+                    {item.index + 1}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: hoveredIndex === item.index ? "#ffffff" : "#111111", lineHeight: 1.4 }}>{item.h}</div>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: hoveredIndex === item.index ? "#ffffff" : "#111111", lineHeight: 1.4 }}>{item.h}</div>
-              </div>
-              <div style={{ fontSize: 12, color: hoveredIndex === item.index ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)", lineHeight: 1.8 }}>
-                {summarize(item.b)}
-              </div>
-            </button>
-          ))}
+                <div style={{ fontSize: 12, color: hoveredIndex === item.index ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                  {summarize(item.b)}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
