@@ -9,7 +9,9 @@
     "build": "vite build",
     "start": "node server.js",
     "build:lesson-video": "node scripts/build-lesson-videos.cjs",
-    "build:lesson-videos": "node scripts/build-lesson-videos.cjs --all"
+    "build:lesson-videos": "node scripts/build-lesson-videos.cjs --all",
+    "test:ai-tutor": "node scripts/run-ai-tutor-regression.mjs",
+    "test:composite-students": "node scripts/run-composite-student-simulation.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.4",
@@ -23,6 +25,7 @@
     "vite": "^7.1.7"
   },
   "devDependencies": {
+    "playwright": "^1.59.1",
     "vercel": "^50.42.0"
   }
 }

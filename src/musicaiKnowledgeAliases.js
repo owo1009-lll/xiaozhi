@@ -1,0 +1,37 @@
+export const KNOWLEDGE_POINT_ALIASES = {
+  L1_K1_pitchProperties: ["音的四种性质", "音高", "音值", "音量", "音色", "频率", "振幅", "泛音", "标准音", "A4", "440Hz"],
+  L1_K2_wholeStepHalfStep: ["全音", "半音", "天然半音", "E-F", "B-C", "键盘相邻", "大调音阶模式"],
+  L2_K1_octaveGroups: ["音组", "中央C", "中央 C", "C4", "c1", "c¹", "大字组", "小字组", "大谱表中的中央C"],
+  L2_K2_temperamentEnharmonic: ["律制", "等音", "十二平均律", "纯律", "五度相生律", "三分损益法", "C#", "Db", "C♯", "D♭"],
+  L3_K1_trebleClef: ["高音谱号", "G谱号", "G 谱号", "第二线", "G4", "高音谱表"],
+  L3_K2_bassClef: ["低音谱号", "F谱号", "F 谱号", "第四线", "F3", "低音谱表"],
+  L4_K1_noteValues: ["音符时值", "全音符", "二分音符", "四分音符", "八分音符", "十六分音符", "时值体系"],
+  L4_K2_dotsAndTies: ["附点", "附点四分音符", "复附点", "连音线", "连奏线", "tie", "slur", "三连音"],
+  L5_K1_trillMordent: ["颤音", "波音", "tr", "上波音", "下波音", "装饰音"],
+  L5_K2_turnAppoggiatura: ["回音", "倚音", "前倚音", "后倚音", "反向回音", "长前倚音"],
+  L6_K1_dynamics: ["力度记号", "力度术语", "p", "f", "mp", "mf", "sfz", "fp", "渐强", "渐弱", "crescendo", "diminuendo"],
+  L6_K2_articulation: ["奏法记号", "连奏", "断奏", "保持音", "重音", "legato", "staccato", "tenuto", "accent"],
+  L7_K1_repeatSigns: ["反复记号", "反复段落", "百分号", "第一结尾", "第二结尾", "Volta", "bis", "ter"],
+  L7_K2_dcDsCoda: ["D.C.", "D.S.", "Coda", "Fine", "Da Capo", "Dal Segno", "al Fine", "al Coda"],
+  L8_K1_tempoTerms: ["速度术语", "Largo", "Adagio", "Andante", "Moderato", "Allegro", "Vivace", "Presto", "accel", "rit", "a tempo", "tempo marking"],
+  L8_K2_expressionTerms: ["表情术语", "dolce", "cantabile", "espressivo", "con brio", "maestoso"],
+  L9_K1_timeSignatureMeter: ["拍号", "强弱规律", "2/4", "3/4", "4/4", "6/8", "强弱", "次强"],
+  L9_K2_simpleCompound: ["单拍子", "复拍子", "复二拍子", "复三拍子", "复四拍子", "6/8", "9/8", "12/8"],
+  L10_K1_noteGrouping: ["音值组合", "节奏组合", "拍内组合", "4/4节奏型", "4/4 拍节奏型", "复拍子分组"],
+  L10_K2_crossBarTies: ["跨小节连音线", "跨小节", "长音写法", "5拍", "5 拍", "延长时值"],
+  L11_K1_syncopationTypes: ["切分音", "切分", "重音错位", "切分的三种形式"],
+  L11_K2_classicSyncopation: ["经典切分型", "弱起切分", "弱位到强位", "休止切分"]
+};
+
+export const IMAGE_FILE_HINTS = {
+  "fixture-01-treble": "L3_K1_trebleClef",
+  "fixture-02-bass": "L3_K2_bassClef",
+  "fixture-03-dot-note": "L4_K2_dotsAndTies",
+  "fixture-04-meter": "L9_K1_timeSignatureMeter",
+  "fixture-05-semitone": "L1_K2_wholeStepHalfStep",
+  "fixture-06-enharmonic": "L2_K2_temperamentEnharmonic",
+  "fixture-07-dynamics": "L6_K1_dynamics",
+  "fixture-08-repeat": "L7_K2_dcDsCoda",
+  "fixture-09-syncopation": "L11_K1_syncopationTypes",
+  "fixture-10-middle-c": "L2_K1_octaveGroups",
+};

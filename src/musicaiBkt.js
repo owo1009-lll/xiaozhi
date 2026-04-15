@@ -1,4 +1,11 @@
-import { BKT_PARAMS, KNOWLEDGE_POINTS, KNOWLEDGE_POINTS_BY_ID, KNOWLEDGE_POINTS_BY_LESSON, getKnowledgePoint } from "./musicaiKnowledge";
+import {
+  BKT_PARAMS,
+  KNOWLEDGE_POINTS,
+  KNOWLEDGE_POINTS_BY_ID,
+  getBktKnowledgePoints,
+  getKnowledgePoint,
+  getKnowledgePointsForLesson,
+} from "./musicaiKnowledge.js";
 
 const STORAGE_PREFIX = "musicai.user";
 const MAPPING_KEY = "musicai.system.knowledgeMapping";
@@ -29,19 +36,21 @@ function writeJson(key, value) {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
-function makeUserKey(userId, type) {
-  return `${STORAGE_PREFIX}.${userId}.${type}`;
-}
-
 function nowIso() {
   return new Date().toISOString();
 }
 
 function clamp01(value) {
-  return Math.max(0, Math.min(1, Number(value || 0)));
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized)) return 0;
+  return Math.max(0, Math.min(1, normalized));
 }
 
-function normalizeDifficulty(raw) {
+export function makeUserKey(userId, type) {
+  return `${STORAGE_PREFIX}.${userId}.${type}`;
+}
+
+function normalizeQuestionDifficulty(raw) {
   const value = String(raw || "medium").toLowerCase();
   if (value === "easy" || value === "hard" || value === "medium") return value;
   if (value === "basic") return "easy";
@@ -50,11 +59,18 @@ function normalizeDifficulty(raw) {
   return "medium";
 }
 
+export function getDifficultyTierForPL(value) {
+  const pL = clamp01(value);
+  if (pL >= 0.75) return "hard";
+  if (pL >= 0.45) return "medium";
+  return "easy";
+}
+
 function buildDefaultKnowledgeState(point) {
   return {
     id: point.id,
     pL: BKT_PARAMS.pL0,
-    difficulty: "medium",
+    difficulty: getDifficultyTierForPL(BKT_PARAMS.pL0),
     totalAttempts: 0,
     correctAttempts: 0,
     consecutiveCorrect: 0,
@@ -81,7 +97,9 @@ export function initializeKnowledgeStore(userId) {
         ...baseState[point.id],
         ...current,
       };
-      next.mastered = clamp01(next.pL) >= BKT_PARAMS.masteryThreshold;
+      next.pL = clamp01(next.pL);
+      next.mastered = next.pL >= BKT_PARAMS.masteryThreshold;
+      next.difficulty = getDifficultyTierForPL(next.pL);
       return [point.id, next];
     }),
   );
@@ -139,11 +157,12 @@ export function updateKnowledgePointEvidence(userId, knowledgePointId, observati
   const store = getKnowledgeStore(userId);
   const current = store[knowledgePointId] || buildDefaultKnowledgeState(getKnowledgePoint(knowledgePointId) || { id: knowledgePointId });
   const isCorrect = observation === "correct";
+  const previousPL = clamp01(current.pL ?? BKT_PARAMS.pL0);
   const nextPL = applyBktObservation(current, isCorrect);
   const nextState = {
     ...current,
     pL: nextPL,
-    difficulty: normalizeDifficulty(metadata.difficulty || current.difficulty),
+    difficulty: getDifficultyTierForPL(nextPL),
     totalAttempts: Number(current.totalAttempts || 0) + 1,
     correctAttempts: Number(current.correctAttempts || 0) + (isCorrect ? 1 : 0),
     consecutiveCorrect: isCorrect ? Number(current.consecutiveCorrect || 0) + 1 : 0,
@@ -159,6 +178,9 @@ export function updateKnowledgePointEvidence(userId, knowledgePointId, observati
         source: metadata.source || "",
         prompt: metadata.prompt || "",
         score: metadata.score ?? null,
+        questionDifficulty: normalizeQuestionDifficulty(metadata.difficulty || ""),
+        previousPL: previousPL,
+        nextPL: nextPL,
         at: nowIso(),
       },
     ],
@@ -212,14 +234,24 @@ export function appendTutorHistory(userId, payload) {
 
 export function summarizeLessonKnowledge(userId, lessonId) {
   const store = getKnowledgeStore(userId);
-  const lessonPoints = KNOWLEDGE_POINTS_BY_LESSON[lessonId] || [];
+  const lessonPoints = getKnowledgePointsForLesson(lessonId);
   const rows = lessonPoints.map((point) => ({
     ...point,
     ...(store[point.id] || buildDefaultKnowledgeState(point)),
-  }));
+  })).map((item) => {
+    const latestHistory = Array.isArray(item.history) ? item.history[item.history.length - 1] : null;
+    const latestDelta = latestHistory && Number.isFinite(Number(latestHistory.nextPL)) && Number.isFinite(Number(latestHistory.previousPL))
+      ? Number((Number(latestHistory.nextPL) - Number(latestHistory.previousPL)).toFixed(3))
+      : 0;
+    return {
+      ...item,
+      latestDelta,
+    };
+  });
   const sorted = [...rows].sort((a, b) => a.pL - b.pL);
   return {
     lessonId,
+    rows,
     strong: [...rows].sort((a, b) => b.pL - a.pL).slice(0, 2),
     weak: sorted.slice(0, Math.min(3, sorted.length)),
     developing: rows.filter((item) => item.pL >= 0.45 && item.pL < 0.75),
@@ -238,13 +270,14 @@ export function getRecommendationFromSummary(summary) {
     return `建议先回看“${weak.title}”相关的课前预习与 PPT，再向 AI 导师提问。`;
   }
   if (weak.pL < 0.75) {
-    return `建议继续完成课堂练习，优先巩固“${weak.title}”这一知识点。`;
+    return `建议继续完成课堂练习，优先巩固“${weak.title}”这个知识点。`;
   }
   return "当前课时掌握度较稳定，可进入下一课时或综合复习。";
 }
 
 export function buildKnowledgeMirrorPayload(userId, lessonId) {
   const summary = summarizeLessonKnowledge(userId, lessonId);
+  const lessonPoints = getKnowledgePointsForLesson(lessonId);
   return {
     userId,
     lessonId,
@@ -252,7 +285,7 @@ export function buildKnowledgeMirrorPayload(userId, lessonId) {
     weakPoints: summary.weak.map((item) => ({ id: item.id, title: item.title, pL: item.pL })),
     averageMastery: summary.averageMastery,
     recommendation: getRecommendationFromSummary(summary),
-    knowledgeStates: (KNOWLEDGE_POINTS_BY_LESSON[lessonId] || []).map((point) => {
+    knowledgeStates: lessonPoints.map((point) => {
       const state = getKnowledgeStore(userId)[point.id] || buildDefaultKnowledgeState(point);
       return {
         id: point.id,
@@ -310,7 +343,7 @@ export function createVirtualStudents() {
     for (let offset = 0; offset < 3; offset += 1) {
       const userId = `virtual-${String(index).padStart(2, "0")}`;
       const knowledge = {};
-      for (const point of KNOWLEDGE_POINTS) {
+      for (const point of getBktKnowledgePoints()) {
         const rhythmBias = /节奏|音值|附点|连音|切分/.test(point.title);
         const notationBias = /谱号|谱表|记谱|五线谱|装饰音/.test(point.title);
         let pL;
@@ -324,16 +357,17 @@ export function createVirtualStudents() {
           const [min, max] = group.range;
           pL = min + (((index + point.id.length) % 7) / 6) * (max - min);
         }
+        const normalizedPL = Number(Math.min(0.98, Math.max(0.05, pL)).toFixed(3));
         knowledge[point.id] = {
           ...buildDefaultKnowledgeState(point),
-          pL: Number(Math.min(0.98, Math.max(0.05, pL)).toFixed(3)),
+          pL: normalizedPL,
           totalAttempts: group.sessionCount + ((index + point.id.length) % 4),
-          correctAttempts: Math.max(0, Math.round((group.sessionCount + ((index + point.id.length) % 4)) * pL)),
-          consecutiveCorrect: pL >= 0.75 ? 2 : 0,
-          consecutiveIncorrect: pL < 0.45 ? 2 : 0,
+          correctAttempts: Math.max(0, Math.round((group.sessionCount + ((index + point.id.length) % 4)) * normalizedPL)),
+          consecutiveCorrect: normalizedPL >= 0.75 ? 2 : 0,
+          consecutiveIncorrect: normalizedPL < 0.45 ? 2 : 0,
           lastPracticed: nowIso(),
-          mastered: pL >= BKT_PARAMS.masteryThreshold,
-          difficulty: pL >= 0.75 ? "hard" : pL >= 0.45 ? "medium" : "easy",
+          mastered: normalizedPL >= BKT_PARAMS.masteryThreshold,
+          difficulty: getDifficultyTierForPL(normalizedPL),
         };
       }
 
@@ -404,11 +438,21 @@ export function clearVirtualStudentsFromLocalStorage() {
   keysToRemove.forEach((key) => window.localStorage.removeItem(key));
 }
 
+export function estimateUserStorageUsageBytes(userId) {
+  const keys = Object.values(STORAGE_TYPES).map((type) => makeUserKey(userId, type));
+  let total = 0;
+  for (const key of keys) {
+    const value = readJson(key, null);
+    if (value != null) {
+      total += (key.length + JSON.stringify(value).length) * 2;
+    }
+  }
+  return total;
+}
+
 export {
   STORAGE_TYPES,
   KNOWLEDGE_POINTS,
   KNOWLEDGE_POINTS_BY_ID,
-  KNOWLEDGE_POINTS_BY_LESSON,
   MAPPING_KEY,
-  makeUserKey,
 };

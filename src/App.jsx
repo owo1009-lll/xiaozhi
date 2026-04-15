@@ -1,6 +1,8 @@
 ﻿import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { getPptLessonData, PPT_CHAPTERS } from "./pptLessonData";
 import { getKnowledgePointsForLesson } from "./musicaiKnowledge";
+import { getQuestionsForLesson } from "./musicaiQuestionBank";
+import { buildPilotTemplateCsv, buildPilotTemplateJson, REAL_STUDENT_PILOT_TEMPLATES } from "./studentPilotTemplate";
 import {
   appendErrorRecord,
   appendSessionRecord,
@@ -1098,6 +1100,38 @@ async function fileToDataUrl(file) {
   });
 }
 
+async function compressImageFileToDataUrl(file, { maxWidth = 1280, maxHeight = 1280, quality = 0.82 } = {}) {
+  const originalDataUrl = await fileToDataUrl(file);
+  if (typeof document === "undefined") {
+    return originalDataUrl;
+  }
+
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      const scale = Math.min(1, maxWidth / image.width, maxHeight / image.height);
+      const targetWidth = Math.max(1, Math.round(image.width * scale));
+      const targetHeight = Math.max(1, Math.round(image.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const context = canvas.getContext("2d");
+      if (!context) {
+        resolve(originalDataUrl);
+        return;
+      }
+      context.drawImage(image, 0, 0, targetWidth, targetHeight);
+      try {
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      } catch {
+        resolve(originalDataUrl);
+      }
+    };
+    image.onerror = () => resolve(originalDataUrl);
+    image.src = originalDataUrl;
+  });
+}
+
 function summarizeRhythmSubmission(rhythmSubmission) {
   if (!rhythmSubmission?.measures) return "未填写节奏。";
   return rhythmSubmission.measures
@@ -1128,83 +1162,142 @@ function formatStructuredEvaluation(evaluation) {
 const LESSON_CONTENT = {};
 const LESSON_LEARNING_SECTIONS = {};
 const LESSON_QUIZ_BANK = {
-  L1: { prompt: "A4 的标准频率是多少？", options: ["220Hz", "440Hz", "523Hz"], answer: "440Hz", explanation: "A4=440Hz 是标准音高。" },
-  L2: { prompt: "十二平均律中相邻半音的频率比约是多少？", options: ["1.5", "1.25", "1.0595"], answer: "1.0595", explanation: "十二平均律将八度平均分成 12 份。" },
-  L3: { prompt: "高音谱号的中心定位在线谱哪一线？", options: ["第二线", "第三线", "第四线"], answer: "第二线", explanation: "高音谱号将第二线定义为 G。" },
-  L4: { prompt: "四分音符通常等于几拍？", options: ["0.5 拍", "1 拍", "2 拍"], answer: "1 拍", explanation: "四分音符常作为一拍的基本单位。" },
-  L5: { prompt: "颤音通常表现为什么？", options: ["相邻音快速交替", "持续延长同一音", "强拍重音"], answer: "相邻音快速交替", explanation: "颤音的核心特征是主音与邻音快速交替。" },
-  L6: { prompt: "Allegro 通常表示什么速度？", options: ["慢板", "中板", "快板"], answer: "快板", explanation: "Allegro 是常见的快板速度术语。" },
-  L7: { prompt: "D.C. 在乐谱中表示什么？", options: ["从头反复", "结束", "跳到尾声"], answer: "从头反复", explanation: "D.C. 即 Da Capo。" },
-  L8: { prompt: "Dolce 更接近哪种表情？", options: ["甜美柔和", "强烈激昂", "庄严缓慢"], answer: "甜美柔和", explanation: "Dolce 表示甜美、柔和。" },
-  L9: { prompt: "3/4 拍每小节通常有几拍？", options: ["2 拍", "3 拍", "4 拍"], answer: "3 拍", explanation: "3/4 拍表示每小节三拍。" },
-  L10: { prompt: "附点会让原音符时值增加多少？", options: ["增加一半", "增加一倍", "减少一半"], answer: "增加一半", explanation: "附点增加原时值的一半。" },
-  L11: { prompt: "切分音最核心的听觉效果是什么？", options: ["重音迁移", "速度变慢", "音高升高"], answer: "重音迁移", explanation: "切分音打破原有强弱关系。" },
-  L12: { prompt: "综合复习最重要的目标是什么？", options: ["只背术语", "整合知识并应用", "只做听辨"], answer: "整合知识并应用", explanation: "综合复习重在整合与迁移。" },
+  L1: { id: "L1-Q1", lessonId: "L1", chapterId: "ch1", knowledgePointId: "L1_K1_pitchProperties", difficulty: "basic", prompt: "A4 的标准频率是多少？", options: ["220Hz", "440Hz", "523Hz"], answer: "440Hz", explanation: "A4=440Hz 是标准音高。" },
+  L2: { id: "L2-Q1", lessonId: "L2", chapterId: "ch1", knowledgePointId: "L2_K2_temperamentEnharmonic", difficulty: "medium", prompt: "十二平均律中相邻半音的频率比约是多少？", options: ["1.5", "1.25", "1.0595"], answer: "1.0595", explanation: "十二平均律将八度平均分成 12 份。" },
+  L3: { id: "L3-Q1", lessonId: "L3", chapterId: "ch2", knowledgePointId: "L3_K1_trebleClef", difficulty: "basic", prompt: "高音谱号的中心定位在线谱哪一线？", options: ["第二线", "第三线", "第四线"], answer: "第二线", explanation: "高音谱号将第二线定义为 G。" },
+  L4: { id: "L4-Q1", lessonId: "L4", chapterId: "ch2", knowledgePointId: "L4_K1_noteValues", difficulty: "basic", prompt: "四分音符通常等于几拍？", options: ["0.5 拍", "1 拍", "2 拍"], answer: "1 拍", explanation: "四分音符常作为一拍的基本单位。" },
+  L5: { id: "L5-Q1", lessonId: "L5", chapterId: "ch3", knowledgePointId: "L5_K1_trillMordent", difficulty: "basic", prompt: "颤音通常表现为什么？", options: ["相邻音快速交替", "持续延长同一音", "强拍重音"], answer: "相邻音快速交替", explanation: "颤音的核心特征是主音与邻音快速交替。" },
+  L6: { id: "L6-Q1", lessonId: "L6", chapterId: "ch3", knowledgePointId: "L6_K1_dynamics", difficulty: "basic", prompt: "Allegro 通常表示什么速度？", options: ["慢板", "中板", "快板"], answer: "快板", explanation: "Allegro 是常见的快板速度术语。" },
+  L7: { id: "L7-Q1", lessonId: "L7", chapterId: "ch4", knowledgePointId: "L7_K1_repeatSigns", difficulty: "basic", prompt: "D.C. 在乐谱中表示什么？", options: ["从头反复", "结束", "跳到尾声"], answer: "从头反复", explanation: "D.C. 即 Da Capo。" },
+  L8: { id: "L8-Q1", lessonId: "L8", chapterId: "ch4", knowledgePointId: "L8_K2_expressionTerms", difficulty: "basic", prompt: "Dolce 更接近哪种表情？", options: ["甜美柔和", "强烈激昂", "庄严缓慢"], answer: "甜美柔和", explanation: "Dolce 表示甜美、柔和。" },
+  L9: { id: "L9-Q1", lessonId: "L9", chapterId: "ch5", knowledgePointId: "L9_K1_timeSignatureMeter", difficulty: "basic", prompt: "3/4 拍每小节通常有几拍？", options: ["2 拍", "3 拍", "4 拍"], answer: "3 拍", explanation: "3/4 拍表示每小节三拍。" },
+  L10: { id: "L10-Q1", lessonId: "L10", chapterId: "ch5", knowledgePointId: "L10_K1_noteGrouping", difficulty: "basic", prompt: "附点会让原音符时值增加多少？", options: ["增加一半", "增加一倍", "减少一半"], answer: "增加一半", explanation: "附点增加原时值的一半。" },
+  L11: { id: "L11-Q1", lessonId: "L11", chapterId: "ch5", knowledgePointId: "L11_K1_syncopationTypes", difficulty: "medium", prompt: "切分音最核心的听觉效果是什么？", options: ["重音迁移", "速度变慢", "音高升高"], answer: "重音迁移", explanation: "切分音打破原有强弱关系。" },
+  L12: { id: "L12-Q1", lessonId: "L12", chapterId: "ch5", knowledgePointId: "L12_K1_review", difficulty: "core", prompt: "综合复习最重要的目标是什么？", options: ["只背术语", "整合知识并应用", "只做听辨"], answer: "整合知识并应用", explanation: "综合复习重在整合与迁移。" },
 };
 
 const LESSON_PRACTICE_EXTRA = {
-  L1: { prompt: "音量变化最直接对应什么？", options: ["频率", "振幅", "谱号"], answer: "振幅", explanation: "音量通常由振幅决定。" },
-  L2: { prompt: "泛音列中第二泛音最接近什么关系？", options: ["八度", "三度", "半音"], answer: "八度", explanation: "第二泛音与基音最接近八度关系。" },
-  L3: { prompt: "低音谱号主要定位哪个音？", options: ["F", "C", "G"], answer: "F", explanation: "低音谱号两点包围 F 所在线。" },
-  L4: { prompt: "附点四分音符等于多少拍？", options: ["1 拍", "1.5 拍", "2 拍"], answer: "1.5 拍", explanation: "附点四分音符等于 1.5 拍。" },
-  L5: { prompt: "哪种装饰音最接近主音与邻音往复？", options: ["波音", "颤音", "倚音"], answer: "颤音", explanation: "颤音是主音与邻音快速交替。" },
-  L6: { prompt: "mf 常表示什么力度层级？", options: ["很弱", "中强", "极强"], answer: "中强", explanation: "mf 即 mezzo forte。" },
-  L7: { prompt: "Fine 常表示什么？", options: ["从头开始", "结束处", "跳到尾声"], answer: "结束处", explanation: "Fine 表示乐句或乐曲结束。" },
-  L8: { prompt: "术语学习最稳的方法是什么？", options: ["一次死记", "分类复现", "只看中文"], answer: "分类复现", explanation: "术语记忆依赖分类和复现。" },
-  L9: { prompt: "4/4 拍第一拍通常是什么属性？", options: ["弱拍", "次强拍", "强拍"], answer: "强拍", explanation: "4/4 的第一拍通常是强拍。" },
-  L10: { prompt: "连音线连接同音高音符时作用是什么？", options: ["改变音高", "时值相加", "改成休止"], answer: "时值相加", explanation: "连音线会把时值相加。" },
-  L11: { prompt: "切分最明显的感受是什么？", options: ["拍感平均", "重音迁移", "音高更高"], answer: "重音迁移", explanation: "切分音最核心的是重音迁移。" },
-  L12: { prompt: "综合复习最有效的复盘方式是什么？", options: ["只做会的题", "按错误类型复盘", "跳过基础"], answer: "按错误类型复盘", explanation: "按错误类型复盘更容易找到薄弱项。" },
+  L1: { id: "L1-Q2", lessonId: "L1", chapterId: "ch1", knowledgePointId: "L1_K1_pitchProperties", difficulty: "medium", prompt: "音量变化最直接对应什么？", options: ["频率", "振幅", "谱号"], answer: "振幅", explanation: "音量通常由振幅决定。" },
+  L2: { id: "L2-Q2", lessonId: "L2", chapterId: "ch1", knowledgePointId: "L2_K2_temperamentEnharmonic", difficulty: "medium", prompt: "泛音列中第二泛音最接近什么关系？", options: ["八度", "三度", "半音"], answer: "八度", explanation: "第二泛音与基音最接近八度关系。" },
+  L3: { id: "L3-Q2", lessonId: "L3", chapterId: "ch2", knowledgePointId: "L3_K2_bassClef", difficulty: "basic", prompt: "低音谱号主要定位哪个音？", options: ["F", "C", "G"], answer: "F", explanation: "低音谱号两点包围 F 所在线。" },
+  L4: { id: "L4-Q2", lessonId: "L4", chapterId: "ch2", knowledgePointId: "L4_K2_dotsAndTies", difficulty: "medium", prompt: "附点四分音符等于多少拍？", options: ["1 拍", "1.5 拍", "2 拍"], answer: "1.5 拍", explanation: "附点四分音符等于 1.5 拍。" },
+  L5: { id: "L5-Q2", lessonId: "L5", chapterId: "ch3", knowledgePointId: "L5_K2_turnAppoggiatura", difficulty: "medium", prompt: "哪种装饰音最接近主音与邻音往复？", options: ["波音", "颤音", "倚音"], answer: "颤音", explanation: "颤音是主音与邻音快速交替。" },
+  L6: { id: "L6-Q2", lessonId: "L6", chapterId: "ch3", knowledgePointId: "L6_K1_dynamics", difficulty: "basic", prompt: "mf 常表示什么力度层级？", options: ["很弱", "中强", "极强"], answer: "中强", explanation: "mf 即 mezzo forte。" },
+  L7: { id: "L7-Q2", lessonId: "L7", chapterId: "ch4", knowledgePointId: "L7_K2_dcDsCoda", difficulty: "basic", prompt: "Fine 常表示什么？", options: ["从头开始", "结束处", "跳到尾声"], answer: "结束处", explanation: "Fine 表示乐句或乐曲结束。" },
+  L8: { id: "L8-Q2", lessonId: "L8", chapterId: "ch4", knowledgePointId: "L8_K1_tempoTerms", difficulty: "core", prompt: "术语学习最稳的方法是什么？", options: ["一次死记", "分类复现", "只看中文"], answer: "分类复现", explanation: "术语记忆依赖分类和复现。" },
+  L9: { id: "L9-Q2", lessonId: "L9", chapterId: "ch5", knowledgePointId: "L9_K1_timeSignatureMeter", difficulty: "basic", prompt: "4/4 拍第一拍通常是什么属性？", options: ["弱拍", "次强拍", "强拍"], answer: "强拍", explanation: "4/4 的第一拍通常是强拍。" },
+  L10: { id: "L10-Q2", lessonId: "L10", chapterId: "ch5", knowledgePointId: "L10_K2_crossBarTies", difficulty: "medium", prompt: "连音线连接同音高音符时作用是什么？", options: ["改变音高", "时值相加", "改成休止"], answer: "时值相加", explanation: "连音线会把时值相加。" },
+  L11: { id: "L11-Q2", lessonId: "L11", chapterId: "ch5", knowledgePointId: "L11_K2_classicSyncopation", difficulty: "core", prompt: "切分最明显的感受是什么？", options: ["拍感平均", "重音迁移", "音高更高"], answer: "重音迁移", explanation: "切分音最核心的是重音迁移。" },
+  L12: { id: "L12-Q2", lessonId: "L12", chapterId: "ch5", knowledgePointId: "L12_K2_review", difficulty: "core", prompt: "综合复习最有效的复盘方式是什么？", options: ["只做会的题", "按错误类型复盘", "跳过基础"], answer: "按错误类型复盘", explanation: "按错误类型复盘更容易找到薄弱项。" },
 };
+
+function ensureQuestionOptions(values = [], fallbackValues = []) {
+  const merged = [...values, ...fallbackValues].filter((item, index, array) => item && array.indexOf(item) === index);
+  return merged.slice(0, 4);
+}
+
+function buildKnowledgePointQuestionSet(point, lessonPoints = []) {
+  const siblingPoints = lessonPoints.filter((item) => item.id !== point.id);
+  const conceptPool = siblingPoints.flatMap((item) => item.subConcepts || []);
+  const exercisePool = siblingPoints.flatMap((item) => item.exerciseTypes || []);
+  const easyPool = siblingPoints.flatMap((item) => item.easy || []);
+  const mediumPool = siblingPoints.flatMap((item) => item.medium || []);
+  const hardPool = siblingPoints.flatMap((item) => item.hard || []);
+
+  const conceptAnswer = point.subConcepts?.[0] || point.title;
+  const conceptOptions = ensureQuestionOptions(
+    [conceptAnswer, ...conceptPool],
+    ["基础概念辨识题", "术语闪卡", "综合分析题"],
+  );
+
+  const exerciseAnswer = point.exerciseTypes?.[0] || "AI 导师问答";
+  const exerciseOptions = ensureQuestionOptions(
+    [exerciseAnswer, ...exercisePool],
+    ["AI 导师问答", "术语闪卡", "记谱练习 (Notation Exercise)", "节奏练习 (Rhythm Exercise)"],
+  );
+
+  const easyAnswer = point.easy?.[0] || point.subConcepts?.[0] || point.title;
+  const easyOptions = ensureQuestionOptions(
+    [easyAnswer, ...easyPool],
+    ["基础概念辨识题", "相邻白键判断", "识别基本等音对：C♯=D♭", "什么决定了音的高低？"],
+  );
+
+  const mediumAnswer = point.medium?.[0] || point.easy?.[0] || point.title;
+  const mediumOptions = ensureQuestionOptions(
+    [mediumAnswer, ...mediumPool],
+    ["概念应用题", "混合时值识别", "等音的作曲选择原理", "含变化音的复杂识读"],
+  );
+
+  const hardAnswer = point.hard?.[0] || point.medium?.[0] || point.title;
+  const hardOptions = ensureQuestionOptions(
+    [hardAnswer, ...hardPool],
+    ["综合分析题", "跨多个音组的快速识别", "复杂节奏型的拍数推算", "大调音阶完整推导"],
+  );
+
+  return [
+    {
+      id: `${point.id}-supplement-1`,
+      lessonId: point.lessonId,
+      chapterId: point.chapterId,
+      knowledgePointId: point.id,
+      difficulty: "basic",
+      prompt: `下列哪一项最直接对应“${point.title}”的核心概念？`,
+      options: conceptOptions,
+      answer: conceptAnswer,
+      explanation: `${point.title}的核心概念包括：${conceptAnswer}。`,
+    },
+    {
+      id: `${point.id}-supplement-2`,
+      lessonId: point.lessonId,
+      chapterId: point.chapterId,
+      knowledgePointId: point.id,
+      difficulty: "medium",
+      prompt: `学习“${point.title}”时，优先匹配哪类练习最合适？`,
+      options: exerciseOptions,
+      answer: exerciseAnswer,
+      explanation: `${point.title}当前优先对应：${exerciseAnswer}。`,
+    },
+    {
+      id: `${point.id}-supplement-3`,
+      lessonId: point.lessonId,
+      chapterId: point.chapterId,
+      knowledgePointId: point.id,
+      difficulty: "basic",
+      prompt: `下列哪一项属于“${point.title}”的基础训练示例？`,
+      options: easyOptions,
+      answer: easyAnswer,
+      explanation: `${point.title}的基础训练示例包括：${easyAnswer}。`,
+    },
+    {
+      id: `${point.id}-supplement-4`,
+      lessonId: point.lessonId,
+      chapterId: point.chapterId,
+      knowledgePointId: point.id,
+      difficulty: "medium",
+      prompt: `针对“${point.title}”的进阶练习，下列哪一项更匹配？`,
+      options: mediumOptions,
+      answer: mediumAnswer,
+      explanation: `${point.title}的进阶训练可对应：${mediumAnswer}。`,
+    },
+    {
+      id: `${point.id}-supplement-5`,
+      lessonId: point.lessonId,
+      chapterId: point.chapterId,
+      knowledgePointId: point.id,
+      difficulty: "hard",
+      prompt: `如果要挑战“${point.title}”的高阶应用，下列哪一项更符合？`,
+      options: hardOptions,
+      answer: hardAnswer,
+      explanation: `${point.title}的高阶应用可对应：${hardAnswer}。`,
+    },
+  ].filter((item) => Array.isArray(item.options) && item.options.length >= 3);
+}
 
 function createLessonPracticePool(lessonId, lessonTitle) {
   const lessonPoints = getKnowledgePointsForLesson(lessonId);
-  const primary = LESSON_QUIZ_BANK[lessonId]
-    ? { id: `${lessonId}-core-1`, knowledgePointId: lessonPoints[0]?.id || "", difficulty: "basic", ...LESSON_QUIZ_BANK[lessonId] }
-    : null;
-  const extra = LESSON_PRACTICE_EXTRA[lessonId]
-    ? { id: `${lessonId}-core-2`, knowledgePointId: lessonPoints[1]?.id || lessonPoints[0]?.id || "", difficulty: "medium", ...LESSON_PRACTICE_EXTRA[lessonId] }
-    : null;
   const focus = HOMEWORK_FOCUS[lessonId] || lessonTitle;
-  const generated = lessonPoints.flatMap((point, index) => {
-    const firstConcept = point.subConcepts?.[0] || point.easy?.[0] || point.title;
-    const firstExercise = point.exerciseTypes?.[0] || "AI 导师问答";
-    const conceptOptions = [
-      firstConcept,
-      lessonPoints[(index + 1) % lessonPoints.length]?.subConcepts?.[0],
-      lessonPoints[(index + 2) % lessonPoints.length]?.subConcepts?.[0],
-    ].filter(Boolean).slice(0, 3);
-    const typeOptions = [
-      firstExercise,
-      lessonPoints[(index + 1) % lessonPoints.length]?.exerciseTypes?.[0],
-      lessonPoints[(index + 2) % lessonPoints.length]?.exerciseTypes?.[0],
-    ].filter((item, optionIndex, array) => item && array.indexOf(item) === optionIndex).slice(0, 3);
-    return [
-      {
-        id: `${point.id}-concept`,
-        lessonId,
-        chapterId: point.chapterId,
-        knowledgePointId: point.id,
-        difficulty: "basic",
-        prompt: `下列哪一项与“${point.title}”直接相关？`,
-        options: conceptOptions,
-        answer: conceptOptions[0],
-        explanation: `${point.title}的核心内容包括：${firstConcept}。`,
-      },
-      {
-        id: `${point.id}-exercise`,
-        lessonId,
-        chapterId: point.chapterId,
-        knowledgePointId: point.id,
-        difficulty: "medium",
-        prompt: `学习“${point.title}”时，平台优先推荐哪类练习？`,
-        options: typeOptions,
-        answer: typeOptions[0],
-        explanation: `${point.title}当前优先对应：${firstExercise}。`,
-      },
-    ].filter((item) => Array.isArray(item.options) && item.options.length >= 2);
-  });
-  const pool = [primary, extra, ...generated].filter(Boolean);
+  const formalQuestions = getQuestionsForLesson(lessonId);
+  const pool = formalQuestions.length ? formalQuestions : [];
   if (!pool.length) {
     pool.push({
       id: `${lessonId}-fallback`,
@@ -1961,7 +2054,8 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
     if (!knowledgePointId) {
       knowledgePointId = await resolveKnowledgePointForText(currentPractice.prompt);
     }
-    if (knowledgePointId) {
+    const shouldUpdateBkt = knowledgePointId && currentPractice.evidenceWeight === "strong";
+    if (shouldUpdateBkt) {
       updateKnowledgePointEvidence(userId, knowledgePointId, ok ? "correct" : "incorrect", {
         lessonId: lesson.id,
         source: "classroom-practice",
@@ -2275,7 +2369,11 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         `${lessonHomework}\n${homeworkDraft}\n${voiceTranscript}`.trim(),
         lessonKnowledgePoints[0]?.id || "",
       );
-      if (matchedKnowledgePointId && homeworkObservation !== "neutral") {
+      const matchedKnowledgePoint = lessonKnowledgePoints.find((item) => item.id === matchedKnowledgePointId);
+      const shouldUpdateHomeworkBkt = matchedKnowledgePointId
+        && homeworkObservation !== "neutral"
+        && !/综合复习/.test(matchedKnowledgePoint?.title || "");
+      if (shouldUpdateHomeworkBkt) {
         updateKnowledgePointEvidence(userId, matchedKnowledgePointId, homeworkObservation, {
           lessonId: lesson.id,
           source: "homework-review",
@@ -2362,6 +2460,31 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             当前薄弱点：{lessonKnowledgeSummary.weak.map((item) => item.title).join(" / ") || "暂无"}
             <br />
             下一步建议：{getRecommendationFromSummary(lessonKnowledgeSummary)}
+          </div>
+        </div>
+        <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 12, fontWeight: 600 }}>掌握度变化</div>
+            <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>已完成 {practiceAnswers.filter(Boolean).length} / {practiceQuestions.length} 题</div>
+          </div>
+          <div style={{ display: "grid", gap: 8 }}>
+            {(lessonKnowledgeSummary.rows || []).map((item) => {
+              const barWidth = `${Math.max(6, Math.round(Number(item.pL || 0) * 100))}%`;
+              const delta = Number(item.latestDelta || 0);
+              const deltaLabel = delta > 0 ? `+${delta.toFixed(3)}` : delta.toFixed(3);
+              const deltaColor = delta > 0 ? "#166534" : delta < 0 ? "#b91c1c" : "var(--color-text-secondary)";
+              return (
+                <div key={item.id} style={{ padding: 10, borderRadius: 10, background: "#f8f8f8" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "#111111" }}>{item.title}</div>
+                    <div style={{ fontSize: 11, color: deltaColor }}>P(L) {Number(item.pL || 0).toFixed(3)} · Δ {deltaLabel}</div>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 999, background: "rgba(17,17,17,0.08)", overflow: "hidden" }}>
+                    <div style={{ width: barWidth, height: "100%", borderRadius: 999, background: "#111111" }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
         <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
@@ -3216,6 +3339,8 @@ function AITutorV2({ lessonId, lessonTitle }) {
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState("");
+  const [responseMeta, setResponseMeta] = useState(null);
   const [imageDataUrl, setImageDataUrl] = useState("");
   const [imageName, setImageName] = useState("");
   const scrollRef = useRef(null);
@@ -3243,9 +3368,11 @@ function AITutorV2({ lessonId, lessonTitle }) {
     const file = event.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
-    const dataUrl = await fileToDataUrl(file);
+    setLoadingStage("正在压缩图片…");
+    const dataUrl = await compressImageFileToDataUrl(file);
     setImageDataUrl(dataUrl);
     setImageName(file.name);
+    setLoadingStage("");
     event.target.value = "";
   }, []);
 
@@ -3256,17 +3383,20 @@ function AITutorV2({ lessonId, lessonTitle }) {
     setMsgs(nextMsgs);
     setInput("");
     setLoading(true);
+    setResponseMeta(null);
+    setLoadingStage(imageDataUrl ? "正在分析图片并生成解释…" : "正在整理问题并生成解释…");
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), imageDataUrl ? 35000 : 20000);
+    const timeoutId = window.setTimeout(() => controller.abort(), imageDataUrl ? 30000 : 18000);
     try {
+      const requestMessages = nextMsgs.slice(-5);
       const response = await fetch("/api/tutor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({
-          maxTokens: imageDataUrl ? 500 : 350,
+          maxTokens: imageDataUrl ? 280 : 220,
           system: `你是一位大学乐理课程教师。当前课程：${lessonTitle}。\n请始终用中文回复，说明要清楚、准确、简洁。\n课程内容：\n${contextText}`,
-          messages: nextMsgs.map((item) => ({
+          messages: requestMessages.map((item) => ({
             role: item.role,
             content: item.text,
             imageDataUrl: item.imageDataUrl || undefined,
@@ -3278,12 +3408,19 @@ function AITutorV2({ lessonId, lessonTitle }) {
       const replyText = response.ok
         ? String(json?.text || "请求失败，请稍后重试。").trim()
         : String(
-            json?.detail
-            || (json?.kind === "timeout" ? "AI 导师响应超时，请稍后重试。" : "")
+            (json?.kind === "timeout" ? "AI 导师响应超时。建议先缩短问题，或改成不带图片提问后再继续。" : "")
+            || (json?.kind === "upstream_network" ? "AI 服务网络不稳定，请稍后重试。" : "")
+            || json?.detail
             || "AI 服务暂时不可用，请稍后重试。"
           ).trim();
       setMsgs((prev) => [...prev, { role: "assistant", text: replyText }]);
       if (response.ok) {
+        setResponseMeta({
+          elapsedMs: json?.elapsedMs || null,
+          cached: Boolean(json?.cached),
+          modelUsed: json?.modelUsed || "",
+          retried: Boolean(json?.retried),
+        });
         setImageDataUrl("");
         setImageName("");
         appendTutorHistory(studentProfile.studentId, {
@@ -3302,6 +3439,7 @@ function AITutorV2({ lessonId, lessonTitle }) {
     } finally {
       window.clearTimeout(timeoutId);
       setLoading(false);
+      setLoadingStage("");
     }
   }, [contextText, imageDataUrl, imageName, input, lessonId, lessonTitle, loading, msgs, studentProfile.studentId]);
 
@@ -3312,6 +3450,14 @@ function AITutorV2({ lessonId, lessonTitle }) {
         <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
           {lessonTitle} · 纯文字通常 2 到 5 秒，图片分析通常更慢
         </div>
+        {responseMeta ? (
+          <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 4 }}>
+            {responseMeta.cached ? "本次回答命中缓存" : "本次回答来自实时生成"}
+            {responseMeta.elapsedMs ? ` · ${responseMeta.elapsedMs} ms` : ""}
+            {responseMeta.modelUsed ? ` · ${responseMeta.modelUsed}` : ""}
+            {responseMeta.retried ? " · 已自动重试一次" : ""}
+          </div>
+        ) : null}
       </div>
       <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
         {msgs.map((msg, index) => (
@@ -3322,7 +3468,7 @@ function AITutorV2({ lessonId, lessonTitle }) {
             </div>
           </div>
         ))}
-        {loading ? <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>思考中…</div> : null}
+        {loading ? <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{loadingStage || "思考中…"}</div> : null}
       </div>
       <div style={{ padding: 10, borderTop: "1px solid rgba(17,17,17,0.08)", background: "#fafafa" }}>
         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePickImage} />
@@ -3334,6 +3480,9 @@ function AITutorV2({ lessonId, lessonTitle }) {
             <button onClick={() => { setImageDataUrl(""); setImageName(""); }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.08)", background: "#f5f5f5", cursor: "pointer" }}>移除</button>
           </div>
         ) : null}
+        <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 8, lineHeight: 1.6 }}>
+          建议先用一句短问题提问。带图片时系统会先压缩图片，再交给视觉模型分析。
+        </div>
         <div style={{ display: "flex", gap: 6 }}>
           <input
             value={input}
@@ -3459,6 +3608,25 @@ function TeacherDashboardPage() {
   const [bktData, setBktData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [simulating, setSimulating] = useState(false);
+  const [testRunning, setTestRunning] = useState(false);
+  const [deepRunning, setDeepRunning] = useState(false);
+  const currentStudentProfile = useMemo(() => getStudentProfile(), []);
+  const [selectedPilotTemplateId, setSelectedPilotTemplateId] = useState(REAL_STUDENT_PILOT_TEMPLATES[0]?.id || "");
+  const [selectedReportUserId, setSelectedReportUserId] = useState("");
+  const [reportPreview, setReportPreview] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportGenerating, setReportGenerating] = useState(false);
+  const [reportPdfInfo, setReportPdfInfo] = useState(null);
+
+  const reloadDashboard = useCallback(async () => {
+    const [analyticsResponse, bktResponse] = await Promise.all([
+      fetch("/api/teacher/overview"),
+      fetch("/api/teacher/bkt-overview"),
+    ]);
+    const [analyticsJson, bktJson] = await Promise.all([analyticsResponse.json(), bktResponse.json()]);
+    setData(analyticsJson);
+    setBktData(bktJson);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -3503,12 +3671,7 @@ function TeacherDashboardPage() {
       const localStudents = createVirtualStudents();
       writeVirtualStudentsToLocalStorage(localStudents);
       await fetch("/api/bkt/simulate", { method: "POST" });
-      const [analyticsResponse, bktResponse] = await Promise.all([
-        fetch("/api/teacher/overview"),
-        fetch("/api/teacher/bkt-overview"),
-      ]);
-      setData(await analyticsResponse.json());
-      setBktData(await bktResponse.json());
+      await reloadDashboard();
     } finally {
       setSimulating(false);
     }
@@ -3519,14 +3682,47 @@ function TeacherDashboardPage() {
     try {
       clearVirtualStudentsFromLocalStorage();
       await fetch("/api/bkt/reset", { method: "POST" });
-      const [analyticsResponse, bktResponse] = await Promise.all([
-        fetch("/api/teacher/overview"),
-        fetch("/api/teacher/bkt-overview"),
-      ]);
-      setData(await analyticsResponse.json());
-      setBktData(await bktResponse.json());
+      await reloadDashboard();
     } finally {
       setSimulating(false);
+    }
+  };
+
+  const runBktValidation = async () => {
+    setTestRunning(true);
+    try {
+      await fetch("/api/bkt/test/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ durationMinutes: 120, questionCount: 200 }),
+      });
+      await reloadDashboard();
+    } finally {
+      setTestRunning(false);
+    }
+  };
+
+  const resetBktValidation = async () => {
+    setTestRunning(true);
+    try {
+      await fetch("/api/bkt/test/reset", { method: "POST" });
+      await reloadDashboard();
+    } finally {
+      setTestRunning(false);
+    }
+  };
+
+  const runDeepSimulation = async () => {
+    setDeepRunning(true);
+    try {
+      await fetch("/api/bkt/test/deep-run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentCount: 150 }),
+      });
+      await reloadDashboard();
+    } finally {
+      setDeepRunning(false);
     }
   };
 
@@ -3537,6 +3733,64 @@ function TeacherDashboardPage() {
     </div>
   );
 
+  const currentStudentRecord = (bktData?.students || []).find((item) => item.userId === currentStudentProfile.studentId) || null;
+  const selectedPilotTemplate = REAL_STUDENT_PILOT_TEMPLATES.find((item) => item.id === selectedPilotTemplateId) || REAL_STUDENT_PILOT_TEMPLATES[0];
+
+  useEffect(() => {
+    if (!selectedReportUserId && bktData?.students?.length) {
+      setSelectedReportUserId(currentStudentRecord?.userId || bktData.students[0].userId || "");
+    }
+  }, [bktData, currentStudentRecord, selectedReportUserId]);
+
+  const downloadPilotTemplate = useCallback((format) => {
+    if (!selectedPilotTemplate) return;
+    const fileNameBase = `${selectedPilotTemplate.id}-${selectedPilotTemplate.studentCount}students`;
+    const blob = new Blob(
+      [format === "json" ? `${JSON.stringify(buildPilotTemplateJson(selectedPilotTemplate), null, 2)}\n` : buildPilotTemplateCsv(selectedPilotTemplate)],
+      { type: format === "json" ? "application/json;charset=utf-8" : "text/csv;charset=utf-8" },
+    );
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${fileNameBase}.${format === "json" ? "json" : "csv"}`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [selectedPilotTemplate]);
+
+  const previewStudentReport = useCallback(async () => {
+    if (!selectedReportUserId) return;
+    setReportLoading(true);
+    setReportPdfInfo(null);
+    try {
+      const response = await fetch(`/api/reports/student-preview?userId=${encodeURIComponent(selectedReportUserId)}`);
+      const json = await response.json();
+      setReportPreview(response.ok ? json.report : null);
+    } finally {
+      setReportLoading(false);
+    }
+  }, [selectedReportUserId]);
+
+  const generateStudentPdfReport = useCallback(async () => {
+    if (!selectedReportUserId) return;
+    setReportGenerating(true);
+    try {
+      const response = await fetch("/api/reports/student-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: selectedReportUserId }),
+      });
+      const json = await response.json();
+      if (response.ok) {
+        setReportPreview(json.report);
+        setReportPdfInfo(json.pdf);
+      } else {
+        setReportPdfInfo({ error: json.error || "生成 PDF 失败。" });
+      }
+    } finally {
+      setReportGenerating(false);
+    }
+  }, [selectedReportUserId]);
+
   return (
     <div>
       <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 14px" }}>教师后台</h2>
@@ -3545,6 +3799,138 @@ function TeacherDashboardPage() {
         {metricCard("学生数", data.summary.totalStudents)}
         {metricCard("平均得分", `${data.summary.averageScore}%`)}
         {metricCard("已提交作业", data.summary.totalHomeworkSubmitted)}
+      </div>
+
+      <div className="section-card" style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>10-20 名真实学生试点模板</div>
+            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+              选择试点规模后，可直接导出试点记录模板，供音乐教师记录学生使用过程、困惑点、最好用功能和 bug。
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <select value={selectedPilotTemplateId} onChange={(event) => setSelectedPilotTemplateId(event.target.value)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff" }}>
+              {REAL_STUDENT_PILOT_TEMPLATES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+            </select>
+            <button onClick={() => downloadPilotTemplate("json")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>导出 JSON 模板</button>
+            <button onClick={() => downloadPilotTemplate("csv")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>导出 CSV 记录表</button>
+          </div>
+        </div>
+        {selectedPilotTemplate ? (
+          <div className="lesson-layout" style={{ marginTop: 14 }}>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>试点目标与招募建议</div>
+              <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 8 }}>
+                规模：{selectedPilotTemplate.studentCount} 人 · 周期：{selectedPilotTemplate.durationDays} 天
+                <br />
+                目标：{selectedPilotTemplate.goal}
+              </div>
+              <div style={{ display: "grid", gap: 6 }}>
+                {selectedPilotTemplate.recruitment.map((item) => (
+                  <div key={item} style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>{item}</div>
+                ))}
+              </div>
+            </div>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>成功标准</div>
+              <div style={{ display: "grid", gap: 6 }}>
+                {selectedPilotTemplate.successCriteria.map((item) => (
+                  <div key={item} style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>{item}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
+        {selectedPilotTemplate ? (
+          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+            {selectedPilotTemplate.phases.map((item) => (
+              <div key={item.phase} className="subtle-card" style={{ padding: "10px 12px" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#111111", marginBottom: 4 }}>{item.phase}</div>
+                <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                  任务：{item.tasks}
+                  <br />
+                  证据：{item.evidence}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="section-card" style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>自动导出单个学生 PDF 学习报告</div>
+            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+              这里按单个学生聚合课堂练习、课后作业和知识点 P(L) 生成报告，不是 10-20 人整批导出。
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <select value={selectedReportUserId} onChange={(event) => setSelectedReportUserId(event.target.value)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", minWidth: 220 }}>
+              {(bktData?.students || []).map((item) => (
+                <option key={item.userId} value={item.userId}>{item.studentLabel}（{item.userId}）</option>
+              ))}
+            </select>
+            <button onClick={previewStudentReport} disabled={!selectedReportUserId || reportLoading} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: !selectedReportUserId || reportLoading ? "default" : "pointer" }}>
+              {reportLoading ? "加载中..." : "预览报告"}
+            </button>
+            <button onClick={generateStudentPdfReport} disabled={!selectedReportUserId || reportGenerating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: !selectedReportUserId || reportGenerating ? "default" : "pointer" }}>
+              {reportGenerating ? "生成中..." : "生成 PDF"}
+            </button>
+          </div>
+        </div>
+        {reportPdfInfo?.url ? (
+          <div style={{ marginTop: 12, fontSize: 11, color: "var(--color-text-secondary)" }}>
+            PDF 已生成：
+            <a href={reportPdfInfo.url} target="_blank" rel="noreferrer" style={{ marginLeft: 6 }}>{reportPdfInfo.fileName}</a>
+          </div>
+        ) : reportPdfInfo?.error ? (
+          <div style={{ marginTop: 12, fontSize: 11, color: "#b91c1c" }}>{reportPdfInfo.error}</div>
+        ) : null}
+        {reportPreview ? (
+          <div className="lesson-layout" style={{ marginTop: 14 }}>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>报告摘要</div>
+              <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                学生：{reportPreview.studentLabel}（{reportPreview.userId}）
+                <br />
+                访问课时数：{reportPreview.lessonsVisited}，平均得分：{reportPreview.averageScore}% ，累计学习时长：{reportPreview.totalStudyMinutes} 分钟
+                <br />
+                平均掌握度：{reportPreview.averageMastery}，作业提交次数：{reportPreview.homeworkSubmitted}
+                <br />
+                已掌握较好：{(reportPreview.strongPoints || []).map((item) => item.title).join(" / ") || "暂无"}
+                <br />
+                当前薄弱点：{(reportPreview.weakPoints || []).map((item) => item.title).join(" / ") || "暂无"}
+              </div>
+            </div>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>知识点 P(L) 预览</div>
+              <div style={{ overflowX: "auto", maxHeight: 280 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                  <thead>
+                    <tr style={{ textAlign: "left", color: "var(--color-text-secondary)" }}>
+                      <th style={{ padding: "6px 8px" }}>知识点</th>
+                      <th style={{ padding: "6px 8px" }}>P(L)</th>
+                      <th style={{ padding: "6px 8px" }}>mastered</th>
+                      <th style={{ padding: "6px 8px" }}>difficulty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(reportPreview.knowledgeStates || []).map((item) => (
+                      <tr key={`preview-${item.id}`} style={{ borderTop: "1px solid rgba(17,17,17,0.08)" }}>
+                        <td style={{ padding: "6px 8px" }}>{item.title}</td>
+                        <td style={{ padding: "6px 8px" }}>{Number(item.pL || 0).toFixed(3)}</td>
+                        <td style={{ padding: "6px 8px" }}>{item.mastered ? "是" : "否"}</td>
+                        <td style={{ padding: "6px 8px" }}>{item.difficulty}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="section-card" style={{ marginBottom: 18 }}>
@@ -3563,6 +3949,39 @@ function TeacherDashboardPage() {
               清空模拟数据
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="section-card" style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>2 小时 BKT 验证报告</div>
+            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+              运行 4 类学生轨迹，输出 24 个知识点最终 P(L)、mastered 数量、难度升级次数和异常诊断。
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={runBktValidation} disabled={testRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: testRunning ? "default" : "pointer" }}>
+              {testRunning ? "验证中..." : "运行 2 小时验证"}
+            </button>
+            <button onClick={resetBktValidation} disabled={testRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", color: "#111111", cursor: testRunning ? "default" : "pointer" }}>
+              清空验证结果
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="section-card" style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>150 名随机学生深度测试</div>
+            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+              随机生成 150 名学生轨迹，统计他们最困惑的知识点、最好用的功能和最常遇到的 bug，用于教师视角的产品诊断。
+            </div>
+          </div>
+          <button onClick={runDeepSimulation} disabled={deepRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: deepRunning ? "default" : "pointer" }}>
+            {deepRunning ? "测试中..." : "运行 150 人深度测试"}
+          </button>
         </div>
       </div>
 
@@ -3600,6 +4019,51 @@ function TeacherDashboardPage() {
       {bktData?.ok ? (
         <div className="lesson-layout" style={{ marginBottom: 18 }}>
           <div className="section-card">
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>当前学生知识点 P(L) 明细</div>
+            {currentStudentRecord ? (
+              <>
+                <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
+                  学生：{currentStudentRecord.studentLabel}（{currentStudentRecord.userId}）
+                  <br />
+                  课时：{currentStudentRecord.lessonId}，平均掌握度：{currentStudentRecord.averageMastery}
+                </div>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                    <thead>
+                      <tr style={{ textAlign: "left", color: "var(--color-text-secondary)" }}>
+                        <th style={{ padding: "6px 8px" }}>知识点</th>
+                        <th style={{ padding: "6px 8px" }}>P(L)</th>
+                        <th style={{ padding: "6px 8px" }}>mastered</th>
+                        <th style={{ padding: "6px 8px" }}>difficulty</th>
+                        <th style={{ padding: "6px 8px" }}>attempts</th>
+                        <th style={{ padding: "6px 8px" }}>accuracy</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(currentStudentRecord.knowledgeStates || []).map((item) => {
+                        const accuracy = Number(item.totalAttempts || 0) > 0 ? Math.round((Number(item.correctAttempts || 0) / Number(item.totalAttempts || 1)) * 100) : 0;
+                        return (
+                          <tr key={`current-student-${item.id}`} style={{ borderTop: "1px solid rgba(17,17,17,0.08)" }}>
+                            <td style={{ padding: "6px 8px" }}>{item.title}</td>
+                            <td style={{ padding: "6px 8px" }}>{Number(item.pL || 0).toFixed(3)}</td>
+                            <td style={{ padding: "6px 8px" }}>{item.mastered ? "是" : "否"}</td>
+                            <td style={{ padding: "6px 8px" }}>{item.difficulty}</td>
+                            <td style={{ padding: "6px 8px" }}>{item.totalAttempts || 0}</td>
+                            <td style={{ padding: "6px 8px" }}>{accuracy}%</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                当前浏览器学生尚未完成知识点同步。请先在学生端完成练习后再刷新教师后台。
+              </div>
+            )}
+          </div>
+          <div className="section-card">
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>知识点掌握概览</div>
             <div style={{ display: "grid", gap: 8 }}>
               {bktData.students?.slice(0, 12).map((student) => (
@@ -3626,6 +4090,254 @@ function TeacherDashboardPage() {
                     所属课时：{item.lessonId}，平均掌握度：{item.averageMastery}
                     <br />
                     掌握率：{Math.round(Number(item.masteryRate || 0) * 100)}%，参与学生：{item.learners}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {bktData?.latestTestRun ? (
+        <div className="section-card" style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>最近一次验证结果</div>
+              <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
+                运行时间：{bktData.latestTestRun.runAt}，时长：{bktData.latestTestRun.params?.durationMinutes || 120} 分钟，题量：{bktData.latestTestRun.params?.questionCount || 200}
+              </div>
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: bktData.latestTestRun.judgement?.passed ? "#166534" : "#b91c1c" }}>
+              {bktData.latestTestRun.judgement?.passed ? "验证通过" : "存在异常"}
+            </div>
+          </div>
+
+          <div className="lesson-layout" style={{ marginBottom: 14 }}>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>综合诊断</div>
+              <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                场景平均 P(L) 差异：{bktData.latestTestRun.judgement?.averageSpread ?? "-"}
+                <br />
+                异常：{bktData.latestTestRun.judgement?.issues?.length ? bktData.latestTestRun.judgement.issues.join("；") : "未发现明显异常"}
+                <br />
+                建议：{bktData.latestTestRun.judgement?.suggestions?.join("；") || "继续观察"}
+              </div>
+            </div>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>教师视角题库风险</div>
+              <div style={{ display: "grid", gap: 6 }}>
+                {(bktData.latestTestRun.questionBankRisks || []).filter((item) => item.risks?.length).slice(0, 8).map((item) => (
+                  <div key={item.knowledgePointId} style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
+                    <strong style={{ color: "#111111" }}>{item.title}</strong>：{item.risks.join(" / ")}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 14 }}>
+            {(bktData.latestTestRun.results || []).map((scenario) => (
+              <div key={scenario.scenarioId} className="subtle-card" style={{ padding: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#111111" }}>{scenario.label}</div>
+                    <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
+                      正确率：{Math.round(Number(scenario.accuracyTarget || 0) * 100)}%，平均 P(L)：{scenario.averagePL}，mastered：{scenario.masteredCount}，难度升级：{scenario.difficultyUpgradeCount}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: scenario.passed ? "#166534" : "#b91c1c" }}>
+                    {scenario.passed ? "符合预期" : "需调参"}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 10, fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                  强项：{scenario.strongPoints?.map((item) => `${item.title} (${item.pL})`).join(" / ") || "暂无"}
+                  <br />
+                  薄弱点：{scenario.weakPoints?.map((item) => `${item.title} (${item.pL})`).join(" / ") || "暂无"}
+                  <br />
+                  诊断：{scenario.issues?.length ? scenario.issues.join("；") : "无异常"}
+                </div>
+
+                <div style={{ display: "grid", gap: 6, marginBottom: 12 }}>
+                  {(scenario.knowledgeStates || []).map((item) => (
+                    <div key={item.id} style={{ display: "grid", gridTemplateColumns: "220px 1fr 70px 70px", gap: 8, alignItems: "center", fontSize: 11 }}>
+                      <div style={{ color: "#111111", fontWeight: 600 }}>{item.title}</div>
+                      <div style={{ height: 10, borderRadius: 999, background: "rgba(17,17,17,0.08)", overflow: "hidden" }}>
+                        <div style={{ width: `${Math.round(Number(item.pL || 0) * 100)}%`, height: "100%", background: Number(item.pL || 0) >= 0.8 ? "#111111" : Number(item.pL || 0) >= 0.45 ? "#555555" : "#bdbdbd" }} />
+                      </div>
+                      <div style={{ color: "#111111" }}>{item.pL}</div>
+                      <div style={{ color: item.mastered ? "#166534" : "var(--color-text-secondary)" }}>{item.mastered ? "mastered" : item.difficulty}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                    <thead>
+                      <tr style={{ textAlign: "left", color: "var(--color-text-secondary)" }}>
+                        <th style={{ padding: "6px 8px" }}>知识点</th>
+                        <th style={{ padding: "6px 8px" }}>P(L)</th>
+                        <th style={{ padding: "6px 8px" }}>mastered</th>
+                        <th style={{ padding: "6px 8px" }}>difficulty</th>
+                        <th style={{ padding: "6px 8px" }}>attempts</th>
+                        <th style={{ padding: "6px 8px" }}>accuracy</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(scenario.knowledgeStates || []).map((item) => (
+                        <tr key={`${scenario.scenarioId}-${item.id}`} style={{ borderTop: "1px solid rgba(17,17,17,0.08)" }}>
+                          <td style={{ padding: "6px 8px" }}>{item.title}</td>
+                          <td style={{ padding: "6px 8px" }}>{item.pL}</td>
+                          <td style={{ padding: "6px 8px" }}>{item.mastered ? "是" : "否"}</td>
+                          <td style={{ padding: "6px 8px" }}>{item.difficulty}</td>
+                          <td style={{ padding: "6px 8px" }}>{item.totalAttempts}</td>
+                          <td style={{ padding: "6px 8px" }}>{Math.round(Number(item.accuracy || 0) * 100)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {bktData?.latestDeepRun ? (
+        <div className="section-card" style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>150 名随机学生深度测试结果</div>
+              <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
+                运行时间：{bktData.latestDeepRun.runAt}，样本数：{bktData.latestDeepRun.studentCount}
+              </div>
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#111111" }}>
+              平均 P(L)：{bktData.latestDeepRun.summary?.averagePL ?? "-"} · 平均 mastered：{bktData.latestDeepRun.summary?.averageMastered ?? "-"}
+            </div>
+          </div>
+
+          <div className="metric-grid" style={{ marginBottom: 14 }}>
+            {[
+              ["优等型", bktData.latestDeepRun.summary?.profileSummary?.excellent || 0],
+              ["中等稳定型", bktData.latestDeepRun.summary?.profileSummary?.steady || 0],
+              ["偏科型", bktData.latestDeepRun.summary?.profileSummary?.imbalanced || 0],
+              ["低参与型", bktData.latestDeepRun.summary?.profileSummary?.lowengage || 0],
+            ].map(([label, value]) => (
+              <div key={label} className="subtle-card" style={{ padding: 12 }}>
+                <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 6 }}>{label}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#111111" }}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="lesson-layout" style={{ marginBottom: 14 }}>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>学生最困惑的内容</div>
+              <div style={{ display: "grid", gap: 6 }}>
+                {(bktData.latestDeepRun.summary?.topConfusions || []).map((item) => (
+                  <div key={item.title} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11 }}>
+                    <span style={{ color: "#111111", fontWeight: 600 }}>{item.title}</span>
+                    <span style={{ color: "var(--color-text-secondary)" }}>{item.count} 人</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>学生觉得最好用的功能</div>
+              <div style={{ display: "grid", gap: 6 }}>
+                {(bktData.latestDeepRun.summary?.topPreferredTools || []).map((item) => (
+                  <div key={item.tool} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11 }}>
+                    <span style={{ color: "#111111", fontWeight: 600 }}>{item.tool}</span>
+                    <span style={{ color: "var(--color-text-secondary)" }}>{item.count} 人</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="lesson-layout" style={{ marginBottom: 14 }}>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>最常报告的 bug</div>
+              <div style={{ display: "grid", gap: 6 }}>
+                {(bktData.latestDeepRun.summary?.topReportedBugs || []).map((item) => (
+                  <div key={item.bug} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11 }}>
+                    <span style={{ color: "#111111", lineHeight: 1.7 }}>{item.bug}</span>
+                    <span style={{ color: "var(--color-text-secondary)", whiteSpace: "nowrap" }}>{item.count} 人</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>产品诊断结论</div>
+              <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                当前样本中，困惑点主要集中在统计结果前列的知识点，说明相关题组和课件解释仍需加强。
+                <br />
+                若“AI 导师”与“课时内容 PPT”同时高频出现，说明学生最依赖的是即时解释与原课件联动，而不是额外功能。
+                <br />
+                高频 bug 可直接作为下一轮前端优化优先级。
+              </div>
+            </div>
+          </div>
+
+          <div className="subtle-card" style={{ padding: 14, marginBottom: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>24 个知识点最终平均 P(L)</div>
+            <div style={{ display: "grid", gap: 6, marginBottom: 12 }}>
+              {(bktData.latestDeepRun.summary?.knowledgePointAverages || []).map((item) => (
+                <div key={item.id} style={{ display: "grid", gridTemplateColumns: "220px 1fr 60px 70px", gap: 8, alignItems: "center", fontSize: 11 }}>
+                  <div style={{ color: "#111111", fontWeight: 600 }}>{item.title}</div>
+                  <div style={{ height: 10, borderRadius: 999, background: "rgba(17,17,17,0.08)", overflow: "hidden" }}>
+                    <div style={{ width: `${Math.round(Number(item.averagePL || 0) * 100)}%`, height: "100%", background: Number(item.averagePL || 0) >= 0.8 ? "#111111" : Number(item.averagePL || 0) >= 0.45 ? "#555555" : "#bdbdbd" }} />
+                  </div>
+                  <div style={{ color: "#111111" }}>{item.averagePL}</div>
+                  <div style={{ color: "var(--color-text-secondary)" }}>{Math.round(Number(item.masteredRate || 0) * 100)}%</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                <thead>
+                  <tr style={{ textAlign: "left", color: "var(--color-text-secondary)" }}>
+                    <th style={{ padding: "6px 8px" }}>知识点</th>
+                    <th style={{ padding: "6px 8px" }}>课时</th>
+                    <th style={{ padding: "6px 8px" }}>平均 P(L)</th>
+                    <th style={{ padding: "6px 8px" }}>mastered 率</th>
+                    <th style={{ padding: "6px 8px" }}>样本数</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(bktData.latestDeepRun.summary?.knowledgePointAverages || []).map((item) => (
+                    <tr key={`deep-kp-${item.id}`} style={{ borderTop: "1px solid rgba(17,17,17,0.08)" }}>
+                      <td style={{ padding: "6px 8px" }}>{item.title}</td>
+                      <td style={{ padding: "6px 8px" }}>{item.lessonId}</td>
+                      <td style={{ padding: "6px 8px" }}>{item.averagePL}</td>
+                      <td style={{ padding: "6px 8px" }}>{Math.round(Number(item.masteredRate || 0) * 100)}%</td>
+                      <td style={{ padding: "6px 8px" }}>{item.learners}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="section-card" style={{ padding: 12, background: "#fafafa", border: "1px solid rgba(17,17,17,0.08)" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>样本学生反馈摘录</div>
+            <div style={{ display: "grid", gap: 8 }}>
+              {(bktData.latestDeepRun.students || []).slice(0, 12).map((student) => (
+                <div key={student.userId} className="subtle-card" style={{ padding: "10px 12px" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#111111", marginBottom: 6 }}>
+                    {student.studentLabel} · {student.profile} · P(L) {student.averagePL} · mastered {student.masteredCount}
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                    最困惑：{student.mostConfused?.join(" / ") || "暂无"}
+                    <br />
+                    最好用：{student.preferredTool}
+                    <br />
+                    常见 bug：{student.reportedBug}
+                    <br />
+                    反馈：{student.confusionReport}
+                    <br />
+                    正向体验：{student.positiveReport}
                   </div>
                 </div>
               ))}

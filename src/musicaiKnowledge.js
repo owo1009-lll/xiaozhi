@@ -1,6 +1,6 @@
 ﻿export const BKT_PARAMS = {
   pL0: 0.2,
-  pT: 0.15,
+  pT: 0.1,
   pG: 0.25,
   pS: 0.1,
   masteryThreshold: 0.8,
@@ -761,7 +761,25 @@ export const KNOWLEDGE_POINTS_BY_CHAPTER = KNOWLEDGE_POINTS.reduce((acc, item) =
   return acc;
 }, {});
 
+export const DIAGNOSTIC_LESSON_ID = "L12";
+
+export function isDiagnosticKnowledgePoint(pointOrId) {
+  const point = typeof pointOrId === "string" ? KNOWLEDGE_POINTS_BY_ID[pointOrId] : pointOrId;
+  return Boolean(point) && point.lessonId === DIAGNOSTIC_LESSON_ID;
+}
+
+export function getBktKnowledgePoints() {
+  return KNOWLEDGE_POINTS.filter((item) => !isDiagnosticKnowledgePoint(item));
+}
+
+export function getDiagnosticSourceKnowledgePoints() {
+  return getBktKnowledgePoints();
+}
+
 export function getKnowledgePointsForLesson(lessonId) {
+  if (lessonId === DIAGNOSTIC_LESSON_ID) {
+    return getDiagnosticSourceKnowledgePoints();
+  }
   return KNOWLEDGE_POINTS_BY_LESSON[lessonId] || [];
 }
 
