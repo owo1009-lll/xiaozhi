@@ -186,7 +186,7 @@ function isRetryableModelError(error) {
   return Boolean(
     error?.status === 429
     || error?.status >= 500
-    || /quota|额度|余额|insufficient|rate limit|too many requests|resource exhausted|exhausted|limit|access denied|good standing|overdue payment|payment|not enabled|model not found/i.test(detail)
+    || /quota|额度|余额|insufficient|rate limit|too many requests|resource exhausted|exhausted|limit|access denied|good standing|overdue payment|payment|not enabled|model not found|does not support http call|api does not support/i.test(detail)
     || /timed out|timeout|aborted|temporarily unavailable|server error|overloaded|busy/i.test(detail)
   );
 }
