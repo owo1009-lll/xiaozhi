@@ -4829,6 +4829,8 @@ function TeacherDashboardPage() {
   const [simulating, setSimulating] = useState(false);
   const [testRunning, setTestRunning] = useState(false);
   const [deepRunning, setDeepRunning] = useState(false);
+  const [seedingSamples, setSeedingSamples] = useState(false);
+  const [seedStatusMessage, setSeedStatusMessage] = useState("");
   const currentStudentProfile = useMemo(() => getStudentProfile(), []);
   const [selectedPilotTemplateId, setSelectedPilotTemplateId] = useState(REAL_STUDENT_PILOT_TEMPLATES[0]?.id || "");
   const [selectedReportUserId, setSelectedReportUserId] = useState("");
@@ -5029,6 +5031,28 @@ function TeacherDashboardPage() {
     }
   };
 
+  const initializeTeacherSamples = async () => {
+    setSeedingSamples(true);
+    setSeedStatusMessage("");
+    try {
+      const response = await fetch("/api/teacher/init-samples", { method: "POST" });
+      const json = await response.json();
+      if (!response.ok || !json?.ok) {
+        throw new Error(json?.error || "初始化教师样本数据失败。");
+      }
+      setSeedStatusMessage(
+        json.mode === "seed-fallback"
+          ? `已加载部署样本数据（运行时写入受限，当前使用内置样本）。学生 ${json.summary?.simulatedStudents || 0} 人。`
+          : `已初始化教师样本数据。学生 ${json.summary?.simulatedStudents || 0} 人。`,
+      );
+      await reloadDashboard();
+    } catch (error) {
+      setSeedStatusMessage(normalizeTeacherDashboardError(error));
+    } finally {
+      setSeedingSamples(false);
+    }
+  };
+
   const runBktValidation = async () => {
     setTestRunning(true);
     try {
@@ -5185,6 +5209,23 @@ function TeacherDashboardPage() {
             );
           })}
         </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginTop: 14 }}>
+          <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+            如果公网教师后台为空，可点击右侧按钮将随部署一起上传的样本数据加载到当前后台。
+          </div>
+          <button
+            onClick={initializeTeacherSamples}
+            disabled={seedingSamples}
+            style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: seedingSamples ? "default" : "pointer" }}
+          >
+            {seedingSamples ? "初始化中..." : "一键初始化教师样本数据"}
+          </button>
+        </div>
+        {seedStatusMessage ? (
+          <div style={{ marginTop: 10, fontSize: 11, color: /失败|无法|error/i.test(seedStatusMessage) ? "#b91c1c" : "#166534", lineHeight: 1.8 }}>
+            {seedStatusMessage}
+          </div>
+        ) : null}
       </div>
 
       <div className="metric-grid" style={{ marginBottom: 18 }}>

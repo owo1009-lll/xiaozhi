@@ -21,9 +21,12 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, "data");
+const SEED_DIR = path.join(__dirname, "seed");
 const ANALYTICS_FILE = path.join(DATA_DIR, "teacher-analytics.json");
 const BKT_SUMMARY_FILE = path.join(DATA_DIR, "teacher-bkt-summary.json");
 const BKT_TEST_FILE = path.join(DATA_DIR, "bkt-test-results.json");
+const ANALYTICS_SEED_FILE = path.join(SEED_DIR, "teacher-analytics.seed.json");
+const BKT_SUMMARY_SEED_FILE = path.join(SEED_DIR, "teacher-bkt-summary.seed.json");
 const REPORTS_DIR = path.join(DATA_DIR, "reports");
 const TUTOR_CACHE_TTL_MS = 5 * 60 * 1000;
 const execFileAsync = promisify(execFile);
@@ -1217,6 +1220,15 @@ async function readAnalyticsStore() {
   try {
     const raw = await fs.readFile(ANALYTICS_FILE, "utf8");
     const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed.records) && parsed.records.length) {
+      return parsed;
+    }
+  } catch {
+    // noop
+  }
+  try {
+    const raw = await fs.readFile(ANALYTICS_SEED_FILE, "utf8");
+    const parsed = JSON.parse(raw);
     return Array.isArray(parsed.records) ? parsed : { records: [] };
   } catch {
     return { records: [] };
@@ -1234,6 +1246,20 @@ async function writeAnalyticsStore(store) {
 async function readBktSummaryStore() {
   try {
     const raw = await fs.readFile(BKT_SUMMARY_FILE, "utf8");
+    const parsed = JSON.parse(raw);
+    const normalized = {
+      records: Array.isArray(parsed.records) ? parsed.records : [],
+      mappings: parsed.mappings && typeof parsed.mappings === "object" ? parsed.mappings : {},
+      simulatedStudents: Array.isArray(parsed.simulatedStudents) ? parsed.simulatedStudents : [],
+    };
+    if (normalized.records.length) {
+      return normalized;
+    }
+  } catch {
+    // noop
+  }
+  try {
+    const raw = await fs.readFile(BKT_SUMMARY_SEED_FILE, "utf8");
     const parsed = JSON.parse(raw);
     return {
       records: Array.isArray(parsed.records) ? parsed.records : [],
@@ -2407,6 +2433,50 @@ app.get("/api/teacher/bkt-overview", async (req, res) => {
     simulatedStudents: store.simulatedStudents,
     latestTestRun: testStore.latestRun,
     latestDeepRun: testStore.latestDeepRun,
+  });
+});
+
+app.post("/api/teacher/init-samples", async (req, res) => {
+  let analyticsSeed = { records: [] };
+  let bktSeed = { records: [], mappings: {}, simulatedStudents: [] };
+  try {
+    const [analyticsRaw, bktRaw] = await Promise.all([
+      fs.readFile(ANALYTICS_SEED_FILE, "utf8"),
+      fs.readFile(BKT_SUMMARY_SEED_FILE, "utf8"),
+    ]);
+    const parsedAnalytics = JSON.parse(analyticsRaw);
+    const parsedBkt = JSON.parse(bktRaw);
+    analyticsSeed = Array.isArray(parsedAnalytics.records) ? parsedAnalytics : { records: [] };
+    bktSeed = {
+      records: Array.isArray(parsedBkt.records) ? parsedBkt.records : [],
+      mappings: parsedBkt.mappings && typeof parsedBkt.mappings === "object" ? parsedBkt.mappings : {},
+      simulatedStudents: Array.isArray(parsedBkt.simulatedStudents) ? parsedBkt.simulatedStudents : [],
+    };
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: safeString(error?.message, "无法读取教师样本种子数据。") });
+  }
+
+  const writeErrors = [];
+  try {
+    await writeAnalyticsStore(analyticsSeed);
+  } catch (error) {
+    writeErrors.push(`analytics: ${safeString(error?.message, "write-failed")}`);
+  }
+  try {
+    await writeBktSummaryStore(bktSeed);
+  } catch (error) {
+    writeErrors.push(`bkt: ${safeString(error?.message, "write-failed")}`);
+  }
+
+  return res.json({
+    ok: true,
+    mode: writeErrors.length ? "seed-fallback" : "runtime-seeded",
+    writeErrors,
+    summary: {
+      analyticsRecords: analyticsSeed.records.length,
+      bktRecords: bktSeed.records.length,
+      simulatedStudents: bktSeed.simulatedStudents.length,
+    },
   });
 });
 
