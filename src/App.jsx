@@ -3786,6 +3786,8 @@ function TeacherDashboardPage() {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportGenerating, setReportGenerating] = useState(false);
   const [reportPdfInfo, setReportPdfInfo] = useState(null);
+  const currentStudentRecord = (bktData?.students || []).find((item) => item.userId === currentStudentProfile.studentId) || null;
+  const selectedPilotTemplate = REAL_STUDENT_PILOT_TEMPLATES.find((item) => item.id === selectedPilotTemplateId) || REAL_STUDENT_PILOT_TEMPLATES[0];
 
   const reloadDashboard = useCallback(async () => {
     const [analyticsResponse, bktResponse] = await Promise.all([
@@ -3826,13 +3828,11 @@ function TeacherDashboardPage() {
     };
   }, []);
 
-  if (loading) {
-    return <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>教师后台加载中...</div>;
-  }
-
-  if (!data?.ok) {
-    return <div style={{ fontSize: 13, color: "#b91c1c" }}>教师后台数据加载失败。</div>;
-  }
+  useEffect(() => {
+    if (!selectedReportUserId && bktData?.students?.length) {
+      setSelectedReportUserId(currentStudentRecord?.userId || bktData.students[0].userId || "");
+    }
+  }, [bktData, currentStudentRecord, selectedReportUserId]);
 
   const regenerateVirtualStudents = async () => {
     setSimulating(true);
@@ -3902,15 +3902,6 @@ function TeacherDashboardPage() {
     </div>
   );
 
-  const currentStudentRecord = (bktData?.students || []).find((item) => item.userId === currentStudentProfile.studentId) || null;
-  const selectedPilotTemplate = REAL_STUDENT_PILOT_TEMPLATES.find((item) => item.id === selectedPilotTemplateId) || REAL_STUDENT_PILOT_TEMPLATES[0];
-
-  useEffect(() => {
-    if (!selectedReportUserId && bktData?.students?.length) {
-      setSelectedReportUserId(currentStudentRecord?.userId || bktData.students[0].userId || "");
-    }
-  }, [bktData, currentStudentRecord, selectedReportUserId]);
-
   const downloadPilotTemplate = useCallback((format) => {
     if (!selectedPilotTemplate) return;
     const fileNameBase = `${selectedPilotTemplate.id}-${selectedPilotTemplate.studentCount}students`;
@@ -3959,6 +3950,14 @@ function TeacherDashboardPage() {
       setReportGenerating(false);
     }
   }, [selectedReportUserId]);
+
+  if (loading) {
+    return <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>教师后台加载中...</div>;
+  }
+
+  if (!data?.ok) {
+    return <div style={{ fontSize: 13, color: "#b91c1c" }}>教师后台数据加载失败。</div>;
+  }
 
   return (
     <div>
