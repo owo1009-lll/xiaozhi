@@ -12,9 +12,11 @@ const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
 const DATA_DIR = path.join(ROOT, "data");
 const ARTIFACTS_DIR = path.join(ROOT, "artifacts");
-const RESULT_JSON = path.join(DATA_DIR, "platform-deep-validation-latest.json");
-const RESULT_CSV = path.join(DATA_DIR, "platform-deep-validation-summary.csv");
-const RESULT_HTML = path.join(DATA_DIR, "platform-deep-validation-report.html");
+const REPORT_TAG = String(process.env.REPORT_TAG || "").trim().replace(/[^\w-]+/g, "-");
+const RESULT_SUFFIX = REPORT_TAG ? `-${REPORT_TAG}` : "-latest";
+const RESULT_JSON = path.join(DATA_DIR, `platform-deep-validation${RESULT_SUFFIX}.json`);
+const RESULT_CSV = path.join(DATA_DIR, `platform-deep-validation${RESULT_SUFFIX}.csv`);
+const RESULT_HTML = path.join(DATA_DIR, `platform-deep-validation${RESULT_SUFFIX}.html`);
 
 function nowIso() {
   return new Date().toISOString();
@@ -523,7 +525,11 @@ async function writeReports(report) {
 async function main() {
   const { server, baseUrl } = await startServer();
   try {
-    const simulation = { studentCount: 100, durationMinutes: 120, questionCountPerStudent: 240 };
+    const simulation = {
+      studentCount: Math.max(1, Math.min(500, Number(process.env.STUDENT_COUNT || 100))),
+      durationMinutes: Math.max(30, Math.min(240, Number(process.env.DURATION_MINUTES || 120))),
+      questionCountPerStudent: Math.max(60, Math.min(400, Number(process.env.QUESTION_COUNT || 240))),
+    };
     const questionBank = inspectQuestionBank();
 
     const deepResponse = await fetch(`${baseUrl}/api/bkt/test/deep-run`, {

@@ -2,6 +2,7 @@
 import { getPptLessonData, PPT_CHAPTERS } from "./pptLessonData";
 import { getKnowledgePointsForLesson } from "./musicaiKnowledge";
 import { getQuestionsForLesson } from "./musicaiQuestionBank";
+import { getWeakEnhancementsForLesson } from "./weakKnowledgeEnhancements";
 import { buildPilotTemplateCsv, buildPilotTemplateJson, REAL_STUDENT_PILOT_TEMPLATES } from "./studentPilotTemplate";
 import {
   appendErrorRecord,
@@ -198,6 +199,9 @@ function nFreq(n, o) { return 440 * Math.pow(2, (NT.indexOf(n) - 9) / 12 + (o - 
 
 const CHAPTERS = PPT_CHAPTERS;
 const ALL_LESSONS = CHAPTERS.flatMap((chapter) => chapter.ls);
+const TEACHER_AUTH_STORAGE_KEY = "musicai.teacher.auth";
+const TEACHER_LOGIN_USERNAME = "gxz";
+const TEACHER_LOGIN_PASSWORD = "19991009";
 
 function Tag({ children, color = "#111111", bg = "#F5F5F5" }) {
   return (
@@ -352,6 +356,106 @@ function LessonCharts({ lessonId }) {
   );
 }
 
+function WeakPointExplanationCards({ items = [], titleMap = {} }) {
+  if (!items.length) return null;
+  return (
+    <div style={{ display: "grid", gap: 12, marginBottom: 12 }}>
+      {items.map((item) => (
+        <div key={item.knowledgePointId} style={{ padding: 14, borderRadius: 14, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
+            {titleMap[item.knowledgePointId] || item.knowledgePointId}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
+            {item.explanation}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+            <div style={{ padding: 10, borderRadius: 12, background: "rgba(17,17,17,0.03)" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>易错点</div>
+              <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, whiteSpace: "pre-line" }}>
+                {item.misunderstandings.map((line) => `• ${line}`).join("\n")}
+              </div>
+            </div>
+            <div style={{ padding: 10, borderRadius: 12, background: "rgba(83,74,183,0.06)" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>做题抓手</div>
+              <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, whiteSpace: "pre-line" }}>
+                {item.practiceGuide.map((line) => `• ${line}`).join("\n")}
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function WeakPointCorrectionBlock({ items = [], titleMap = {}, answers = {}, onAnswer }) {
+  if (!items.length) return null;
+  return (
+    <div style={{ display: "grid", gap: 12, marginBottom: 12 }}>
+      {items.map((item) => (
+        <div key={`correction-${item.knowledgePointId}`} style={{ padding: 14, borderRadius: 14, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
+            纠错题：{titleMap[item.knowledgePointId] || item.knowledgePointId}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
+            先做下面 2 题，把最容易混淆的点先纠正，再进入 20 题连续练习。
+          </div>
+          <div style={{ display: "grid", gap: 10 }}>
+            {item.correctionQuestions.map((question, index) => {
+              const answerKey = `${item.knowledgePointId}-${index}`;
+              const currentAnswer = answers[answerKey];
+              return (
+                <div key={answerKey} style={{ padding: 12, borderRadius: 12, background: "rgba(17,17,17,0.03)" }}>
+                  <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7, marginBottom: 8 }}>{question.prompt}</div>
+                  <div style={{ display: "grid", gap: 6 }}>
+                    {question.options.map((option) => {
+                      const isCorrect = option === question.answer;
+                      const isSelected = currentAnswer?.selected === option;
+                      const reveal = Boolean(currentAnswer);
+                      return (
+                        <button
+                          key={`${answerKey}-${option}`}
+                          type="button"
+                          onClick={() => !currentAnswer && onAnswer?.(answerKey, option, question)}
+                          disabled={Boolean(currentAnswer)}
+                          style={{
+                            textAlign: "left",
+                            padding: "8px 10px",
+                            borderRadius: 10,
+                            border: "1px solid rgba(17,17,17,0.1)",
+                            background: reveal
+                              ? isCorrect
+                                ? "#111111"
+                                : isSelected
+                                  ? "#FDECEC"
+                                  : "#ffffff"
+                              : "#ffffff",
+                            color: reveal && isCorrect ? "#ffffff" : "#111111",
+                            cursor: currentAnswer ? "default" : "pointer",
+                          }}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {currentAnswer ? (
+                    <div style={{ marginTop: 8, fontSize: 11, color: currentAnswer.correct ? "#166534" : "#b91c1c", lineHeight: 1.8 }}>
+                      {currentAnswer.correct ? "回答正确。" : `回答不正确，正确答案是 ${question.answer}。`}
+                      <br />
+                      {question.explanation}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function InteractivePitchFrequencyWidgetCn() {
   const noteItems = [
     { label: "C3", freq: 130.81, tip: "频率较低，听感较沉稳。" },
@@ -492,6 +596,864 @@ function InteractiveVolumeAmplitudeWidgetCn() {
             <br />
             说明：{activeLevel.desc}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrebleClefDrillWidgetCn() {
+  const targets = [
+    { id: "g4", label: "G4", hint: "第二线参照点", lineIndex: 1, isLedger: false, x: 120, y: 132, answer: "第二线" },
+    { id: "c4", label: "C4", hint: "中央 C", lineIndex: -1, isLedger: true, x: 190, y: 182, answer: "下加一线" },
+    { id: "b4", label: "B4", hint: "第三线", lineIndex: 2, isLedger: false, x: 260, y: 112, answer: "第三线" },
+    { id: "a5", label: "A5", hint: "第二间以上区域", lineIndex: 5, isLedger: false, x: 330, y: 72, answer: "第二间" },
+  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState("");
+  const active = targets[activeIndex];
+  const options = ["下加一线", "第一线", "第二线", "第三线", "第二间"];
+
+  const lineY = [152, 132, 112, 92, 72];
+  const ledgerLines = [
+    { x1: 170, x2: 210, y: 182 },
+  ];
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>高音谱号定位训练</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        先固定第二线 G4，再练中央 C 与加线音。点击右侧不同目标音，判断它对应的线或间位置。
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 14 }}>
+        <div className="subtle-card" style={{ padding: 14 }}>
+          <svg viewBox="0 0 420 230" style={{ width: "100%", height: 220 }}>
+            {lineY.map((y) => (
+              <line key={`staff-${y}`} x1="50" y1={y} x2="380" y2={y} stroke="#111111" strokeWidth="2" opacity="0.78" />
+            ))}
+            {ledgerLines.map((line, index) => (
+              <line key={`ledger-${index}`} x1={line.x1} y1={line.y} x2={line.x2} y2={line.y} stroke="#111111" strokeWidth="2" />
+            ))}
+            <text x="72" y="120" fontSize="72" fontFamily="serif" fill="#111111">𝄞</text>
+            {targets.map((item, index) => {
+              const isActive = index === activeIndex;
+              return (
+                <g key={item.id} onClick={() => { setActiveIndex(index); setSelectedAnswer(""); }} style={{ cursor: "pointer" }}>
+                  <ellipse cx={item.x} cy={item.y} rx="16" ry="11" fill={isActive ? "#111111" : "#ffffff"} stroke="#111111" strokeWidth="2" />
+                  <line x1={item.x + 14} y1={item.y} x2={item.x + 14} y2={item.y - 52} stroke="#111111" strokeWidth="2.5" />
+                  {item.id === "g4" ? (
+                    <circle cx={item.x} cy={item.y} r="24" fill="none" stroke="rgba(83,74,183,0.32)" strokeWidth="3" />
+                  ) : null}
+                </g>
+              );
+            })}
+            <text x="102" y="130" fontSize="12" fill="#534AB7" fontWeight="700">第二线 = G4</text>
+            <text x="165" y="206" fontSize="12" fill="#111111">中央 C = 下加一线</text>
+          </svg>
+        </div>
+        <div className="subtle-card" style={{ padding: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>当前目标音</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "#111111", marginBottom: 4 }}>{active.label}</div>
+          <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+            提示：{active.hint}
+            <br />
+            先找最近参照点，再判断它在线上还是间里。
+          </div>
+          <div style={{ display: "grid", gap: 6 }}>
+            {options.map((option) => {
+              const reveal = Boolean(selectedAnswer);
+              const isCorrect = option === active.answer;
+              const isSelected = option === selectedAnswer;
+              return (
+                <button
+                  key={`${active.id}-${option}`}
+                  type="button"
+                  onClick={() => !selectedAnswer && setSelectedAnswer(option)}
+                  style={{
+                    textAlign: "left",
+                    padding: "8px 10px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(17,17,17,0.1)",
+                    background: reveal ? (isCorrect ? "#111111" : isSelected ? "#FDECEC" : "#ffffff") : "#ffffff",
+                    color: reveal && isCorrect ? "#ffffff" : "#111111",
+                    cursor: selectedAnswer ? "default" : "pointer",
+                  }}
+                >
+                  {option}
+                </button>
+              );
+            })}
+          </div>
+          {selectedAnswer ? (
+            <div style={{ marginTop: 10, fontSize: 11, color: selectedAnswer === active.answer ? "#166534" : "#b91c1c", lineHeight: 1.8 }}>
+              {selectedAnswer === active.answer ? "判断正确。" : `判断不正确，正确答案是 ${active.answer}。`}
+              <br />
+              {active.id === "g4" ? "先记住第二线 G4，再向上或向下推其他音。" : active.id === "c4" ? "中央 C 在高音谱表中通常写在下加一线上。" : "识读时先分清在线上还是间里，再从最近参照点外推。"}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BassClefDrillWidgetCn() {
+  const targets = [
+    { id: "f3", label: "F3", hint: "第四线参照点", x: 130, y: 122, answer: "第四线" },
+    { id: "c4", label: "C4", hint: "中央 C", x: 205, y: 62, answer: "上加一线" },
+    { id: "d3", label: "D3", hint: "第三线", x: 280, y: 142, answer: "第三线" },
+    { id: "a3", label: "A3", hint: "第五线", x: 345, y: 102, answer: "第五线" },
+  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState("");
+  const active = targets[activeIndex];
+  const options = ["第三线", "第四线", "第五线", "上加一线", "第二间"];
+  const lineY = [182, 162, 142, 122, 102];
+  const ledgerLines = [{ x1: 184, x2: 226, y: 62 }];
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>低音谱号定位训练</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        先固定第四线 F3，再用中央 C 的上加一线作为第二参照点。点击目标音，判断它对应的线位。
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 14 }}>
+        <div className="subtle-card" style={{ padding: 14 }}>
+          <svg viewBox="0 0 420 250" style={{ width: "100%", height: 236 }}>
+            {lineY.map((y) => (
+              <line key={`bass-staff-${y}`} x1="50" y1={y} x2="380" y2={y} stroke="#111111" strokeWidth="2" opacity="0.78" />
+            ))}
+            {ledgerLines.map((line, index) => (
+              <line key={`bass-ledger-${index}`} x1={line.x1} y1={line.y} x2={line.x2} y2={line.y} stroke="#111111" strokeWidth="2" />
+            ))}
+            <text x="70" y="155" fontSize="72" fontFamily="serif" fill="#111111">𝄢</text>
+            {targets.map((item, index) => {
+              const isActive = index === activeIndex;
+              return (
+                <g key={item.id} onClick={() => { setActiveIndex(index); setSelectedAnswer(""); }} style={{ cursor: "pointer" }}>
+                  <ellipse cx={item.x} cy={item.y} rx="16" ry="11" fill={isActive ? "#111111" : "#ffffff"} stroke="#111111" strokeWidth="2" />
+                  <line x1={item.x + 14} y1={item.y} x2={item.x + 14} y2={item.y - 52} stroke="#111111" strokeWidth="2.5" />
+                  {item.id === "f3" ? (
+                    <circle cx={item.x} cy={item.y} r="24" fill="none" stroke="rgba(83,74,183,0.32)" strokeWidth="3" />
+                  ) : null}
+                </g>
+              );
+            })}
+            <text x="110" y="118" fontSize="12" fill="#534AB7" fontWeight="700">第四线 = F3</text>
+            <text x="172" y="42" fontSize="12" fill="#111111">中央 C = 上加一线</text>
+          </svg>
+        </div>
+        <div className="subtle-card" style={{ padding: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>当前目标音</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "#111111", marginBottom: 4 }}>{active.label}</div>
+          <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+            提示：{active.hint}
+            <br />
+            先确认低音谱号，再从第四线 F3 或中央 C 外推。
+          </div>
+          <div style={{ display: "grid", gap: 6 }}>
+            {options.map((option) => {
+              const reveal = Boolean(selectedAnswer);
+              const isCorrect = option === active.answer;
+              const isSelected = option === selectedAnswer;
+              return (
+                <button
+                  key={`${active.id}-${option}`}
+                  type="button"
+                  onClick={() => !selectedAnswer && setSelectedAnswer(option)}
+                  style={{
+                    textAlign: "left",
+                    padding: "8px 10px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(17,17,17,0.1)",
+                    background: reveal ? (isCorrect ? "#111111" : isSelected ? "#FDECEC" : "#ffffff") : "#ffffff",
+                    color: reveal && isCorrect ? "#ffffff" : "#111111",
+                    cursor: selectedAnswer ? "default" : "pointer",
+                  }}
+                >
+                  {option}
+                </button>
+              );
+            })}
+          </div>
+          {selectedAnswer ? (
+            <div style={{ marginTop: 10, fontSize: 11, color: selectedAnswer === active.answer ? "#166534" : "#b91c1c", lineHeight: 1.8 }}>
+              {selectedAnswer === active.answer ? "判断正确。" : `判断不正确，正确答案是 ${active.answer}。`}
+              <br />
+              {active.id === "f3" ? "先记住第四线 F3，这是低音谱号最稳定的参照点。" : active.id === "c4" ? "中央 C 在低音谱表中通常写在上加一线上。" : "识读时先分清线与间，再从最近参照点外推。"}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExpressionVsTempoCardCn() {
+  const rows = [
+    { label: "Allegro", type: "速度术语", note: "强调速度较快" },
+    { label: "Andante", type: "速度术语", note: "强调行进般的中速" },
+    { label: "Dolce", type: "表情术语", note: "强调甜美柔和的声音" },
+    { label: "Cantabile", type: "表情术语", note: "强调如歌的演奏状态" },
+  ];
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>速度术语与表情术语对照</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        先排除速度，再判断情绪风格。不要把“如歌地、甜美地”误判为快慢变化。
+      </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {rows.map((row) => (
+          <div key={row.label} style={{ display: "grid", gridTemplateColumns: "120px 110px 1fr", gap: 10, alignItems: "center", padding: 10, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>{row.label}</div>
+            <Tag color={row.type === "表情术语" ? "#534AB7" : "#111111"} bg={row.type === "表情术语" ? "rgba(83,74,183,0.08)" : "#F5F5F5"}>{row.type}</Tag>
+            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>{row.note}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DotsAndTiesGuideWidgetCn() {
+  const examples = [
+    {
+      title: "附点四分音符",
+      badge: "单个音符延长",
+      detail: "一拍 + 半拍 = 一拍半。只作用于一个音符本身的时值。",
+    },
+    {
+      title: "连音线",
+      badge: "同音高相连",
+      detail: "连接两个同音高音符，把时值合成一个更长的音。",
+    },
+  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = examples[activeIndex];
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>附点与连音线对照</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        先判断“是不是两个同音高音符连接”，再判断“是不是单个音符自身延长”。这样可以最快区分附点和连音线。
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        {examples.map((item, index) => {
+          const activeCard = index === activeIndex;
+          return (
+            <button
+              key={item.title}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              style={{
+                textAlign: "left",
+                padding: 14,
+                borderRadius: 14,
+                border: activeCard ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
+                background: activeCard ? "#111111" : "#ffffff",
+                color: activeCard ? "#ffffff" : "#111111",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{item.title}</div>
+                <span style={{ fontSize: 10, padding: "4px 8px", borderRadius: 999, background: activeCard ? "rgba(255,255,255,0.16)" : "rgba(17,17,17,0.06)", color: activeCard ? "#ffffff" : "#111111" }}>
+                  {item.badge}
+                </span>
+              </div>
+              <div style={{ fontSize: 12, lineHeight: 1.8, color: activeCard ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)" }}>
+                {item.detail}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="subtle-card" style={{ padding: 14, marginTop: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>当前抓手</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          {activeIndex === 0
+            ? "附点题先算原时值，再加一半；如果题目里没有第二个同音高音符，就优先考虑附点。"
+            : "连音线题先看两端音高是否相同；跨拍、跨小节时更常见拆分后用连音线保持节拍结构清晰。"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NoteValueHierarchyWidgetCn() {
+  const rows = [
+    { label: "全音符 / 二分 / 四分", note: "先抓倍数关系：全音符通常是四分音符的 4 倍，二分音符是 2 倍。" },
+    { label: "四分 / 八分 / 十六分", note: "向下每一层减半：四分一拍，八分半拍，十六分再减半。" },
+    { label: "做题抓手", note: "先找题目给的基准拍值，再按乘 2 / 除 2 往上往下推，不要死记每个名字。" },
+  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = rows[activeIndex];
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>音符时值体系抓手</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        音符时值题先抓“每往下一层减半”的体系关系，再做具体换算。先找基准拍值，比死背所有时值表更稳。
+      </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {rows.map((item, index) => {
+          const activeCard = index === activeIndex;
+          return (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              style={{
+                textAlign: "left",
+                padding: 12,
+                borderRadius: 12,
+                border: activeCard ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
+                background: activeCard ? "#111111" : "#ffffff",
+                color: activeCard ? "#ffffff" : "#111111",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontSize: 12, lineHeight: 1.8, color: activeCard ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)" }}>
+                {item.note}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="subtle-card" style={{ padding: 14, marginTop: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>当前抓手</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          {active.note}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrnamentComparisonWidgetCn() {
+  const rows = [
+    {
+      label: "回音",
+      badge: "四音装饰型",
+      note: "先还原围绕主音展开的顺序，再判断是正回音还是反向回音。",
+    },
+    {
+      label: "前倚音",
+      badge: "主音前装饰",
+      note: "先出现小音符，再落到主音；判断它是否占用了主音的一部分时值。",
+    },
+    {
+      label: "后倚音",
+      badge: "短促带过",
+      note: "常见为符干上带斜线的小音符，速度快，更多是短暂装饰而不是完整占拍。",
+    },
+  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = rows[activeIndex];
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>回音与倚音对照</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        先判断题目考的是“演奏顺序”，还是“主音时值是否被占用”。回音更偏固定四音顺序，倚音更偏主音前的装饰与解决。
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+        {rows.map((item, index) => {
+          const activeCard = index === activeIndex;
+          return (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              style={{
+                textAlign: "left",
+                padding: 14,
+                borderRadius: 14,
+                border: activeCard ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
+                background: activeCard ? "#111111" : "#ffffff",
+                color: activeCard ? "#ffffff" : "#111111",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{item.label}</div>
+                <span style={{ fontSize: 10, padding: "4px 8px", borderRadius: 999, background: activeCard ? "rgba(255,255,255,0.16)" : "rgba(17,17,17,0.06)", color: activeCard ? "#ffffff" : "#111111" }}>
+                  {item.badge}
+                </span>
+              </div>
+              <div style={{ fontSize: 12, lineHeight: 1.8, color: activeCard ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)" }}>
+                {item.note}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="subtle-card" style={{ padding: 14, marginTop: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>当前抓手</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          {activeIndex === 0
+            ? "回音题先把音序写成“围绕主音的展开”，再判断方向；不要只背中文名称。"
+            : activeIndex === 1
+              ? "前倚音题先看小音符与主音的连接关系，再判断它是否占了主音的一部分时值。"
+              : "后倚音多是短而快的带过装饰，先排除“完整占拍”的长前倚音思路。"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrillVsMordentWidgetCn() {
+  const rows = [
+    { label: "颤音", note: "主音与邻音持续快速交替，强调持续震荡的听感。" },
+    { label: "上波音", note: "围绕主音向上邻音做短小装饰性往返，通常不如颤音持续。" },
+    { label: "下波音", note: "围绕主音向下邻音做短小装饰性往返，先向下再回主音。" },
+  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = rows[activeIndex];
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>颤音与波音对照</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        先判断是“持续快速交替”，还是“短装饰回转”。颤音强调持续震荡，波音更像短促的上/下方回转装饰。
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+        {rows.map((item, index) => {
+          const activeCard = index === activeIndex;
+          return (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              style={{
+                textAlign: "left",
+                padding: 14,
+                borderRadius: 14,
+                border: activeCard ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
+                background: activeCard ? "#111111" : "#ffffff",
+                color: activeCard ? "#ffffff" : "#111111",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{item.label}</div>
+              <div style={{ fontSize: 12, lineHeight: 1.8, color: activeCard ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)" }}>
+                {item.note}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="subtle-card" style={{ padding: 14, marginTop: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>当前抓手</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          {active.note}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CrossBarTieGuideWidgetCn() {
+  const rows = [
+    { label: "先看是否跨小节", note: "如果长音越过了小节线，就要优先考虑拆写，而不是硬写成长附点。" },
+    { label: "再看是否同音高", note: "只有同音高拆成两段，才应该用连音线把时值连接起来。" },
+    { label: "最后按小节分配拍值", note: "先保证当前小节拍值完整，再把剩余时值写到下一个小节。" },
+  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = rows[activeIndex];
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>跨小节连音线抓手</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        跨小节题先判断“有没有越过小节边界”，再判断“是不是同音高需要拆成两段”。真正的重点是保留节拍结构，而不是只会说“时值相加”。
+      </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {rows.map((item, index) => {
+          const activeCard = index === activeIndex;
+          return (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              style={{
+                textAlign: "left",
+                padding: 12,
+                borderRadius: 12,
+                border: activeCard ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
+                background: activeCard ? "#111111" : "#ffffff",
+                color: activeCard ? "#ffffff" : "#111111",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontSize: 12, lineHeight: 1.8, color: activeCard ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)" }}>
+                {item.note}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="subtle-card" style={{ padding: 14, marginTop: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>当前抓手</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          {active.note}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ArticulationContrastWidgetCn() {
+  const rows = [
+    { label: "连奏 Legato", focus: "音与音连贯连接", trap: "不要和“连音线 tie”混淆，连奏更关注演奏方式而非同音高时值相加。" },
+    { label: "断奏 Staccato", focus: "音头清楚、时值缩短", trap: "不要只看到圆点就等同于弱奏，它强调短促而不是弱。" },
+    { label: "保持音 Tenuto", focus: "音值尽量保持完整", trap: "不要把短横线误判成断奏；tenuto 更接近“压住、撑满”音值。" },
+    { label: "重音 Accent", focus: "起音突出、重点强调", trap: "不要把 accent 一律当成 sfz；accent 更偏单次强调，不一定是突强。"},
+  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = rows[activeIndex];
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>奏法记号对照</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        先判断声音是“连”“断”“撑住”还是“强调起音”，再匹配具体奏法记号。不要只背中文名，不然容易把连音线、断奏和保持音混为一类。
+      </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {rows.map((item, index) => {
+          const activeCard = index === activeIndex;
+          return (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              style={{
+                textAlign: "left",
+                padding: 12,
+                borderRadius: 12,
+                border: activeCard ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
+                background: activeCard ? "#111111" : "#ffffff",
+                color: activeCard ? "#ffffff" : "#111111",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontSize: 12, lineHeight: 1.8, color: activeCard ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)" }}>
+                关键听感：{item.focus}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="subtle-card" style={{ padding: 14, marginTop: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>当前易错提醒</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          {active.trap}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SyncopationPatternWidgetCn() {
+  const rows = [
+    { label: "弱拍延长到强拍", note: "先在弱拍起音，再用连线或时值延长压到后面的强拍。" },
+    { label: "休止后强拍进入", note: "前面留空，后面进入的强拍音会造成切分的听感张力。" },
+    { label: "连续切分型", note: "不是单个节奏点，而是一连串重音感被错位的节奏组织。" },
+  ];
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>经典切分型识别抓手</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        判断经典切分型时，先看重音感是不是被“错位”了，而不是只看音符长短。重点盯弱拍起音、跨拍延长和休止后的进入。
+      </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {rows.map((item) => (
+          <div key={item.label} className="subtle-card" style={{ padding: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>{item.label}</div>
+            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>{item.note}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TemperamentEnharmonicWidgetCn() {
+  const rows = [
+    { label: "等音", note: "写法不同、实际音高相同。例如 C# 与 Db 在平均律中听起来相同。" },
+    { label: "律制", note: "说明音高体系如何划分，不同律制下同名音和变化音的细微音高关系可能不同。" },
+    { label: "做题抓手", note: "先看题目考的是“书写名称”还是“实际音高”；前者偏等音写法，后者偏律制理解。" },
+  ];
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>律制与等音对照</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        不要把“等音”理解成单纯两个名字相似。它的关键是：平均律里听起来相同，但书写与理论来源不同；题目一旦提到律制，就要想到“为什么会等音”。
+      </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {rows.map((item) => (
+          <div key={item.label} className="subtle-card" style={{ padding: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>{item.label}</div>
+            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>{item.note}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DynamicsScaleWidgetCn() {
+  const rows = [
+    { label: "固定力度", note: "p / mp / mf / f 这类题，先判断是弱、中弱、中强还是强，不要误判成变化过程。" },
+    { label: "渐强渐弱", note: "< / >、cresc. / dim. 更强调一段时间内的变化，而不是单个点的强弱。" },
+    { label: "单次强调", note: "sf / sfz / fp 先看是不是瞬间突出，尤其 fp 不是一直强，而是先强后弱。" },
+  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = rows[activeIndex];
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>力度记号分类抓手</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        力度题先分三类：固定层级、渐变过程、单次强调。只要先分对类型，再选具体记号，错误率会明显下降。
+      </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {rows.map((item, index) => {
+          const activeCard = index === activeIndex;
+          return (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              style={{
+                textAlign: "left",
+                padding: 12,
+                borderRadius: 12,
+                border: activeCard ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
+                background: activeCard ? "#111111" : "#ffffff",
+                color: activeCard ? "#ffffff" : "#111111",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontSize: 12, lineHeight: 1.8, color: activeCard ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)" }}>
+                {item.note}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="subtle-card" style={{ padding: 14, marginTop: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>当前抓手</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          {active.note}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RepeatPathGuideWidgetCn() {
+  const rows = [
+    { label: "基本反复", note: "先找出 𝄆 和 𝄇 包围的区域，再从结尾回到起点重走一次。" },
+    { label: "第一/第二结尾", note: "第一次走 1. 结尾，第二次反复后跳过 1. 改走 2. 结尾。" },
+    { label: "百分号与 bis/ter", note: "百分号常表示重复前一小节，bis/ter 则提示重复次数。" },
+  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = rows[activeIndex];
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>反复记号路径推导</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        反复题先推演“演奏路径”，不要只背术语。你要先知道从哪开始、回到哪、第二次又该往哪条结尾走。
+      </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {rows.map((item, index) => {
+          const activeCard = index === activeIndex;
+          return (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              style={{
+                textAlign: "left",
+                padding: 12,
+                borderRadius: 12,
+                border: activeCard ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
+                background: activeCard ? "#111111" : "#ffffff",
+                color: activeCard ? "#ffffff" : "#111111",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontSize: 12, lineHeight: 1.8, color: activeCard ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)" }}>
+                {item.note}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="subtle-card" style={{ padding: 14, marginTop: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>当前抓手</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          {active.note}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DcDsCodaGuideWidgetCn() {
+  const rows = [
+    { label: "D.C.", note: "先回到开头，再根据后续 al Fine / al Coda 决定怎么结束。" },
+    { label: "D.S.", note: "不是回到开头，而是回到 𝄋 记号，再继续执行后面的路径。" },
+    { label: "Coda / Fine", note: "Fine 是结束点，Coda 是尾声入口；见到 al Coda 时要先找 To Coda。" },
+  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = rows[activeIndex];
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>D.C. / D.S. / Coda / Fine 路径抓手</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        这类题先推演演奏路径，不要只背术语中文。先判断“回到哪里”，再判断“从哪里继续”，最后判断“在哪里结束或进入尾声”。
+      </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {rows.map((item, index) => {
+          const activeCard = index === activeIndex;
+          return (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              style={{
+                textAlign: "left",
+                padding: 12,
+                borderRadius: 12,
+                border: activeCard ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
+                background: activeCard ? "#111111" : "#ffffff",
+                color: activeCard ? "#ffffff" : "#111111",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontSize: 12, lineHeight: 1.8, color: activeCard ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)" }}>
+                {item.note}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="subtle-card" style={{ padding: 14, marginTop: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>当前抓手</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          {active.note}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MeterAccentGuideWidgetCn() {
+  const rows = [
+    { label: "3/4", note: "三拍子，通常第一拍强，后两拍弱。先认拍数，再看重音。" },
+    { label: "4/4", note: "常见规律是 强、弱、次强、弱。第三拍经常被忽略，是典型易错点。" },
+    { label: "6/8", note: "不是六个平铺小拍，而是两个大拍，每个大拍再分成三个八分音。" },
+  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = rows[activeIndex];
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>拍号与强弱规律抓手</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        拍号题先看“每小节几拍”，再看“每拍单位是什么”，最后分析强弱分布。不要把拍号和速度混在一起。
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+        {rows.map((item, index) => {
+          const activeCard = index === activeIndex;
+          return (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              style={{
+                textAlign: "left",
+                padding: 14,
+                borderRadius: 14,
+                border: activeCard ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
+                background: activeCard ? "#111111" : "#ffffff",
+                color: activeCard ? "#ffffff" : "#111111",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{item.label}</div>
+              <div style={{ fontSize: 12, lineHeight: 1.8, color: activeCard ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)" }}>
+                {item.note}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="subtle-card" style={{ padding: 14, marginTop: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>当前抓手</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          {active.note}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SyncopationTypeGuideWidgetCn() {
+  const rows = [
+    { label: "连音线切分", note: "弱拍起音并延长到后面强拍，重心被“借走”到不该强的地方。" },
+    { label: "休止强拍型", note: "强拍位置空出来，后面的音反而承担重心，形成切分感。" },
+    { label: "弱位重音型", note: "弱位被强调，听感上重音错位，不再服从原来的强弱格局。" },
+  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = rows[activeIndex];
+
+  return (
+    <div className="section-card" style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>切分三种形式抓手</div>
+      <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+        不要先看音符外形，先看原本强拍被谁打破了。只要抓住“重音错位”，再去判断它是延长型、休止型还是弱位强调型。
+      </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {rows.map((item, index) => {
+          const activeCard = index === activeIndex;
+          return (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              style={{
+                textAlign: "left",
+                padding: 12,
+                borderRadius: 12,
+                border: activeCard ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
+                background: activeCard ? "#111111" : "#ffffff",
+                color: activeCard ? "#ffffff" : "#111111",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontSize: 12, lineHeight: 1.8, color: activeCard ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)" }}>
+                {item.note}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="subtle-card" style={{ padding: 14, marginTop: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>当前抓手</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          {active.note}
         </div>
       </div>
     </div>
@@ -889,18 +1851,30 @@ const RHYTHMS = [
 ];
 function getStudentProfile() {
   if (typeof window === "undefined") {
-    return { studentId: "student-local", studentLabel: "鏈湴瀛︾敓" };
+    return { studentId: "student-local", studentLabel: "本地学生" };
   }
   const storageKey = "music-theory-student-profile";
   const cached = window.localStorage.getItem(storageKey);
   if (cached) {
     try {
-      return JSON.parse(cached);
+      const parsed = JSON.parse(cached);
+      if (parsed?.studentId) {
+        const hasGarbledLabel = /[�瀛鏈湴]/.test(String(parsed.studentLabel || "")) && !/学生|本地学生/.test(String(parsed.studentLabel || ""));
+        if (hasGarbledLabel) {
+          const repaired = {
+            ...parsed,
+            studentLabel: `学生 ${new Date().toLocaleDateString("zh-CN").replace(/\//g, "")}`,
+          };
+          window.localStorage.setItem(storageKey, JSON.stringify(repaired));
+          return repaired;
+        }
+        return parsed;
+      }
     } catch {}
   }
   const profile = {
     studentId: `student-${Math.random().toString(36).slice(2, 10)}`,
-    studentLabel: `瀛︾敓 ${new Date().toLocaleDateString("zh-CN").replace(/\//g, "")}`,
+    studentLabel: `学生 ${new Date().toLocaleDateString("zh-CN").replace(/\//g, "")}`,
   };
   window.localStorage.setItem(storageKey, JSON.stringify(profile));
   return profile;
@@ -1796,6 +2770,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
   const [practiceIndex, setPracticeIndex] = useState(0);
   const [practiceAnswers, setPracticeAnswers] = useState([]);
   const [practiceResult, setPracticeResult] = useState(null);
+  const [weakCorrectionAnswers, setWeakCorrectionAnswers] = useState({});
   const [homeworkRemaining, setHomeworkRemaining] = useState(30 * 60);
   const [homeworkRunning, setHomeworkRunning] = useState(false);
   const [homeworkDraft, setHomeworkDraft] = useState("");
@@ -1980,6 +2955,11 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
   }, []);
 
   const lessonKnowledgePoints = useMemo(() => getKnowledgePointsForLesson(lesson.id), [lesson.id]);
+  const weakEnhancements = useMemo(() => getWeakEnhancementsForLesson(lessonKnowledgePoints.map((item) => item.id)), [lessonKnowledgePoints]);
+  const weakPointTitleMap = useMemo(
+    () => Object.fromEntries(lessonKnowledgePoints.map((item) => [item.id, item.title])),
+    [lessonKnowledgePoints],
+  );
 
   const resolveKnowledgePointForText = useCallback(async (signature, fallbackId = lessonKnowledgePoints[0]?.id || "") => {
     const mappingKey = createKnowledgeMappingKey(lesson.id, signature);
@@ -2085,6 +3065,25 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
       recordError("课堂练习题", currentPractice.explanation);
     }
   }, [currentPractice, practiceAnswers, practiceIndex, recordError, resolveKnowledgePointForText, userId, lesson.id, lessonKnowledgePoints, onBktChange]);
+
+  const answerWeakCorrection = useCallback((answerKey, selected, question) => {
+    const correct = selected === question.answer;
+    setWeakCorrectionAnswers((prev) => ({
+      ...prev,
+      [answerKey]: {
+        selected,
+        correct,
+      },
+    }));
+    setStats((prev) => ({
+      ...prev,
+      interactions: prev.interactions + 1,
+      lastExplanation: question.explanation,
+    }));
+    if (!correct) {
+      recordError("纠错题", question.explanation);
+    }
+  }, [recordError]);
 
   const nextPracticeQuestion = useCallback(() => {
     setPracticeResult(null);
@@ -2207,6 +3206,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
     setShowHomeworkDialog(false);
     setHomeworkRemaining(30 * 60);
     setHomeworkRunning(false);
+    setWeakCorrectionAnswers({});
   }, [lesson.id]);
 
   useEffect(() => {
@@ -2443,8 +3443,25 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
       {activeSection === "content" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(17,17,17,0.04)", border: "1px solid rgba(17,17,17,0.08)" }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 8 }}>内容呈现</div>
         <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
-          本页仅保留本课 PPT 课件，不再重复展示知识点长列表。
+          本页先用强化解释卡梳理本课最容易混淆的点，再查看完整 PPT。
         </div>
+        <WeakPointExplanationCards items={weakEnhancements} titleMap={weakPointTitleMap} />
+        {lesson.id === "L2" ? <TemperamentEnharmonicWidgetCn /> : null}
+        {lesson.id === "L3" ? <TrebleClefDrillWidgetCn /> : null}
+        {lesson.id === "L3" ? <BassClefDrillWidgetCn /> : null}
+        {lesson.id === "L4" ? <DotsAndTiesGuideWidgetCn /> : null}
+        {lesson.id === "L4" ? <NoteValueHierarchyWidgetCn /> : null}
+        {lesson.id === "L5" ? <TrillVsMordentWidgetCn /> : null}
+        {lesson.id === "L5" ? <OrnamentComparisonWidgetCn /> : null}
+        {lesson.id === "L6" ? <DynamicsScaleWidgetCn /> : null}
+        {lesson.id === "L6" ? <ArticulationContrastWidgetCn /> : null}
+        {lesson.id === "L7" ? <RepeatPathGuideWidgetCn /> : null}
+        {lesson.id === "L7" ? <DcDsCodaGuideWidgetCn /> : null}
+        {lesson.id === "L8" ? <ExpressionVsTempoCardCn /> : null}
+        {lesson.id === "L9" ? <MeterAccentGuideWidgetCn /> : null}
+        {lesson.id === "L10" ? <CrossBarTieGuideWidgetCn /> : null}
+        {lesson.id === "L11" ? <SyncopationTypeGuideWidgetCn /> : null}
+        {lesson.id === "L11" ? <SyncopationPatternWidgetCn /> : null}
         {pptLessonData && (
           <div style={{ marginBottom: 12, padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
             <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{`\u7b2c ${pptLessonData.lessonNumber} \u8bfe\u65f6`}</div>
@@ -2463,6 +3480,21 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
           系统会结合你在内容呈现中的互动操作结果，提供 20 题连续课堂练习，并反馈当前掌握情况。
         </div>
+        {weakEnhancements.length ? (
+          <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>课堂练习引导</div>
+            <div style={{ display: "grid", gap: 8 }}>
+              {weakEnhancements.map((item) => (
+                <div key={`guide-${item.knowledgePointId}`} style={{ padding: "8px 10px", borderRadius: 10, background: "rgba(83,74,183,0.05)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4 }}>{weakPointTitleMap[item.knowledgePointId] || item.knowledgePointId}</div>
+                  <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, whiteSpace: "pre-line" }}>
+                    {item.practiceGuide.map((line) => `• ${line}`).join("\n")}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>知识点掌握摘要</div>
           <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
@@ -2473,6 +3505,12 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             下一步建议：{getRecommendationFromSummary(lessonKnowledgeSummary)}
           </div>
         </div>
+        <WeakPointCorrectionBlock
+          items={weakEnhancements}
+          titleMap={weakPointTitleMap}
+          answers={weakCorrectionAnswers}
+          onAnswer={answerWeakCorrection}
+        />
         <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>互动检测</div>
           <div style={{ fontSize: 11, color: stats.errors > 0 ? "#b91c1c" : "var(--color-text-secondary)" }}>
@@ -3776,6 +4814,18 @@ function TeacherDashboardPage() {
   const [data, setData] = useState(null);
   const [bktData, setBktData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState("");
+  const [bktLoadError, setBktLoadError] = useState("");
+  const [authChecked, setAuthChecked] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [selfCheck, setSelfCheck] = useState({
+    service: { status: "pending", message: "未检测" },
+    overview: { status: "pending", message: "未检测" },
+    bkt: { status: "pending", message: "未检测" },
+  });
   const [simulating, setSimulating] = useState(false);
   const [testRunning, setTestRunning] = useState(false);
   const [deepRunning, setDeepRunning] = useState(false);
@@ -3789,34 +4839,133 @@ function TeacherDashboardPage() {
   const currentStudentRecord = (bktData?.students || []).find((item) => item.userId === currentStudentProfile.studentId) || null;
   const selectedPilotTemplate = REAL_STUDENT_PILOT_TEMPLATES.find((item) => item.id === selectedPilotTemplateId) || REAL_STUDENT_PILOT_TEMPLATES[0];
 
-  const reloadDashboard = useCallback(async () => {
-    const [analyticsResponse, bktResponse] = await Promise.all([
-      fetch("/api/teacher/overview"),
-      fetch("/api/teacher/bkt-overview"),
-    ]);
-    const [analyticsJson, bktJson] = await Promise.all([analyticsResponse.json(), bktResponse.json()]);
-    setData(analyticsJson);
-    setBktData(bktJson);
+  useEffect(() => {
+    try {
+      const raw = typeof window !== "undefined" ? window.sessionStorage.getItem(TEACHER_AUTH_STORAGE_KEY) : "";
+      setAuthenticated(raw === "ok");
+    } catch {
+      setAuthenticated(false);
+    } finally {
+      setAuthChecked(true);
+    }
   }, []);
 
+  const parseResponseJson = useCallback(async (response, label) => {
+    const raw = await response.text();
+    let json = null;
+    try {
+      json = raw ? JSON.parse(raw) : null;
+    } catch {
+      throw new Error(`${label} 返回了非 JSON 内容。`);
+    }
+    if (!response.ok) {
+      throw new Error(json?.error || `${label} 请求失败（${response.status}）`);
+    }
+    return json;
+  }, []);
+
+  const normalizeTeacherDashboardError = useCallback((error) => {
+    const message = String(error?.message || error || "");
+    if (/Failed to fetch|NetworkError|Load failed/i.test(message)) {
+      return "无法连接教师后台服务。请先确认本地服务已启动，再刷新页面。";
+    }
+    return message || "教师后台数据加载失败。";
+  }, []);
+
+  const setCheckState = useCallback((key, status, message) => {
+    setSelfCheck((current) => ({
+      ...current,
+      [key]: { status, message },
+    }));
+  }, []);
+
+  const loadTeacherHealth = useCallback(async () => {
+    const healthResponse = await fetch("/api/health");
+    const healthJson = await parseResponseJson(healthResponse, "教师后台服务自检");
+    setCheckState("service", "success", `在线（${healthJson.provider || "unknown"} / ${healthJson.model || "unknown"}）`);
+    return healthJson;
+  }, [parseResponseJson, setCheckState]);
+
+  const loadTeacherOverview = useCallback(async () => {
+    const analyticsResponse = await fetch("/api/teacher/overview");
+    const analyticsJson = await parseResponseJson(analyticsResponse, "教师后台概览");
+    setCheckState("overview", "success", `成功（学生 ${analyticsJson.summary?.totalStudents ?? 0} 人）`);
+    return analyticsJson;
+  }, [parseResponseJson, setCheckState]);
+
+  const loadTeacherBktOverview = useCallback(async () => {
+    const bktResponse = await fetch("/api/teacher/bkt-overview");
+    const bktJson = await parseResponseJson(bktResponse, "教师后台 BKT 概览");
+    setCheckState("bkt", "success", `成功（知识点 ${bktJson.summary?.totalKnowledgePoints ?? 0} 个）`);
+    return bktJson;
+  }, [parseResponseJson, setCheckState]);
+
+  const reloadDashboard = useCallback(async () => {
+    setCheckState("service", "pending", "检测中...");
+    setCheckState("overview", "pending", "检测中...");
+    setCheckState("bkt", "pending", "检测中...");
+    setDashboardError("");
+    try {
+      await loadTeacherHealth();
+    } catch (error) {
+      setCheckState("service", "error", normalizeTeacherDashboardError(error));
+      throw error;
+    }
+    let analyticsJson = null;
+    try {
+      analyticsJson = await loadTeacherOverview();
+      setData(analyticsJson);
+    } catch (error) {
+      setCheckState("overview", "error", normalizeTeacherDashboardError(error));
+      throw error;
+    }
+    try {
+      const bktJson = await loadTeacherBktOverview();
+      setBktData(bktJson);
+      setBktLoadError("");
+    } catch (error) {
+      setBktData(null);
+      const normalized = normalizeTeacherDashboardError(error);
+      setCheckState("bkt", "error", normalized);
+      setBktLoadError(normalized);
+    }
+  }, [loadTeacherBktOverview, loadTeacherHealth, loadTeacherOverview, normalizeTeacherDashboardError, setCheckState]);
+
   useEffect(() => {
+    if (!authChecked || !authenticated) return undefined;
     let active = true;
     const load = async () => {
       setLoading(true);
+      setCheckState("service", "pending", "检测中...");
+      setCheckState("overview", "pending", "检测中...");
+      setCheckState("bkt", "pending", "检测中...");
       try {
-        const [analyticsResponse, bktResponse] = await Promise.all([
-          fetch("/api/teacher/overview"),
-          fetch("/api/teacher/bkt-overview"),
-        ]);
-        const [analyticsJson, bktJson] = await Promise.all([analyticsResponse.json(), bktResponse.json()]);
+        await loadTeacherHealth();
+        const analyticsJson = await loadTeacherOverview();
         if (active) {
           setData(analyticsJson);
-          setBktData(bktJson);
+          setDashboardError("");
         }
-      } catch {
+        try {
+          const bktJson = await loadTeacherBktOverview();
+          if (active) {
+            setBktData(bktJson);
+            setBktLoadError("");
+          }
+        } catch (error) {
+          if (active) {
+            setBktData(null);
+            const normalized = normalizeTeacherDashboardError(error);
+            setCheckState("bkt", "error", normalized);
+            setBktLoadError(normalized);
+          }
+        }
+      } catch (error) {
         if (active) {
           setData(null);
           setBktData(null);
+          const normalized = normalizeTeacherDashboardError(error);
+          setDashboardError(normalized);
         }
       } finally {
         if (active) setLoading(false);
@@ -3826,6 +4975,29 @@ function TeacherDashboardPage() {
     return () => {
       active = false;
     };
+  }, [authChecked, authenticated, loadTeacherBktOverview, loadTeacherHealth, loadTeacherOverview, normalizeTeacherDashboardError, setCheckState]);
+
+  const handleTeacherLogin = useCallback((event) => {
+    event.preventDefault();
+    if (loginUsername.trim() !== TEACHER_LOGIN_USERNAME || loginPassword !== TEACHER_LOGIN_PASSWORD) {
+      setLoginError("账号或密码错误。");
+      return;
+    }
+    try {
+      window.sessionStorage.setItem(TEACHER_AUTH_STORAGE_KEY, "ok");
+    } catch {}
+    setLoginError("");
+    setAuthenticated(true);
+  }, [loginPassword, loginUsername]);
+
+  const handleTeacherLogout = useCallback(() => {
+    try {
+      window.sessionStorage.removeItem(TEACHER_AUTH_STORAGE_KEY);
+    } catch {}
+    setAuthenticated(false);
+    setData(null);
+    setBktData(null);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -3951,23 +5123,87 @@ function TeacherDashboardPage() {
     }
   }, [selectedReportUserId]);
 
+  if (!authChecked) {
+    return <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>正在校验教师后台权限...</div>;
+  }
+
+  if (!authenticated) {
+    return (
+      <div className="section-card" style={{ maxWidth: 420, margin: "0 auto" }}>
+        <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>教师后台登录</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 14 }}>
+          请使用教师账号登录后再查看 BKT 概览、学生报告和试点数据。
+        </div>
+        <form onSubmit={handleTeacherLogin} style={{ display: "grid", gap: 10 }}>
+          <input value={loginUsername} onChange={(event) => setLoginUsername(event.target.value)} placeholder="账号" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)" }} />
+          <input type="password" value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} placeholder="密码" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)" }} />
+          {loginError ? <div style={{ fontSize: 12, color: "#b91c1c" }}>{loginError}</div> : null}
+          <button type="submit" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>
+            登录
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   if (loading) {
     return <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>教师后台加载中...</div>;
   }
 
   if (!data?.ok) {
-    return <div style={{ fontSize: 13, color: "#b91c1c" }}>教师后台数据加载失败。</div>;
+    return (
+      <div style={{ fontSize: 13, color: "#b91c1c", lineHeight: 1.8 }}>
+        教师后台数据加载失败。
+        <br />
+        {dashboardError || "请先确认本地服务已启动，然后刷新页面。"}
+      </div>
+    );
   }
 
   return (
     <div>
-      <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 14px" }}>教师后台</h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>教师后台</h2>
+        <button onClick={handleTeacherLogout} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>退出登录</button>
+      </div>
+
+      <div className="section-card" style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>教师后台自检状态</div>
+        <div className="metric-grid">
+          {[
+            ["服务是否在线", selfCheck.service],
+            ["概览接口是否成功", selfCheck.overview],
+            ["BKT 接口是否成功", selfCheck.bkt],
+          ].map(([label, item]) => {
+            const color = item.status === "success" ? "#166534" : item.status === "error" ? "#b91c1c" : "#555555";
+            return (
+              <div key={label} className="subtle-card" style={{ padding: 12 }}>
+                <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 6 }}>{label}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color }}>{item.status === "success" ? "正常" : item.status === "error" ? "失败" : "检测中"}</div>
+                <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.6, marginTop: 6 }}>{item.message}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="metric-grid" style={{ marginBottom: 18 }}>
         {metricCard("数据记录数", data.summary.totalRecords)}
         {metricCard("学生数", data.summary.totalStudents)}
         {metricCard("平均得分", `${data.summary.averageScore}%`)}
         {metricCard("已提交作业", data.summary.totalHomeworkSubmitted)}
       </div>
+
+      {bktLoadError ? (
+        <div className="section-card" style={{ marginBottom: 18, borderColor: "rgba(185,28,28,0.18)", background: "rgba(254,242,242,0.9)" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#991b1b", marginBottom: 6 }}>BKT 面板加载失败</div>
+          <div style={{ fontSize: 12, color: "#7f1d1d", lineHeight: 1.8 }}>
+            {bktLoadError}
+            <br />
+            当前仍可查看基础教师后台数据；BKT 概览恢复后会自动显示。
+          </div>
+        </div>
+      ) : null}
 
       <div className="section-card" style={{ marginBottom: 18 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>

@@ -32,6 +32,11 @@ let bktSummaryWriteQueue = Promise.resolve();
 let bktTestWriteQueue = Promise.resolve();
 const tutorResponseCache = new Map();
 const tutorInflightRequests = new Map();
+const AI_CIRCUIT_BREAKER_WINDOW_MS = 5 * 60 * 1000;
+let aiCircuitBreaker = {
+  openUntil: 0,
+  reason: "",
+};
 
 app.use(express.json({ limit: "25mb" }));
 app.use("/generated-reports", express.static(REPORTS_DIR));
@@ -99,6 +104,24 @@ function clearTutorInflightRequest(cacheKey) {
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function isAiCircuitBreakerOpen() {
+  return Date.now() < Number(aiCircuitBreaker.openUntil || 0);
+}
+
+function openAiCircuitBreaker(reason) {
+  aiCircuitBreaker = {
+    openUntil: Date.now() + AI_CIRCUIT_BREAKER_WINDOW_MS,
+    reason: safeString(reason, "unstable-upstream"),
+  };
+}
+
+function closeAiCircuitBreaker() {
+  aiCircuitBreaker = {
+    openUntil: 0,
+    reason: "",
+  };
 }
 
 function getOpenAIBaseUrl() {
@@ -526,6 +549,13 @@ function normalizeTutorPrompt(text) {
     .trim();
 }
 
+function extractChineseKeywords(text = "") {
+  return [...new Set(
+    safeString(text)
+      .match(/[\u4e00-\u9fff]{2,}/g) || []
+  )].filter((item) => item.length >= 2);
+}
+
 function extractLatestUserImageName(messages = []) {
   const latestUserMessage = [...getArray(messages)]
     .reverse()
@@ -553,8 +583,8 @@ function selectRelevantSubConcepts(point, prompt) {
     const normalizedItem = safeString(item).toLowerCase();
     return normalizedPrompt.includes(normalizedItem) || aliases.some((alias) => alias && normalizedPrompt.includes(alias) && normalizedItem.includes(alias));
   });
-  const result = matched.length ? matched : subConcepts;
-  return result.slice(0, 4);
+  const fallbackHead = subConcepts.slice(0, 2);
+  return [...new Set([...(matched.length ? matched : []), ...fallbackHead])].slice(0, 4);
 }
 
 function hasMeaningfulKeywordOverlap(reply, prompt) {
@@ -564,7 +594,40 @@ function hasMeaningfulKeywordOverlap(reply, prompt) {
   return keywords.some((keyword) => replyText.includes(keyword));
 }
 
-function findBestKnowledgePointMatch(prompt, { imageName = "", system = "" } = {}) {
+function scoreKnowledgePointMatch(point, normalizedPrompt, promptKeywords = []) {
+  const title = safeString(point.title);
+  const titleAliases = [
+    title,
+    title.replace(/识读|基础|体系|规则|记号|形式|类型|原理|分析|组合|关系$/g, ""),
+    ...getArray(KNOWLEDGE_POINT_ALIASES[point.id]),
+  ].filter(Boolean);
+  const haystacks = [
+    ...titleAliases,
+    ...getArray(point.subConcepts),
+    ...getArray(point.exerciseTypes),
+    ...getArray(point.easy),
+    ...getArray(point.medium),
+    ...getArray(point.hard),
+  ].map((item) => safeString(item).toLowerCase());
+
+  let score = 0;
+  for (const alias of titleAliases.map((item) => item.toLowerCase())) {
+    if (alias && normalizedPrompt.includes(alias)) score += 8;
+    const compactAlias = alias.replace(/\s+/g, "");
+    if (compactAlias && normalizedPrompt.includes(compactAlias)) score += 8;
+  }
+  for (const haystack of haystacks) {
+    for (const keyword of promptKeywords) {
+      if (haystack.includes(keyword)) score += keyword.length >= 4 ? 3 : 2;
+    }
+  }
+  if (haystacks.some((item) => normalizedPrompt.includes(item) || item.includes(normalizedPrompt))) {
+    score += 6;
+  }
+  return score;
+}
+
+function getKnowledgePointMatchRanking(prompt, { imageName = "", system = "", limit = 3 } = {}) {
   const cleanedPrompt = normalizeTutorPrompt(prompt);
   const systemPrompt = normalizeTutorPrompt(system);
   const normalizedPrompt = `${cleanedPrompt} ${systemPrompt}`.toLowerCase();
@@ -575,46 +638,58 @@ function findBestKnowledgePointMatch(prompt, { imageName = "", system = "" } = {
 
   const matchedImageHint = Object.entries(IMAGE_FILE_HINTS).find(([hint]) => safeString(imageName).toLowerCase().includes(hint));
   if (matchedImageHint) {
-    return KNOWLEDGE_POINTS.find((point) => point.id === matchedImageHint[1]) || null;
+    const directPoint = KNOWLEDGE_POINTS.find((point) => point.id === matchedImageHint[1]) || null;
+    return directPoint ? [{ point: directPoint, score: 999 }] : [];
   }
-  let bestMatch = null;
+  return KNOWLEDGE_POINTS
+    .map((point) => ({
+      point,
+      score: scoreKnowledgePointMatch(point, normalizedPrompt, promptKeywords),
+    }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, Math.max(1, limit));
+}
 
-  for (const point of KNOWLEDGE_POINTS) {
-    const title = safeString(point.title);
-    const titleAliases = [
-      title,
-      title.replace(/识读|基础|体系|规则|记号|形式|类型|原理|分析|组合|关系$/g, ""),
-      ...getArray(KNOWLEDGE_POINT_ALIASES[point.id]),
-    ].filter(Boolean);
-    const haystacks = [
-      ...titleAliases,
-      ...getArray(point.subConcepts),
-      ...getArray(point.exerciseTypes),
-      ...getArray(point.easy),
-      ...getArray(point.medium),
-      ...getArray(point.hard),
-    ].map((item) => safeString(item).toLowerCase());
+function findBestKnowledgePointMatch(prompt, options = {}) {
+  return getKnowledgePointMatchRanking(prompt, { ...options, limit: 1 })[0]?.point || null;
+}
 
-    let score = 0;
-    for (const alias of titleAliases.map((item) => item.toLowerCase())) {
-      if (alias && normalizedPrompt.includes(alias)) score += 8;
-      const compactAlias = alias.replace(/\s+/g, "");
-      if (compactAlias && normalizedPrompt.includes(compactAlias)) score += 8;
-    }
-    for (const haystack of haystacks) {
-      for (const keyword of promptKeywords) {
-        if (haystack.includes(keyword)) score += keyword.length >= 4 ? 3 : 2;
-      }
-    }
-    if (haystacks.some((item) => normalizedPrompt.includes(item) || item.includes(normalizedPrompt))) {
-      score += 6;
-    }
-    if (!bestMatch || score > bestMatch.score) {
-      bestMatch = { point, score };
-    }
-  }
+function buildCombinedConceptTutorFallback(points, prompt, intent) {
+  const distinctPoints = getArray(points).filter(Boolean).slice(0, 2);
+  const keyIdeas = distinctPoints.flatMap((point) => selectRelevantSubConcepts(point, prompt).slice(0, 2));
+  const examples = distinctPoints
+    .map((point) => getArray(point.easy)[0] || getArray(point.medium)[0] || "")
+    .filter(Boolean)
+    .slice(0, 2);
+  return [
+    `这个问题涉及“${distinctPoints.map((point) => point.title).join("”和“")}”。`,
+    keyIdeas.length ? `你可以先抓住这些关键点：${keyIdeas.join("；")}。` : "",
+    examples.length ? `可以用这些例子快速理解：${examples.join("；")}。` : "",
+    intent.teaching ? "如果面对学生讲解，建议先区分概念，再给出规则和例子。" : "如果你愿意，我可以继续把这两个知识点并排对照讲解。",
+  ].filter(Boolean).join("");
+}
 
-  return bestMatch && bestMatch.score > 0 ? bestMatch.point : null;
+function buildDiagnosticTutorFallback() {
+  return [
+    "这节课是综合诊断课，不是重新背诵全部知识点。",
+    "它的目标是整合前 11 课内容，判断学生究竟卡在识谱、节奏、术语、装饰音还是综合分析。",
+    "最有效的做法是：先看错题和作业，再定位到具体薄弱知识点，最后给出下一步复习顺序。",
+    "如果你愿意，我可以继续按“薄弱点定位 + 复习建议”的结构展开说明。",
+  ].join("");
+}
+
+function shouldPreferLocalTutorResponse(prompt, intent, matchedPoints = [], system = "") {
+  const normalizedPrompt = normalizeTutorPrompt(prompt);
+  const normalizedSystem = normalizeTutorPrompt(system);
+  if (/综合诊断|前 11 课|前11课|薄弱项|复习建议/.test(`${normalizedPrompt} ${normalizedSystem}`)) return true;
+  if (intent.homework) return true;
+  if (intent.image && matchedPoints.length) return true;
+  if (intent.image) return false;
+  if (!matchedPoints.length) return false;
+  if (normalizedPrompt.length <= 120) return true;
+  if (/什么是|请解释|请说明|区别|比较|含义|定义|如何理解|怎么讲解|教学口吻/.test(normalizedPrompt)) return true;
+  return false;
 }
 
 function buildHomeworkTutorFallback(point, prompt) {
@@ -658,19 +733,56 @@ function buildLocalTutorFallback(messages = [], { system = "" } = {}) {
   const prompt = extractLatestUserPrompt(messages);
   const imageName = extractLatestUserImageName(messages);
   const intent = detectTutorIntent({ prompt, imageName });
-  const matchedPoint = findBestKnowledgePointMatch(prompt, { imageName, system });
+  const matchedPoints = getKnowledgePointMatchRanking(prompt, { imageName, system }, 2).map((item) => item.point);
+  const matchedPoint = matchedPoints[0] || null;
+  if (/综合诊断|前 11 课|前11课|薄弱项|复习建议/.test(`${normalizeTutorPrompt(prompt)} ${normalizeTutorPrompt(system)}`)) {
+    return {
+      text: buildDiagnosticTutorFallback(),
+      matchedPoint: null,
+      matchedPoints: [],
+      intent,
+    };
+  }
   if (!matchedPoint) {
     if (intent.homework) {
-      return "这是一道作业辅导类问题。当前模型没有稳定给出答案，建议你直接说明作业要求、拍号或谱号信息，我会按“批改提醒 + 常见错误 + 示例”的结构继续解释。";
+      return {
+        text: "这是一道作业辅导类问题。当前模型没有稳定给出答案，建议你直接说明作业要求、拍号或谱号信息，我会按“批改提醒 + 常见错误 + 示例”的结构继续解释。",
+        matchedPoint: null,
+        matchedPoints: [],
+        intent,
+      };
     }
     if (intent.image) {
-      return "这是一道图片讲解类问题。当前模型没有稳定识别图片内容，建议你补一句图片主题，例如“这是高音谱号课件”或“这是 4/4 拍节奏图”，我会直接按知识点讲解。";
+      return {
+        text: "这是一道图片讲解类问题。当前模型没有稳定识别图片内容，建议你补一句图片主题，例如“这是高音谱号课件”或“这是 4/4 拍节奏图”，我会直接按知识点讲解。",
+        matchedPoint: null,
+        matchedPoints: [],
+        intent,
+      };
     }
-    return "这个问题可以继续提问，但当前模型没有稳定给出答案。建议你把问题改成“定义 + 例子”形式，或上传对应题目图片，我会按课程知识点继续解释。";
+    return {
+      text: "这个问题可以继续提问，但当前模型没有稳定给出答案。建议你把问题改成“定义 + 例子”形式，或上传对应题目图片，我会按课程知识点继续解释。",
+      matchedPoint: null,
+      matchedPoints: [],
+      intent,
+    };
   }
-  if (intent.homework) return buildHomeworkTutorFallback(matchedPoint, prompt);
-  if (intent.image) return buildImageTutorFallback(matchedPoint);
-  return buildConceptTutorFallback(matchedPoint, intent, prompt);
+  let text = "";
+  if (intent.homework) {
+    text = buildHomeworkTutorFallback(matchedPoint, prompt);
+  } else if (intent.image) {
+    text = buildImageTutorFallback(matchedPoint);
+  } else if (/区别|比较|联系|不同/.test(normalizeTutorPrompt(prompt)) && matchedPoints.length > 1) {
+    text = buildCombinedConceptTutorFallback(matchedPoints, prompt, intent);
+  } else {
+    text = buildConceptTutorFallback(matchedPoint, intent, prompt);
+  }
+  return {
+    text,
+    matchedPoint,
+    matchedPoints,
+    intent,
+  };
 }
 
 function isLowQualityTutorReply(text, messages = []) {
@@ -692,6 +804,16 @@ async function createTutorResponseWithFallback({ system, messages, rawMessages =
   const strictSystem = `${safeString(system)}\n\n额外要求：\n1. 必须使用简体中文回答。\n2. 先直接回答，不要反问用户补充信息，除非完全无法判断。\n3. 如果是概念题，请先给定义，再给一个简短例子。\n4. 不要输出英文开场白。`;
   let lastText = "";
   const attemptedModels = [];
+  const localFallback = buildLocalTutorFallback(rawMessages, { system });
+  const latestPrompt = extractLatestUserPrompt(rawMessages);
+
+  if ((isAiCircuitBreakerOpen() || shouldPreferLocalTutorResponse(latestPrompt, localFallback.intent, localFallback.matchedPoints, system)) && localFallback.text) {
+    return {
+      text: localFallback.text,
+      model: isAiCircuitBreakerOpen() ? `local-priority(circuit-open:${aiCircuitBreaker.reason})` : "local-priority",
+      retried: false,
+    };
+  }
 
   for (const modelName of modelChain) {
     try {
@@ -707,6 +829,7 @@ async function createTutorResponseWithFallback({ system, messages, rawMessages =
       attemptedModels.push(candidateModel);
       lastText = candidateText;
       if (!isLowQualityTutorReply(candidateText, rawMessages)) {
+        closeAiCircuitBreaker();
         return {
           text: candidateText,
           model: candidateModel,
@@ -715,13 +838,16 @@ async function createTutorResponseWithFallback({ system, messages, rawMessages =
       }
     } catch (error) {
       attemptedModels.push(`${modelName}:error`);
+      if (isRetryableModelError(error)) {
+        openAiCircuitBreaker(error?.message || "retryable-upstream-error");
+      }
       if (!isRetryableModelError(error)) {
         throw error;
       }
     }
   }
 
-  const localFallbackText = buildLocalTutorFallback(rawMessages, { system });
+  const localFallbackText = localFallback.text;
   return {
     text: localFallbackText || lastText || "抱歉，我暂时没有生成稳定回答，请稍后重试。",
     model: `${attemptedModels.filter(Boolean).join(" -> ")}${localFallbackText ? " -> local-fallback" : ""}`,
@@ -1002,6 +1128,9 @@ function parseJsonObject(text) {
 
 async function buildAiEvaluation(payload, fallbackEvaluation) {
   const provider = (process.env.AI_PROVIDER || "openai").toLowerCase();
+  if (provider === "openai" && isDashScopeCompatibleMode() && isAiCircuitBreakerOpen()) {
+    return null;
+  }
   const system = "你是一名大学乐理教师。请根据学生作业生成 JSON，字段必须包含 overallComment、strengths、issues、suggestions、tags，所有内容使用中文。";
   const prompt = JSON.stringify({
     lessonTitle: safeString(payload.lessonTitle, "当前课时"),
@@ -1026,29 +1155,50 @@ async function buildAiEvaluation(payload, fallbackEvaluation) {
 
   if (provider === "gemini") {
     if (!process.env.GEMINI_API_KEY) return null;
-    const text = await createGeminiResponse({
-      system,
-      messages: reviewMessages,
-      maxTokens: 1200,
-    });
-    return parseJsonObject(text);
+    try {
+      const text = await createGeminiResponse({
+        system,
+        messages: reviewMessages,
+        maxTokens: 1200,
+      });
+      return parseJsonObject(text);
+    } catch (error) {
+      if (isRetryableModelError(error)) {
+        openAiCircuitBreaker(error?.message || "gemini-evaluation-error");
+      }
+      throw error;
+    }
   }
 
   if (!process.env.OPENAI_API_KEY) return null;
-  const text = await createOpenAITextResponse({
-    system,
-    messages: reviewMessages,
-    maxTokens: 1200,
-    modelChain: getHomeworkModelChain(getArray(payload.images).length > 0),
-  });
+  let text = "";
+  try {
+    text = await createOpenAITextResponse({
+      system,
+      messages: reviewMessages,
+      maxTokens: 1200,
+      modelChain: getHomeworkModelChain(getArray(payload.images).length > 0),
+    });
+    closeAiCircuitBreaker();
+  } catch (error) {
+    if (isRetryableModelError(error)) {
+      openAiCircuitBreaker(error?.message || "homework-evaluation-error");
+      return null;
+    }
+    throw error;
+  }
   const parsed = parseJsonObject(text || "");
   if (!parsed) return null;
+  const aiStrengths = getArray(parsed.strengths).map((item) => safeString(item)).filter(Boolean).slice(0, 5);
+  const aiIssues = getArray(parsed.issues).map((item) => safeString(item)).filter(Boolean).slice(0, 5);
+  const aiSuggestions = getArray(parsed.suggestions).map((item) => safeString(item)).filter(Boolean).slice(0, 5);
+  const aiTags = getArray(parsed.tags).map((item) => safeString(item)).filter(Boolean).slice(0, 6);
   return {
     overallComment: safeString(parsed.overallComment, fallbackEvaluation.overallComment),
-    strengths: getArray(parsed.strengths).map((item) => safeString(item)).filter(Boolean).slice(0, 5),
-    issues: getArray(parsed.issues).map((item) => safeString(item)).filter(Boolean).slice(0, 5),
-    suggestions: getArray(parsed.suggestions).map((item) => safeString(item)).filter(Boolean).slice(0, 5),
-    tags: getArray(parsed.tags).map((item) => safeString(item)).filter(Boolean).slice(0, 6),
+    strengths: (aiStrengths.length ? aiStrengths : fallbackEvaluation.strengths).slice(0, 5),
+    issues: (aiIssues.length ? aiIssues : fallbackEvaluation.issues).slice(0, 5),
+    suggestions: (aiSuggestions.length ? aiSuggestions : fallbackEvaluation.suggestions).slice(0, 5),
+    tags: [...new Set([...(aiTags.length ? aiTags : fallbackEvaluation.tags)])].slice(0, 6),
   };
 }
 
