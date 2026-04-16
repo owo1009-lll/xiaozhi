@@ -130,6 +130,67 @@ function getDashScopeAsrModel() {
   return process.env.DASHSCOPE_ASR_MODEL || "paraformer-v2";
 }
 
+function parseModelChain(value, fallback = []) {
+  const items = [
+    ...String(value || "").split(",").map((item) => item.trim()).filter(Boolean),
+    ...getArray(fallback).map((item) => safeString(item).trim()).filter(Boolean),
+  ];
+  return [...new Set(items)];
+}
+
+function getDefaultTextModelChain() {
+  return parseModelChain(process.env.OPENAI_MODEL_CHAIN, [
+    getOpenAIModel(),
+    "qwen-plus-2025-07-28",
+    "qvq-max-2025-03-25",
+    "qwen-math-turbo",
+  ]);
+}
+
+function getTutorModelChain() {
+  return parseModelChain(process.env.OPENAI_TUTOR_MODEL_CHAIN, [
+    getTutorModel(),
+    getTutorFallbackModel(),
+    "qwen-plus-2025-07-28",
+    "qvq-max-2025-03-25",
+    "qwen-math-turbo",
+  ]);
+}
+
+function getHomeworkModelChain(hasImages = false) {
+  if (hasImages) {
+    return parseModelChain(process.env.OPENAI_HOMEWORK_VISION_MODEL_CHAIN, [
+      getDashScopeVisionModel(),
+      "qwen3-vl-32b-thinking",
+      "qwen3-vl-235b-a22b-thinking",
+    ]);
+  }
+  return parseModelChain(process.env.OPENAI_HOMEWORK_MODEL_CHAIN, [
+    getOpenAIModel(),
+    "qwen-plus-2025-07-28",
+    "qvq-max-2025-03-25",
+    "qwen-math-turbo",
+  ]);
+}
+
+function getVisionModelChain() {
+  return parseModelChain(process.env.DASHSCOPE_VISION_MODEL_CHAIN, [
+    getDashScopeVisionModel(),
+    "qwen3-vl-32b-thinking",
+    "qwen3-vl-235b-a22b-thinking",
+  ]);
+}
+
+function isRetryableModelError(error) {
+  const detail = safeString(error?.message, "").toLowerCase();
+  return Boolean(
+    error?.status === 429
+    || error?.status >= 500
+    || /quota|额度|余额|insufficient|rate limit|too many requests|resource exhausted|exhausted|limit|access denied|good standing|overdue payment|payment|not enabled|model not found/i.test(detail)
+    || /timed out|timeout|aborted|temporarily unavailable|server error|overloaded|busy/i.test(detail)
+  );
+}
+
 function hasImageMessages(messages = []) {
   return messages.some((message) => Boolean(message?.imageDataUrl));
 }
@@ -211,71 +272,93 @@ async function uploadDataUrlToDashScope(dataUrl, { model, fileNamePrefix }) {
   });
 }
 
-async function createDashScopeCompatibleResponse({ system, messages = [], maxTokens = 1000, modelOverride, timeoutMs }) {
+async function createDashScopeCompatibleResponseDetailed({ system, messages = [], maxTokens = 1000, modelOverride, modelChain, timeoutMs }) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is not configured.");
   }
 
   const baseUrl = getOpenAIBaseUrl();
   const hasImages = hasImageMessages(messages);
-  const model = modelOverride || (hasImages ? getDashScopeVisionModel() : getOpenAIModel());
-  const supportsImages = /vl|vision|ocr|omni/i.test(model);
+  const candidateModels = parseModelChain(modelOverride || modelChain, hasImages ? getVisionModelChain() : getDefaultTextModelChain());
+  let lastError = null;
 
-  const normalizedMessages = [];
-  let needsOssResolve = false;
+  for (const model of candidateModels) {
+    try {
+      const supportsImages = /vl|vision|ocr|omni/i.test(model);
+      const normalizedMessages = [];
+      let needsOssResolve = false;
 
-  if (system) {
-    normalizedMessages.push({ role: "system", content: safeString(system) });
-  }
-
-  for (const message of messages) {
-    const role = message.role === "assistant" ? "assistant" : "user";
-    if (supportsImages && role !== "assistant" && message.imageDataUrl) {
-      const imageUrl = message.imageDataUrl.startsWith("data:")
-        ? await uploadDataUrlToDashScope(message.imageDataUrl, {
-            model,
-            fileNamePrefix: "vision-input",
-          })
-        : String(message.imageDataUrl);
-      if (imageUrl.startsWith("oss://")) {
-        needsOssResolve = true;
+      if (system) {
+        normalizedMessages.push({ role: "system", content: safeString(system) });
       }
-      normalizedMessages.push({
-        role,
-        content: [
-          { type: "text", text: safeString(message.content, "请结合这张图片回答。") },
-          { type: "image_url", image_url: { url: imageUrl } },
-        ],
+
+      for (const message of messages) {
+        const role = message.role === "assistant" ? "assistant" : "user";
+        if (supportsImages && role !== "assistant" && message.imageDataUrl) {
+          const imageUrl = message.imageDataUrl.startsWith("data:")
+            ? await uploadDataUrlToDashScope(message.imageDataUrl, {
+                model,
+                fileNamePrefix: "vision-input",
+              })
+            : String(message.imageDataUrl);
+          if (imageUrl.startsWith("oss://")) {
+            needsOssResolve = true;
+          }
+          normalizedMessages.push({
+            role,
+            content: [
+              { type: "text", text: safeString(message.content, "请结合这张图片回答。") },
+              { type: "image_url", image_url: { url: imageUrl } },
+            ],
+          });
+          continue;
+        }
+
+        normalizedMessages.push({
+          role,
+          content: safeString(message.content),
+        });
+      }
+
+      const response = await fetch(`${baseUrl}/chat/completions`, {
+        method: "POST",
+        signal: AbortSignal.timeout(Number(timeoutMs) || getTutorTimeoutMs()),
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+          ...(needsOssResolve ? { "X-DashScope-OssResourceResolve": "enable" } : {}),
+        },
+        body: JSON.stringify({
+          model,
+          messages: normalizedMessages,
+          temperature: 0.7,
+          max_tokens: Number(maxTokens) || 1000,
+        }),
       });
-      continue;
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(data?.error?.message || data?.message || `DashScope request failed with status ${response.status}`);
+        error.status = response.status;
+        throw error;
+      }
+      return {
+        text: safeString(data?.choices?.[0]?.message?.content).trim(),
+        model,
+      };
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableModelError(error)) {
+        throw error;
+      }
     }
-
-    normalizedMessages.push({
-      role,
-      content: safeString(message.content),
-    });
   }
 
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    signal: AbortSignal.timeout(Number(timeoutMs) || getTutorTimeoutMs()),
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-      ...(needsOssResolve ? { "X-DashScope-OssResourceResolve": "enable" } : {}),
-    },
-    body: JSON.stringify({
-      model,
-      messages: normalizedMessages,
-      temperature: 0.7,
-      max_tokens: Number(maxTokens) || 1000,
-    }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data?.error?.message || data?.message || `DashScope request failed with status ${response.status}`);
-  }
-  return safeString(data?.choices?.[0]?.message?.content).trim();
+  throw lastError || new Error("No available DashScope model in fallback chain.");
+}
+
+async function createDashScopeCompatibleResponse(args) {
+  const result = await createDashScopeCompatibleResponseDetailed(args);
+  return result.text;
 }
 
 async function transcribeWithDashScope({ audioDataUrl, fileName, mimeType }) {
@@ -605,38 +688,44 @@ function isLowQualityTutorReply(text, messages = []) {
 }
 
 async function createTutorResponseWithFallback({ system, messages, rawMessages = messages, maxTokens, timeoutMs }) {
-  const primaryModel = getTutorModel();
-  const fallbackModel = getTutorFallbackModel();
+  const modelChain = getTutorModelChain();
   const strictSystem = `${safeString(system)}\n\n额外要求：\n1. 必须使用简体中文回答。\n2. 先直接回答，不要反问用户补充信息，除非完全无法判断。\n3. 如果是概念题，请先给定义，再给一个简短例子。\n4. 不要输出英文开场白。`;
+  let lastText = "";
+  const attemptedModels = [];
 
-  const primaryText = await createOpenAITextResponse({
-    system: strictSystem,
-    messages,
-    maxTokens,
-    modelOverride: primaryModel,
-    timeoutMs,
-  });
-
-  const primaryIsLowQuality = isLowQualityTutorReply(primaryText, rawMessages);
-  if (!primaryIsLowQuality) {
-    return { text: primaryText, model: primaryModel, retried: false };
+  for (const modelName of modelChain) {
+    try {
+      const result = await createOpenAITextResponseDetailed({
+        system: strictSystem,
+        messages,
+        maxTokens,
+        modelOverride: modelName,
+        timeoutMs,
+      });
+      const candidateText = safeString(result?.text);
+      const candidateModel = safeString(result?.model, modelName);
+      attemptedModels.push(candidateModel);
+      lastText = candidateText;
+      if (!isLowQualityTutorReply(candidateText, rawMessages)) {
+        return {
+          text: candidateText,
+          model: candidateModel,
+          retried: attemptedModels.length > 1,
+        };
+      }
+    } catch (error) {
+      attemptedModels.push(`${modelName}:error`);
+      if (!isRetryableModelError(error)) {
+        throw error;
+      }
+    }
   }
 
-  const fallbackText = await createOpenAITextResponse({
-    system: strictSystem,
-    messages,
-    maxTokens,
-    modelOverride: fallbackModel,
-    timeoutMs,
-  });
-
-  const fallbackIsLowQuality = isLowQualityTutorReply(fallbackText, rawMessages);
-  const localFallbackText = fallbackIsLowQuality ? buildLocalTutorFallback(rawMessages, { system }) : "";
-
+  const localFallbackText = buildLocalTutorFallback(rawMessages, { system });
   return {
-    text: fallbackIsLowQuality ? (localFallbackText || primaryText) : (fallbackText || primaryText),
-    model: fallbackIsLowQuality ? `${primaryModel}+local-fallback` : fallbackModel,
-    retried: true,
+    text: localFallbackText || lastText || "抱歉，我暂时没有生成稳定回答，请稍后重试。",
+    model: `${attemptedModels.filter(Boolean).join(" -> ")}${localFallbackText ? " -> local-fallback" : ""}`,
+    retried: attemptedModels.length > 1,
   };
 }
 
@@ -644,13 +733,18 @@ function extractOpenAITextFromChatCompletion(response) {
   return safeString(response?.choices?.[0]?.message?.content).trim();
 }
 
-async function createOpenAITextResponse({ system, messages = [], maxTokens = 1000, modelOverride, timeoutMs }) {
+async function createOpenAITextResponse({ system, messages = [], maxTokens = 1000, modelOverride, modelChain, timeoutMs }) {
+  const result = await createOpenAITextResponseDetailed({ system, messages, maxTokens, modelOverride, modelChain, timeoutMs });
+  return result.text;
+}
+
+async function createOpenAITextResponseDetailed({ system, messages = [], maxTokens = 1000, modelOverride, modelChain, timeoutMs }) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is not configured.");
   }
 
   if (isDashScopeCompatibleMode()) {
-    return createDashScopeCompatibleResponse({ system, messages, maxTokens, modelOverride, timeoutMs });
+    return createDashScopeCompatibleResponseDetailed({ system, messages, maxTokens, modelOverride, modelChain, timeoutMs });
   }
 
   const client = getOpenAIClient();
@@ -681,7 +775,7 @@ async function createOpenAITextResponse({ system, messages = [], maxTokens = 100
       temperature: 0.7,
       max_tokens: Number(maxTokens) || 1000,
     });
-    return extractOpenAITextFromChatCompletion(response);
+    return { text: extractOpenAITextFromChatCompletion(response), model };
   }
 
   const response = await client.responses.create({
@@ -698,7 +792,7 @@ async function createOpenAITextResponse({ system, messages = [], maxTokens = 100
     })),
     max_output_tokens: Number(maxTokens) || 1000,
   });
-  return safeString(response.output_text).trim();
+  return { text: safeString(response.output_text).trim(), model };
 }
 
 function getArray(value) {
@@ -945,6 +1039,7 @@ async function buildAiEvaluation(payload, fallbackEvaluation) {
     system,
     messages: reviewMessages,
     maxTokens: 1200,
+    modelChain: getHomeworkModelChain(getArray(payload.images).length > 0),
   });
   const parsed = parseJsonObject(text || "");
   if (!parsed) return null;
@@ -1916,12 +2011,17 @@ app.get("/api/health", (req, res) => {
       ? process.env.GEMINI_MODEL || "gemini-2.5-flash"
       : process.env.OPENAI_MODEL || "gpt-5-mini",
     visionModel: provider === "openai" && isDashScopeCompatibleMode() ? getDashScopeVisionModel() : undefined,
+    visionModelChain: provider === "openai" && isDashScopeCompatibleMode() ? getVisionModelChain() : undefined,
     asrModel: provider === "openai" && isDashScopeCompatibleMode() ? getDashScopeAsrModel() : undefined,
     hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
     hasOpenAIKey: Boolean(process.env.OPENAI_API_KEY),
     openaiBaseUrl: provider === "openai" ? (getOpenAIBaseUrl() || "https://api.openai.com/v1") : undefined,
     openaiCompatibleMode: provider === "openai" ? isOpenAICompatibleMode() : undefined,
     tutorModel: provider === "openai" ? getTutorModel() : undefined,
+    tutorModelChain: provider === "openai" ? getTutorModelChain() : undefined,
+    defaultModelChain: provider === "openai" ? getDefaultTextModelChain() : undefined,
+    homeworkModelChain: provider === "openai" ? getHomeworkModelChain(false) : undefined,
+    homeworkVisionModelChain: provider === "openai" ? getHomeworkModelChain(true) : undefined,
     tutorTimeoutMs: provider === "openai" ? getTutorTimeoutMs() : undefined,
     geminiBaseUrl: provider === "gemini"
       ? (process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com")
