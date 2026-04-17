@@ -388,74 +388,6 @@ function WeakPointExplanationCards({ items = [], titleMap = {} }) {
   );
 }
 
-function WeakPointCorrectionBlock({ items = [], titleMap = {}, answers = {}, onAnswer }) {
-  if (!items.length) return null;
-  return (
-    <div style={{ display: "grid", gap: 12, marginBottom: 12 }}>
-      {items.map((item) => (
-        <div key={`correction-${item.knowledgePointId}`} style={{ padding: 14, borderRadius: 14, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
-            纠错题：{titleMap[item.knowledgePointId] || item.knowledgePointId}
-          </div>
-          <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
-            先做下面 2 题，把最容易混淆的点先纠正，再进入 20 题连续练习。
-          </div>
-          <div style={{ display: "grid", gap: 10 }}>
-            {item.correctionQuestions.map((question, index) => {
-              const answerKey = `${item.knowledgePointId}-${index}`;
-              const currentAnswer = answers[answerKey];
-              return (
-                <div key={answerKey} style={{ padding: 12, borderRadius: 12, background: "rgba(17,17,17,0.03)" }}>
-                  <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7, marginBottom: 8 }}>{question.prompt}</div>
-                  <div style={{ display: "grid", gap: 6 }}>
-                    {question.options.map((option) => {
-                      const isCorrect = option === question.answer;
-                      const isSelected = currentAnswer?.selected === option;
-                      const reveal = Boolean(currentAnswer);
-                      return (
-                        <button
-                          key={`${answerKey}-${option}`}
-                          type="button"
-                          onClick={() => !currentAnswer && onAnswer?.(answerKey, option, question)}
-                          disabled={Boolean(currentAnswer)}
-                          style={{
-                            textAlign: "left",
-                            padding: "8px 10px",
-                            borderRadius: 10,
-                            border: "1px solid rgba(17,17,17,0.1)",
-                            background: reveal
-                              ? isCorrect
-                                ? "#111111"
-                                : isSelected
-                                  ? "#FDECEC"
-                                  : "#ffffff"
-                              : "#ffffff",
-                            color: reveal && isCorrect ? "#ffffff" : "#111111",
-                            cursor: currentAnswer ? "default" : "pointer",
-                          }}
-                        >
-                          {option}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {currentAnswer ? (
-                    <div style={{ marginTop: 8, fontSize: 11, color: currentAnswer.correct ? "#166534" : "#b91c1c", lineHeight: 1.8 }}>
-                      {currentAnswer.correct ? "回答正确。" : `回答不正确，正确答案是 ${question.answer}。`}
-                      <br />
-                      {question.explanation}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function InteractivePitchFrequencyWidgetCn() {
   const noteItems = [
     { label: "C3", freq: 130.81, tip: "频率较低，听感较沉稳。" },
@@ -3514,12 +3446,6 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             下一步建议：{getRecommendationFromSummary(lessonKnowledgeSummary)}
           </div>
         </div>
-        <WeakPointCorrectionBlock
-          items={weakEnhancements}
-          titleMap={weakPointTitleMap}
-          answers={weakCorrectionAnswers}
-          onAnswer={answerWeakCorrection}
-        />
         <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>互动检测</div>
           <div style={{ fontSize: 11, color: stats.errors > 0 ? "#b91c1c" : "var(--color-text-secondary)" }}>
@@ -3527,9 +3453,14 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
           </div>
         </div>
         <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
             <div style={{ fontSize: 12, fontWeight: 600 }}>课堂练习题</div>
-            <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>第 {practiceIndex + 1} / {practiceQuestions.length} 题</div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>第 {practiceIndex + 1} / {practiceQuestions.length} 题</div>
+              <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 2 }}>
+                {{"concept-recognition":"概念识别","knowledge-point-match":"知识点匹配","exclusion":"排除辨析","application":"应用题","analysis":"分析题","specific-fact":"事实记忆","contrast":"对比辨析"}[currentPractice?.questionType] ?? "综合题"}
+              </div>
+            </div>
           </div>
           <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7, marginBottom: 8 }}>{currentPractice?.prompt}</div>
           <div style={{ display: "grid", gap: 6 }}>
