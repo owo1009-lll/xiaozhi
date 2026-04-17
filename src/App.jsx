@@ -2268,11 +2268,20 @@ function buildKnowledgePointQuestionSet(point, lessonPoints = []) {
   ].filter((item) => Array.isArray(item.options) && item.options.length >= 3);
 }
 
+function shuffleArray(arr) {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 function createLessonPracticePool(lessonId, lessonTitle) {
   const lessonPoints = getKnowledgePointsForLesson(lessonId);
   const focus = HOMEWORK_FOCUS[lessonId] || lessonTitle;
   const formalQuestions = getQuestionsForLesson(lessonId);
-  const pool = formalQuestions.length ? formalQuestions : [];
+  const pool = formalQuestions.length ? shuffleArray(formalQuestions) : [];
   if (!pool.length) {
     pool.push({
       id: `${lessonId}-fallback`,
