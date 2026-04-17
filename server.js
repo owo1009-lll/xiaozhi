@@ -1387,6 +1387,261 @@ function buildStudentLearningReportData({ analyticsRecords = [], bktRecords = []
   };
 }
 
+function buildTeacherSampleReportData({ analyticsRecords = [], bktRecords = [] }) {
+  const records = getArray(analyticsRecords);
+  const bktRows = getArray(bktRecords);
+  const studentsMap = new Map();
+  const lessonsMap = new Map();
+  const latestKnowledgeByStudent = new Map();
+  const profileCounter = new Map();
+
+  for (const record of records) {
+    const studentId = safeString(record.studentId);
+    const studentLabel = decodeSafeText(record.studentLabel, studentId);
+    const lessonId = safeString(record.lessonId);
+    const lessonTitle = decodeSafeText(record.lessonTitle, lessonId);
+    const currentStudent = studentsMap.get(studentId) || {
+      studentId,
+      studentLabel,
+      lessonsVisited: 0,
+      averageScore: 0,
+      homeworkSubmitted: 0,
+      totalStudyMinutes: 0,
+      totalErrors: 0,
+      totalInteractions: 0,
+      latestUpdatedAt: "",
+    };
+    currentStudent.lessonsVisited += 1;
+    currentStudent.averageScore += Number(record.score || 0);
+    currentStudent.homeworkSubmitted += record.homeworkSubmitted ? 1 : 0;
+    currentStudent.totalStudyMinutes += Number(record.studyMinutes || 0);
+    currentStudent.totalErrors += Number(record.errors || 0);
+    currentStudent.totalInteractions += Number(record.interactions || 0);
+    currentStudent.latestUpdatedAt = safeString(record.updatedAt) > safeString(currentStudent.latestUpdatedAt)
+      ? safeString(record.updatedAt)
+      : currentStudent.latestUpdatedAt;
+    studentsMap.set(studentId, currentStudent);
+
+    const currentLesson = lessonsMap.get(lessonId) || {
+      lessonId,
+      lessonTitle,
+      totalScore: 0,
+      activeStudents: 0,
+      totalErrors: 0,
+    };
+    currentLesson.totalScore += Number(record.score || 0);
+    currentLesson.activeStudents += 1;
+    currentLesson.totalErrors += Number(record.errors || 0);
+    lessonsMap.set(lessonId, currentLesson);
+
+    const profileMatch = studentLabel.match(/^(优等型|中等稳定型|偏科型|低参与型)/);
+    if (profileMatch) {
+      const key = profileMatch[1];
+      profileCounter.set(key, Number(profileCounter.get(key) || 0) + 1);
+    }
+  }
+
+  for (const row of bktRows) {
+    const userId = safeString(row.userId);
+    const current = latestKnowledgeByStudent.get(userId) || [];
+    const merged = mergeStudentKnowledgeStates([
+      { knowledgeStates: current },
+      row,
+    ]);
+    latestKnowledgeByStudent.set(userId, merged);
+  }
+
+  const studentSummaries = [...studentsMap.values()].map((item) => {
+    const knowledgeStates = latestKnowledgeByStudent.get(item.studentId) || [];
+    const knowledgeSummary = summarizeKnowledgeStates(knowledgeStates);
+    return {
+      ...item,
+      averageScore: item.lessonsVisited ? Math.round(item.averageScore / item.lessonsVisited) : 0,
+      averageMastery: Number(knowledgeSummary.averageMastery || 0),
+      masteredCount: knowledgeStates.filter((state) => state.mastered).length,
+      weakPoints: knowledgeSummary.weakPoints,
+    };
+  }).sort((a, b) => safeString(a.studentId).localeCompare(safeString(b.studentId)));
+
+  const allKnowledgeStates = studentSummaries.flatMap((item) =>
+    (latestKnowledgeByStudent.get(item.studentId) || []).map((state) => ({
+      ...state,
+      studentId: item.studentId,
+      studentLabel: item.studentLabel,
+    })),
+  );
+
+  const knowledgePointStatsMap = new Map();
+  for (const row of allKnowledgeStates) {
+    const current = knowledgePointStatsMap.get(row.id) || {
+      id: row.id,
+      title: row.title,
+      lessonId: row.lessonId,
+      totalPL: 0,
+      count: 0,
+      masteredCount: 0,
+    };
+    current.totalPL += Number(row.pL || 0);
+    current.count += 1;
+    current.masteredCount += row.mastered ? 1 : 0;
+    knowledgePointStatsMap.set(row.id, current);
+  }
+
+  const knowledgePointStats = [...knowledgePointStatsMap.values()]
+    .map((item) => ({
+      ...item,
+      averagePL: item.count ? Number((item.totalPL / item.count).toFixed(3)) : 0,
+      masteredRate: item.count ? Number((item.masteredCount / item.count).toFixed(3)) : 0,
+    }))
+    .sort((a, b) => a.averagePL - b.averagePL);
+
+  const lessons = [...lessonsMap.values()]
+    .map((item) => ({
+      lessonId: item.lessonId,
+      lessonTitle: item.lessonTitle,
+      averageScore: item.activeStudents ? Math.round(item.totalScore / item.activeStudents) : 0,
+      activeStudents: item.activeStudents,
+      totalErrors: item.totalErrors,
+    }))
+    .sort((a, b) => safeString(a.lessonId).localeCompare(safeString(b.lessonId)));
+
+  const averageMastery = studentSummaries.length
+    ? Number((studentSummaries.reduce((sum, item) => sum + Number(item.averageMastery || 0), 0) / studentSummaries.length).toFixed(3))
+    : BKT_PARAMS.pL0;
+
+  return {
+    generatedAt: nowIso(),
+    summary: {
+      totalRecords: records.length,
+      totalStudents: studentSummaries.length,
+      totalHomeworkSubmitted: records.filter((item) => item.homeworkSubmitted).length,
+      averageScore: records.length ? Math.round(records.reduce((sum, item) => sum + Number(item.score || 0), 0) / records.length) : 0,
+      averageMastery,
+      lowMasteryStudents: studentSummaries.filter((item) => Number(item.averageMastery || 0) < 0.45).length,
+    },
+    profileDistribution: [...profileCounter.entries()].map(([label, count]) => ({ label, count })),
+    weakKnowledgePoints: knowledgePointStats.slice(0, 8),
+    strongKnowledgePoints: [...knowledgePointStats].sort((a, b) => b.averagePL - a.averagePL).slice(0, 5),
+    students: studentSummaries,
+    lessons,
+    knowledgePointStats,
+  };
+}
+
+function buildTeacherSampleReportCsv(report) {
+  const summaryRows = [
+    ["generatedAt", report.generatedAt],
+    ["totalRecords", report.summary.totalRecords],
+    ["totalStudents", report.summary.totalStudents],
+    ["totalHomeworkSubmitted", report.summary.totalHomeworkSubmitted],
+    ["averageScore", report.summary.averageScore],
+    ["averageMastery", report.summary.averageMastery],
+    ["lowMasteryStudents", report.summary.lowMasteryStudents],
+  ];
+  const studentRows = (report.students || []).map((item) => [
+    item.studentId,
+    item.studentLabel,
+    item.lessonsVisited,
+    item.averageScore,
+    item.totalStudyMinutes,
+    item.totalErrors,
+    item.totalInteractions,
+    Number(item.averageMastery || 0).toFixed(3),
+    item.masteredCount,
+    (item.weakPoints || []).map((point) => point.title).join(" / "),
+  ]);
+  const weakRows = (report.knowledgePointStats || []).map((item) => [
+    item.lessonId,
+    item.id,
+    item.title,
+    Number(item.averagePL || 0).toFixed(3),
+    Number(item.masteredRate || 0).toFixed(3),
+    item.count,
+  ]);
+  const sections = [
+    ["summaryKey", "value"],
+    ...summaryRows,
+    [],
+    ["studentId", "studentLabel", "lessonsVisited", "averageScore", "totalStudyMinutes", "totalErrors", "totalInteractions", "averageMastery", "masteredCount", "weakPoints"],
+    ...studentRows,
+    [],
+    ["lessonId", "knowledgePointId", "knowledgePointTitle", "averagePL", "masteredRate", "sampleCount"],
+    ...weakRows,
+  ];
+  return `\uFEFF${sections.map((row) => row.map((value) => {
+    const text = safeString(value);
+    return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  }).join(",")).join("\n")}\n`;
+}
+
+function buildTeacherSampleReportHtml(report) {
+  const profileCards = (report.profileDistribution || []).map((item) => `
+    <div class="card"><div class="label">${escapeHtml(item.label)}</div><div class="value">${item.count}</div></div>
+  `).join("");
+  const weakRows = (report.weakKnowledgePoints || []).map((item) => `
+    <tr>
+      <td>${escapeHtml(item.lessonId)}</td>
+      <td>${escapeHtml(item.title)}</td>
+      <td>${Number(item.averagePL || 0).toFixed(3)}</td>
+      <td>${Math.round(Number(item.masteredRate || 0) * 100)}%</td>
+      <td>${item.count}</td>
+    </tr>
+  `).join("");
+  const studentRows = (report.students || []).map((item) => `
+    <tr>
+      <td>${escapeHtml(item.studentLabel)}</td>
+      <td>${escapeHtml(item.studentId)}</td>
+      <td>${item.lessonsVisited}</td>
+      <td>${item.averageScore}%</td>
+      <td>${item.totalStudyMinutes}</td>
+      <td>${Number(item.averageMastery || 0).toFixed(3)}</td>
+      <td>${item.masteredCount}</td>
+    </tr>
+  `).join("");
+  return `<!doctype html>
+  <html lang="zh-CN">
+    <head>
+      <meta charset="utf-8" />
+      <title>教师样本报告</title>
+      <style>
+        body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; color: #111; margin: 32px; }
+        h1 { font-size: 24px; margin-bottom: 6px; }
+        h2 { font-size: 18px; margin: 24px 0 10px; }
+        .meta { color: #666; font-size: 12px; margin-bottom: 18px; }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+        .card { border: 1px solid #ddd; border-radius: 10px; padding: 12px; }
+        .label { color: #666; font-size: 11px; margin-bottom: 4px; }
+        .value { font-size: 20px; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #e5e5e5; padding: 8px; text-align: left; vertical-align: top; }
+        th { background: #f7f7f7; }
+      </style>
+    </head>
+    <body>
+      <h1>教师样本报告</h1>
+      <div class="meta">生成时间：${escapeHtml(report.generatedAt)}</div>
+      <div class="grid">
+        <div class="card"><div class="label">样本记录数</div><div class="value">${report.summary.totalRecords}</div></div>
+        <div class="card"><div class="label">学生数</div><div class="value">${report.summary.totalStudents}</div></div>
+        <div class="card"><div class="label">平均得分</div><div class="value">${report.summary.averageScore}%</div></div>
+        <div class="card"><div class="label">平均掌握度</div><div class="value">${Number(report.summary.averageMastery || 0).toFixed(3)}</div></div>
+      </div>
+      <h2>样本画像分布</h2>
+      <div class="grid">${profileCards}</div>
+      <h2>当前最弱知识点</h2>
+      <table>
+        <thead><tr><th>课时</th><th>知识点</th><th>平均 P(L)</th><th>mastered 率</th><th>样本数</th></tr></thead>
+        <tbody>${weakRows}</tbody>
+      </table>
+      <h2>学生样本明细</h2>
+      <table>
+        <thead><tr><th>学生</th><th>ID</th><th>访问课时</th><th>平均得分</th><th>学习分钟</th><th>平均掌握度</th><th>mastered 数</th></tr></thead>
+        <tbody>${studentRows}</tbody>
+      </table>
+    </body>
+  </html>`;
+}
+
 function buildStudentReportHtml(report) {
   const strongList = report.strongPoints.map((item) => `${escapeHtml(item.title)} (${Number(item.pL || 0).toFixed(3)})`).join(" / ") || "暂无";
   const weakList = report.weakPoints.map((item) => `${escapeHtml(item.title)} (${Number(item.pL || 0).toFixed(3)})`).join(" / ") || "暂无";
@@ -2686,6 +2941,37 @@ app.get("/api/teacher/overview", async (req, res) => {
     lessons,
     records: records.slice(0, 80),
   });
+});
+
+app.get("/api/reports/teacher-samples-preview", async (req, res) => {
+  const [analyticsStore, bktStore] = await Promise.all([readAnalyticsStore(), readBktSummaryStore()]);
+  const report = buildTeacherSampleReportData({
+    analyticsRecords: analyticsStore.records,
+    bktRecords: bktStore.records,
+  });
+  return res.json({ ok: true, report });
+});
+
+app.get("/api/reports/teacher-samples-export", async (req, res) => {
+  const format = safeString(req.query.format, "html").toLowerCase();
+  const [analyticsStore, bktStore] = await Promise.all([readAnalyticsStore(), readBktSummaryStore()]);
+  const report = buildTeacherSampleReportData({
+    analyticsRecords: analyticsStore.records,
+    bktRecords: bktStore.records,
+  });
+  if (format === "json") {
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="teacher-sample-report.json"');
+    return res.send(`${JSON.stringify(report, null, 2)}\n`);
+  }
+  if (format === "csv") {
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="teacher-sample-report.csv"');
+    return res.send(buildTeacherSampleReportCsv(report));
+  }
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="teacher-sample-report.html"');
+  return res.send(buildTeacherSampleReportHtml(report));
 });
 
 app.get("/api/reports/student-preview", async (req, res) => {

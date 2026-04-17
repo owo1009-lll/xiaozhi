@@ -4838,6 +4838,8 @@ function TeacherDashboardPage() {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportGenerating, setReportGenerating] = useState(false);
   const [reportPdfInfo, setReportPdfInfo] = useState(null);
+  const [teacherSampleReportPreview, setTeacherSampleReportPreview] = useState(null);
+  const [teacherSampleReportLoading, setTeacherSampleReportLoading] = useState(false);
   const currentStudentRecord = (bktData?.students || []).find((item) => item.userId === currentStudentProfile.studentId) || null;
   const selectedPilotTemplate = REAL_STUDENT_PILOT_TEMPLATES.find((item) => item.id === selectedPilotTemplateId) || REAL_STUDENT_PILOT_TEMPLATES[0];
 
@@ -5147,6 +5149,24 @@ function TeacherDashboardPage() {
     }
   }, [selectedReportUserId]);
 
+  const previewTeacherSampleReport = useCallback(async () => {
+    setTeacherSampleReportLoading(true);
+    try {
+      const response = await fetch("/api/reports/teacher-samples-preview");
+      const json = await response.json();
+      setTeacherSampleReportPreview(response.ok ? json.report : null);
+    } finally {
+      setTeacherSampleReportLoading(false);
+    }
+  }, []);
+
+  const downloadTeacherSampleReport = useCallback((format) => {
+    const anchor = document.createElement("a");
+    anchor.href = `/api/reports/teacher-samples-export?format=${encodeURIComponent(format)}`;
+    anchor.download = format === "json" ? "teacher-sample-report.json" : format === "csv" ? "teacher-sample-report.csv" : "teacher-sample-report.html";
+    anchor.click();
+  }, []);
+
   if (!authChecked) {
     return <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>正在校验教师后台权限...</div>;
   }
@@ -5224,6 +5244,51 @@ function TeacherDashboardPage() {
         {seedStatusMessage ? (
           <div style={{ marginTop: 10, fontSize: 11, color: /失败|无法|error/i.test(seedStatusMessage) ? "#b91c1c" : "#166534", lineHeight: 1.8 }}>
             {seedStatusMessage}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="section-card" style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>导出教师样本报告</div>
+            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+              聚合当前教师后台样本数据，导出为 `JSON / CSV / HTML`，用于团队验收、试点说明或人工复核。
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={previewTeacherSampleReport} disabled={teacherSampleReportLoading} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: teacherSampleReportLoading ? "default" : "pointer" }}>
+              {teacherSampleReportLoading ? "加载中..." : "预览样本报告"}
+            </button>
+            <button onClick={() => downloadTeacherSampleReport("json")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>导出 JSON</button>
+            <button onClick={() => downloadTeacherSampleReport("csv")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>导出 CSV</button>
+            <button onClick={() => downloadTeacherSampleReport("html")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>导出 HTML</button>
+          </div>
+        </div>
+        {teacherSampleReportPreview ? (
+          <div className="lesson-layout" style={{ marginTop: 14 }}>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>样本报告摘要</div>
+              <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                样本记录：{teacherSampleReportPreview.summary?.totalRecords || 0}
+                <br />
+                学生数：{teacherSampleReportPreview.summary?.totalStudents || 0}，平均得分：{teacherSampleReportPreview.summary?.averageScore || 0}% ，平均掌握度：{Number(teacherSampleReportPreview.summary?.averageMastery || 0).toFixed(3)}
+                <br />
+                低掌握学生：{teacherSampleReportPreview.summary?.lowMasteryStudents || 0}，已提交作业：{teacherSampleReportPreview.summary?.totalHomeworkSubmitted || 0}
+                <br />
+                当前最弱知识点：{(teacherSampleReportPreview.weakKnowledgePoints || []).slice(0, 3).map((item) => item.title).join(" / ") || "暂无"}
+              </div>
+            </div>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>样本画像分布</div>
+              <div style={{ display: "grid", gap: 6 }}>
+                {(teacherSampleReportPreview.profileDistribution || []).map((item) => (
+                  <div key={`profile-${item.label}`} style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                    {item.label}：{item.count} 人
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         ) : null}
       </div>
