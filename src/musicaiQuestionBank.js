@@ -5,7 +5,6 @@ import {
   getDiagnosticSourceKnowledgePoints,
   isDiagnosticKnowledgePoint,
 } from "./musicaiKnowledge.js";
-import { NOTATION_QUESTIONS } from "./musicaiNotationQuestions.js";
 
 function unique(items = []) {
   return items.filter((item, index, array) => item && array.indexOf(item) === index);
@@ -365,12 +364,9 @@ function buildFormalQuestionsForPoint(point, lessonPoints) {
   ];
 }
 
-export const FORMAL_QUESTION_BANK = [
-  ...KNOWLEDGE_POINTS.flatMap((point) =>
-    buildFormalQuestionsForPoint(point, KNOWLEDGE_POINTS_BY_LESSON[point.lessonId] || []),
-  ),
-  ...NOTATION_QUESTIONS,
-];
+export const FORMAL_QUESTION_BANK = KNOWLEDGE_POINTS.flatMap((point) =>
+  buildFormalQuestionsForPoint(point, KNOWLEDGE_POINTS_BY_LESSON[point.lessonId] || []),
+);
 
 export function getQuestionsForLesson(lessonId) {
   if (lessonId === DIAGNOSTIC_LESSON_ID) {

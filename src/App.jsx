@@ -406,7 +406,6 @@ function WeakPointCorrectionBlock({ items = [], titleMap = {}, answers = {}, onA
               const currentAnswer = answers[answerKey];
               return (
                 <div key={answerKey} style={{ padding: 12, borderRadius: 12, background: "rgba(17,17,17,0.03)" }}>
-                  {question.imageData ? <div dangerouslySetInnerHTML={{ __html: question.imageData }} style={{ marginBottom: 8 }} /> : null}
                   <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7, marginBottom: 8 }}>{question.prompt}</div>
                   <div style={{ display: "grid", gap: 6 }}>
                     {question.options.map((option) => {
@@ -3532,7 +3531,6 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             <div style={{ fontSize: 12, fontWeight: 600 }}>课堂练习题</div>
             <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>第 {practiceIndex + 1} / {practiceQuestions.length} 题</div>
           </div>
-          {currentPractice?.imageData ? <div dangerouslySetInnerHTML={{ __html: currentPractice.imageData }} style={{ marginBottom: 8 }} /> : null}
           <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7, marginBottom: 8 }}>{currentPractice?.prompt}</div>
           <div style={{ display: "grid", gap: 6 }}>
             {currentPractice?.options.map((option) => (
