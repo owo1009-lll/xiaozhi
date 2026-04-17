@@ -1569,7 +1569,7 @@ function buildTeacherSampleReportCsv(report) {
     ...weakRows,
   ];
   return `\uFEFF${sections.map((row) => row.map((value) => {
-    const text = safeString(value);
+    const text = value == null ? "" : String(value);
     return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
   }).join(",")).join("\n")}\n`;
 }
