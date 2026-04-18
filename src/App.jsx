@@ -1852,21 +1852,66 @@ const HOMEWORK_METER_MAP = {
 };
 
 const RHYTHM_SYMBOLS = [
-  { id: "whole", label: "\\u5168\\u97f3\\u7b26", duration: 4, kind: "note" },
-  { id: "half", label: "\\u4e8c\\u5206\\u97f3\\u7b26", duration: 2, kind: "note" },
-  { id: "quarter", label: "\\u56db\\u5206\\u97f3\\u7b26", duration: 1, kind: "note" },
-  { id: "eighth", label: "\\u516b\\u5206\\u97f3\\u7b26", duration: 0.5, kind: "note" },
-  { id: "sixteenth", label: "\\u5341\\u516d\\u5206\\u97f3\\u7b26", duration: 0.25, kind: "note" },
-  { id: "dotted-half", label: "\\u9644\\u70b9\\u4e8c\\u5206", duration: 3, kind: "note" },
-  { id: "dotted-quarter", label: "\\u9644\\u70b9\\u56db\\u5206", duration: 1.5, kind: "note" },
-  { id: "dotted-eighth", label: "\\u9644\\u70b9\\u516b\\u5206", duration: 0.75, kind: "note" },
-  { id: "whole-rest", label: "\\u5168\\u4f11\\u6b62\\u7b26", duration: 4, kind: "rest" },
-  { id: "half-rest", label: "\\u4e8c\\u5206\\u4f11\\u6b62", duration: 2, kind: "rest" },
-  { id: "quarter-rest", label: "\\u56db\\u5206\\u4f11\\u6b62", duration: 1, kind: "rest" },
-  { id: "eighth-rest", label: "\\u516b\\u5206\\u4f11\\u6b62", duration: 0.5, kind: "rest" },
-  { id: "sixteenth-rest", label: "\\u5341\\u516d\\u5206\\u4f11\\u6b62", duration: 0.25, kind: "rest" },
-  { id: "tie", label: "\\u8fde\\u97f3", duration: 0, kind: "tie" },
+  { id: "whole", label: "全音符", duration: 4, kind: "note" },
+  { id: "half", label: "二分音符", duration: 2, kind: "note" },
+  { id: "quarter", label: "四分音符", duration: 1, kind: "note" },
+  { id: "eighth", label: "八分音符", duration: 0.5, kind: "note" },
+  { id: "sixteenth", label: "十六分音符", duration: 0.25, kind: "note" },
+  { id: "dotted-half", label: "附点二分音符", duration: 3, kind: "note" },
+  { id: "dotted-quarter", label: "附点四分音符", duration: 1.5, kind: "note" },
+  { id: "dotted-eighth", label: "附点八分音符", duration: 0.75, kind: "note" },
+  { id: "whole-rest", label: "全休止符", duration: 4, kind: "rest" },
+  { id: "half-rest", label: "二分休止符", duration: 2, kind: "rest" },
+  { id: "quarter-rest", label: "四分休止符", duration: 1, kind: "rest" },
+  { id: "eighth-rest", label: "八分休止符", duration: 0.5, kind: "rest" },
+  { id: "sixteenth-rest", label: "十六分休止符", duration: 0.25, kind: "rest" },
+  { id: "tie", label: "连音", duration: 0, kind: "tie" },
 ];
+
+function decodeEscapedUnicodeText(value) {
+  if (typeof value !== "string" || !value.includes("\\u")) {
+    return value;
+  }
+  return value.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+}
+
+function decodeEscapedUnicodeDeep(value) {
+  if (typeof value === "string") {
+    return decodeEscapedUnicodeText(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => decodeEscapedUnicodeDeep(item));
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, decodeEscapedUnicodeDeep(item)]));
+  }
+  return value;
+}
+
+function normalizeRhythmEntry(item) {
+  if (!item || typeof item !== "object") {
+    return item;
+  }
+  return {
+    ...item,
+    label: decodeEscapedUnicodeText(item.label),
+  };
+}
+
+function normalizeRhythmMeasures(measures = [[], []]) {
+  return measures.map((measure = []) => measure.map((item) => normalizeRhythmEntry(item)));
+}
+
+function normalizeRhythmSubmission(rhythmSubmission) {
+  if (!rhythmSubmission || typeof rhythmSubmission !== "object") {
+    return rhythmSubmission;
+  }
+  const decoded = decodeEscapedUnicodeDeep(rhythmSubmission);
+  return {
+    ...decoded,
+    measures: normalizeRhythmMeasures(decoded.measures || [[], []]),
+  };
+}
 
 const HOMEWORK_REQUIREMENTS = {};
 
@@ -1961,12 +2006,13 @@ function summarizePianoSubmission(pianoSubmission) {
 }
 
 function getRhythmValidation(rhythmSubmission) {
-  if (!rhythmSubmission?.measures) {
+  const normalizedSubmission = normalizeRhythmSubmission(rhythmSubmission);
+  if (!normalizedSubmission?.measures) {
     return { complete: false, issues: [] };
   }
-  const targetBeats = getMeterBeats(rhythmSubmission.meter);
+  const targetBeats = getMeterBeats(normalizedSubmission.meter);
   const issues = [];
-  rhythmSubmission.measures.forEach((measure = [], index) => {
+  normalizedSubmission.measures.forEach((measure = [], index) => {
     const beats = calculateMeasureDuration(measure);
     if (!measure.length) {
       issues.push(`第 ${index + 1} 小节尚未填写。`);
@@ -1975,7 +2021,7 @@ function getRhythmValidation(rhythmSubmission) {
     if (beats < targetBeats) issues.push(`第 ${index + 1} 小节拍数不足。`);
     if (beats > targetBeats) issues.push(`第 ${index + 1} 小节超出拍号要求。`);
     const lastItem = measure[measure.length - 1];
-    if (lastItem?.tieToNext && index === rhythmSubmission.measures.length - 1) {
+    if (lastItem?.tieToNext && index === normalizedSubmission.measures.length - 1) {
       issues.push(`第 ${index + 1} 小节最后一个音带有连音，但后面没有对应音符。`);
     }
   });
@@ -1983,9 +2029,10 @@ function getRhythmValidation(rhythmSubmission) {
 }
 
 function summarizeRhythmSubmissionLegacy(rhythmSubmission) {
-  if (!rhythmSubmission?.measures) return "未填写节奏。";
-  return rhythmSubmission.measures
-    .map((measure, index) => `第${index + 1}小节：${(measure || []).map((item) => item.label).join(" / ") || "空"}`)
+  const normalizedSubmission = normalizeRhythmSubmission(rhythmSubmission);
+  if (!normalizedSubmission?.measures) return "未填写节奏。";
+  return normalizedSubmission.measures
+    .map((measure, index) => `第${index + 1}小节：${(measure || []).map((item) => decodeEscapedUnicodeText(item.label)).join(" / ") || "空"}`)
     .join("；");
 }
 
@@ -2039,9 +2086,10 @@ async function compressImageFileToDataUrl(file, { maxWidth = 1280, maxHeight = 1
 }
 
 function summarizeRhythmSubmission(rhythmSubmission) {
-  if (!rhythmSubmission?.measures) return "未填写节奏。";
-  return rhythmSubmission.measures
-    .map((measure, index) => `第${index + 1}小节：${(measure || []).map((item) => `${item.label}${item.tieToNext ? "~" : ""}`).join(" / ") || "空"}`)
+  const normalizedSubmission = normalizeRhythmSubmission(rhythmSubmission);
+  if (!normalizedSubmission?.measures) return "未填写节奏。";
+  return normalizedSubmission.measures
+    .map((measure, index) => `第${index + 1}小节：${(measure || []).map((item) => `${decodeEscapedUnicodeText(item.label)}${item.tieToNext ? "~" : ""}`).join(" / ") || "空"}`)
     .join("；");
 }
 
@@ -2308,14 +2356,16 @@ function HomeworkImageUploader({
 }
 
 function RhythmHomeworkEditorV2({ rhythmSubmission, onChange, onPlay }) {
-  const activeMeasure = rhythmSubmission?.activeMeasure || 0;
-  const measures = rhythmSubmission?.measures || [[], []];
-  const targetBeats = getMeterBeats(rhythmSubmission?.meter);
+  const normalizedSubmission = useMemo(() => normalizeRhythmSubmission(rhythmSubmission), [rhythmSubmission]);
+  const activeMeasure = normalizedSubmission?.activeMeasure || 0;
+  const measures = useMemo(() => normalizeRhythmMeasures(normalizedSubmission?.measures || [[], []]), [normalizedSubmission?.measures]);
+  const rhythmSymbols = useMemo(() => RHYTHM_SYMBOLS.map((symbol) => normalizeRhythmEntry(symbol)), []);
+  const targetBeats = getMeterBeats(normalizedSubmission?.meter);
 
   const appendSymbol = useCallback((symbol) => {
     onChange((prev) => {
       const nextMeasures = (prev.measures || [[], []]).map((measure) => [...measure]);
-      nextMeasures[prev.activeMeasure || 0].push({ ...symbol, tieToNext: false });
+      nextMeasures[prev.activeMeasure || 0].push({ ...normalizeRhythmEntry(symbol), tieToNext: false });
       return { ...prev, measures: nextMeasures };
     });
   }, [onChange]);
@@ -2362,7 +2412,7 @@ function RhythmHomeworkEditorV2({ rhythmSubmission, onChange, onPlay }) {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <select value={rhythmSubmission?.meter || "4/4"} onChange={(e) => onChange((prev) => ({ ...prev, meter: e.target.value }))} style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff" }}>
+          <select value={normalizedSubmission?.meter || "4/4"} onChange={(e) => onChange((prev) => ({ ...prev, meter: e.target.value }))} style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff" }}>
             {["2/4", "3/4", "4/4", "6/8"].map((meter) => <option key={meter} value={meter}>{meter}</option>)}
           </select>
           {[0, 1].map((measureIndex) => (
@@ -2373,7 +2423,7 @@ function RhythmHomeworkEditorV2({ rhythmSubmission, onChange, onPlay }) {
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8, marginBottom: 10 }}>
-        {RHYTHM_SYMBOLS.map((symbol) => (
+        {rhythmSymbols.map((symbol) => (
           <button key={symbol.id} onClick={() => appendSymbol(symbol)} style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.1)", background: "#f8f8f8", cursor: "pointer", textAlign: "left" }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>{symbol.label}</div>
             <div style={{ fontSize: 10, color: "var(--color-text-tertiary)", marginTop: 4 }}>{symbol.kind === "tie" ? "连接前后音" : `${symbol.duration} 拍`}</div>
@@ -3242,7 +3292,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         homeworkText: homeworkDraft,
         homeworkImages,
         homeworkImageCount: homeworkImages.length,
-        homeworkRhythmData: homeworkRhythm,
+        homeworkRhythmData: normalizeRhythmSubmission(homeworkRhythm),
         homeworkStaffData: homeworkStaff,
         homeworkPianoData: homeworkPiano,
         homeworkVoiceTranscript: voiceTranscript,
@@ -3277,7 +3327,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
           homeworkPrompt: lessonHomework,
           text: homeworkDraft,
           images: homeworkImages,
-          rhythmSubmission: homeworkRhythm,
+          rhythmSubmission: normalizeRhythmSubmission(homeworkRhythm),
           staffSubmission: homeworkStaff,
           pianoSubmission: homeworkPiano,
           voiceTranscript,
@@ -3313,7 +3363,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         homeworkText: homeworkDraft,
         homeworkImages,
         homeworkImageCount: homeworkImages.length,
-        homeworkRhythmData: homeworkRhythm,
+        homeworkRhythmData: normalizeRhythmSubmission(homeworkRhythm),
         homeworkStaffData: homeworkStaff,
         homeworkPianoData: homeworkPiano,
         homeworkVoiceTranscript: voiceTranscript,
@@ -3557,7 +3607,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
           />}
           {homeworkRequirement.channels.includes("rhythm") && <RhythmHomeworkEditorV2
             rhythmSubmission={homeworkRhythm}
-            onChange={(updater) => setHomeworkRhythm((prev) => (typeof updater === "function" ? updater(prev) : updater))}
+            onChange={(updater) => setHomeworkRhythm((prev) => normalizeRhythmSubmission(typeof updater === "function" ? updater(prev) : updater))}
             onPlay={playRhythmMeasure}
           />}
           {homeworkRequirement.channels.includes("staff") && <StaffHomeworkEditorV2
@@ -4796,6 +4846,7 @@ function TeacherDashboardPage() {
   const [teacherSampleReportLoading, setTeacherSampleReportLoading] = useState(false);
   const currentStudentRecord = (bktData?.students || []).find((item) => item.userId === currentStudentProfile.studentId) || null;
   const selectedPilotTemplate = REAL_STUDENT_PILOT_TEMPLATES.find((item) => item.id === selectedPilotTemplateId) || REAL_STUDENT_PILOT_TEMPLATES[0];
+  const rq4Data = data?.experimentSimulation?.rq4 || null;
 
   useEffect(() => {
     try {
@@ -5253,6 +5304,138 @@ function TeacherDashboardPage() {
         {metricCard("平均得分", `${data.summary.averageScore}%`)}
         {metricCard("已提交作业", data.summary.totalHomeworkSubmitted)}
       </div>
+
+      {rq4Data ? (
+        <div className="section-card" style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>RQ4 深度使用实验组数据</div>
+              <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                来源：{data.experimentSimulation?.source === "seed-json" ? "随部署样本" : "本地 experiment-sim-package-v2.xlsx"}
+                <br />
+                样本：实验组 {rq4Data.sampleCount || 0} 人，低参与学生 {rq4Data.lowParticipationCount || 0} 人，Pearson 达标 {rq4Data.significantPearsons || 0} 项，强预测因子 {rq4Data.strongPredictors || 0} 个。
+              </div>
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: rq4Data.overallPass ? "#166534" : "#b91c1c" }}>
+              {rq4Data.overallPass ? "RQ4 达标" : "RQ4 未达标"}
+            </div>
+          </div>
+
+          <div className="metric-grid" style={{ marginBottom: 14 }}>
+            {(rq4Data.summaryMetrics || []).filter((item) => !["low_participation_count", "significant_pearsons", "strong_predictors", "overall_pass"].includes(item.metric)).map((item) => (
+              <div key={`rq4-metric-${item.metric}`} className="subtle-card" style={{ padding: 12 }}>
+                <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 6 }}>{item.metric}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#111111" }}>
+                  {typeof item.mean === "number" ? Number(item.mean).toFixed(item.metric.includes("accuracy") || item.metric.includes("pL") ? 3 : 1) : item.mean}
+                </div>
+                <div style={{ fontSize: 11, color: item.pass ? "#166534" : "#b91c1c", marginTop: 6 }}>
+                  目标：{item.target || "-"} · {item.pass ? "通过" : "未通过"}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="lesson-layout" style={{ marginBottom: 14 }}>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>与后测成绩的 Pearson 相关</div>
+              <div style={{ display: "grid", gap: 6 }}>
+                {(rq4Data.correlations || []).map((item) => (
+                  <div key={`rq4-corr-${item.variableY}`} style={{ display: "grid", gridTemplateColumns: "1fr 70px 70px 90px", gap: 8, fontSize: 11, alignItems: "center" }}>
+                    <div style={{ color: "#111111", fontWeight: 600 }}>{item.variableY}</div>
+                    <div>r={Number(item.r || 0).toFixed(3)}</div>
+                    <div>p={Number(item.p || 0).toFixed(4)}</div>
+                    <div style={{ color: item.pass ? "#166534" : "#b91c1c" }}>{item.pass ? "达标" : "未达标"}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>逻辑一致性检查</div>
+              <div style={{ display: "grid", gap: 6 }}>
+                {(rq4Data.logicChecks || []).map((item) => (
+                  <div key={`rq4-logic-${item.check}`} style={{ display: "grid", gridTemplateColumns: "1fr 70px 70px 90px", gap: 8, fontSize: 11, alignItems: "center" }}>
+                    <div style={{ color: "#111111", fontWeight: 600 }}>{item.check}</div>
+                    <div>r={Number(item.r || 0).toFixed(3)}</div>
+                    <div>p={Number(item.p || 0).toFixed(4)}</div>
+                    <div style={{ color: item.pass ? "#166534" : "#b91c1c" }}>{item.pass ? "通过" : "失败"}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="lesson-layout" style={{ marginBottom: 14 }}>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>层级回归摘要</div>
+              <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 8 }}>
+                Block 1 R²：{Number(rq4Data.regression?.block1?.rSquared || 0).toFixed(4)}
+                <br />
+                Block 2 R²：{Number(rq4Data.regression?.block2?.rSquared || 0).toFixed(4)}
+                <br />
+                ΔR²：{Number(rq4Data.regression?.block2?.deltaRSquared || 0).toFixed(4)}，F change：{Number(rq4Data.regression?.block2?.fChange || 0).toFixed(4)}，p：{Number(rq4Data.regression?.block2?.pChange || 0).toFixed(4)}
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                  <thead>
+                    <tr style={{ textAlign: "left", color: "var(--color-text-secondary)" }}>
+                      <th style={{ padding: "6px 8px" }}>预测变量</th>
+                      <th style={{ padding: "6px 8px" }}>β</th>
+                      <th style={{ padding: "6px 8px" }}>p</th>
+                      <th style={{ padding: "6px 8px" }}>Tolerance</th>
+                      <th style={{ padding: "6px 8px" }}>VIF</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(rq4Data.regression?.coefficients || []).map((item) => (
+                      <tr key={`rq4-beta-${item.predictor}`} style={{ borderTop: "1px solid rgba(17,17,17,0.08)" }}>
+                        <td style={{ padding: "6px 8px" }}>{item.predictor}</td>
+                        <td style={{ padding: "6px 8px" }}>{Number(item.standardizedBeta || 0).toFixed(3)}</td>
+                        <td style={{ padding: "6px 8px" }}>{Number(item.p || 0).toFixed(4)}</td>
+                        <td style={{ padding: "6px 8px" }}>{Number(item.tolerance || 0).toFixed(3)}</td>
+                        <td style={{ padding: "6px 8px" }}>{Number(item.vif || 0).toFixed(3)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="subtle-card" style={{ padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>实验组学生样本</div>
+              <div style={{ overflowX: "auto", maxHeight: 360 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                  <thead>
+                    <tr style={{ textAlign: "left", color: "var(--color-text-secondary)" }}>
+                      <th style={{ padding: "6px 8px" }}>学生</th>
+                      <th style={{ padding: "6px 8px" }}>后测</th>
+                      <th style={{ padding: "6px 8px" }}>时长</th>
+                      <th style={{ padding: "6px 8px" }}>题量</th>
+                      <th style={{ padding: "6px 8px" }}>正确率</th>
+                      <th style={{ padding: "6px 8px" }}>P(L)</th>
+                      <th style={{ padding: "6px 8px" }}>mastered</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(rq4Data.students || []).slice(0, 24).map((item) => (
+                      <tr key={`rq4-student-${item.studentId}`} style={{ borderTop: "1px solid rgba(17,17,17,0.08)" }}>
+                        <td style={{ padding: "6px 8px" }}>{item.studentId}</td>
+                        <td style={{ padding: "6px 8px" }}>{item.postMte ?? "-"}</td>
+                        <td style={{ padding: "6px 8px" }}>{item.totalTimeMin ?? "-"}</td>
+                        <td style={{ padding: "6px 8px" }}>{item.totalExercises ?? "-"}</td>
+                        <td style={{ padding: "6px 8px" }}>{typeof item.overallAccuracy === "number" ? item.overallAccuracy.toFixed(3) : "-"}</td>
+                        <td style={{ padding: "6px 8px" }}>{typeof item.avgPL === "number" ? item.avgPL.toFixed(3) : "-"}</td>
+                        <td style={{ padding: "6px 8px" }}>{item.masteredCount ?? "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ marginTop: 8, fontSize: 11, color: "var(--color-text-secondary)" }}>
+                当前展示前 24 名实验组学生，完整 150 名数据已写入后台源文件并可继续扩展导出。
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {bktLoadError ? (
         <div className="section-card" style={{ marginBottom: 18, borderColor: "rgba(185,28,28,0.18)", background: "rgba(254,242,242,0.9)" }}>

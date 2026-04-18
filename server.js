@@ -1,6 +1,7 @@
 ﻿import "dotenv/config";
 import express from "express";
 import OpenAI from "openai";
+import xlsx from "xlsx";
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
@@ -22,17 +23,21 @@ const app = express();
 const port = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, "data");
 const SEED_DIR = path.join(__dirname, "seed");
+const EXPERIMENT_SIM_DIR = path.join(DATA_DIR, "experiment-sim");
 const ANALYTICS_FILE = path.join(DATA_DIR, "teacher-analytics.json");
 const BKT_SUMMARY_FILE = path.join(DATA_DIR, "teacher-bkt-summary.json");
 const BKT_TEST_FILE = path.join(DATA_DIR, "bkt-test-results.json");
+const EXPERIMENT_SIM_V2_FILE = path.join(EXPERIMENT_SIM_DIR, "experiment-sim-package-v2.xlsx");
 const ANALYTICS_SEED_FILE = path.join(SEED_DIR, "teacher-analytics.seed.json");
 const BKT_SUMMARY_SEED_FILE = path.join(SEED_DIR, "teacher-bkt-summary.seed.json");
+const EXPERIMENT_RQ4_SEED_FILE = path.join(SEED_DIR, "experiment-rq4.seed.json");
 const REPORTS_DIR = path.join(DATA_DIR, "reports");
 const TUTOR_CACHE_TTL_MS = 5 * 60 * 1000;
 const execFileAsync = promisify(execFile);
 let analyticsWriteQueue = Promise.resolve();
 let bktSummaryWriteQueue = Promise.resolve();
 let bktTestWriteQueue = Promise.resolve();
+let experimentRq4Cache = { sourceKey: "", data: null };
 const tutorResponseCache = new Map();
 const tutorInflightRequests = new Map();
 const AI_CIRCUIT_BREAKER_WINDOW_MS = 5 * 60 * 1000;
@@ -928,6 +933,25 @@ function getArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function decodeEscapedUnicodeText(value) {
+  if (typeof value !== "string" || !value.includes("\\u")) return value;
+  return value.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+}
+
+function decodeEscapedUnicodeDeep(value) {
+  if (typeof value === "string") return decodeEscapedUnicodeText(value);
+  if (Array.isArray(value)) return value.map((item) => decodeEscapedUnicodeDeep(item));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, decodeEscapedUnicodeDeep(item)]));
+  }
+  return value;
+}
+
+function normalizeRhythmSubmission(rhythmSubmission) {
+  if (!rhythmSubmission || typeof rhythmSubmission !== "object") return rhythmSubmission;
+  return decodeEscapedUnicodeDeep(rhythmSubmission);
+}
+
 function hasRhythmContent(rhythmSubmission) {
   return Boolean(rhythmSubmission?.measures?.some((measure) => Array.isArray(measure) && measure.length));
 }
@@ -952,11 +976,12 @@ function getSubmissionTypes(payload = {}) {
 }
 
 function getRhythmIssues(rhythmSubmission) {
-  if (!rhythmSubmission?.measures) return [];
-  const [top, bottom] = String(rhythmSubmission.meter || "4/4").split("/");
+  const normalizedSubmission = normalizeRhythmSubmission(rhythmSubmission);
+  if (!normalizedSubmission?.measures) return [];
+  const [top, bottom] = String(normalizedSubmission.meter || "4/4").split("/");
   const beats = Number(top || 4) * (4 / Number(bottom || 4));
   const issues = [];
-  rhythmSubmission.measures.forEach((measure = [], index) => {
+  normalizedSubmission.measures.forEach((measure = [], index) => {
     if (!measure.length) {
       issues.push(`第 ${index + 1} 小节为空`);
       return;
@@ -965,7 +990,7 @@ function getRhythmIssues(rhythmSubmission) {
     if (duration < beats) issues.push(`第 ${index + 1} 小节拍数不足`);
     if (duration > beats) issues.push(`第 ${index + 1} 小节拍数超出`);
     const last = measure[measure.length - 1];
-    if (last?.tieToNext && index === rhythmSubmission.measures.length - 1) {
+    if (last?.tieToNext && index === normalizedSubmission.measures.length - 1) {
       issues.push(`第 ${index + 1} 小节末尾连音缺少后续音符`);
     }
   });
@@ -980,7 +1005,7 @@ function buildHeuristicScores(payload = {}) {
 
   const text = safeString(payload.text).trim();
   const images = getArray(payload.images);
-  const rhythmSubmission = payload.rhythmSubmission || null;
+  const rhythmSubmission = normalizeRhythmSubmission(payload.rhythmSubmission || null);
   const staffSubmission = payload.staffSubmission || null;
   const pianoSubmission = payload.pianoSubmission || null;
   const voiceTranscript = safeString(payload.voiceTranscript).trim();
@@ -1141,7 +1166,7 @@ async function buildAiEvaluation(payload, fallbackEvaluation) {
     text: safeString(payload.text),
     voiceTranscript: safeString(payload.voiceTranscript),
     submissionTypes: getSubmissionTypes(payload),
-    rhythmSubmission: payload.rhythmSubmission || null,
+    rhythmSubmission: normalizeRhythmSubmission(payload.rhythmSubmission || null),
     staffSubmission: payload.staffSubmission || null,
     pianoSubmission: payload.pianoSubmission || null,
     imageCount: getArray(payload.images).length,
@@ -1300,6 +1325,167 @@ async function writeBktTestStore(store) {
     await fs.writeFile(BKT_TEST_FILE, JSON.stringify(store, null, 2), "utf8");
   });
   await bktTestWriteQueue;
+}
+
+function toFiniteNumberOrNull(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function toBooleanFlag(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  const normalized = safeString(value).trim().toLowerCase();
+  if (!normalized) return false;
+  return ["true", "pass", "yes", "ok", "1", "成功", "通过"].includes(normalized);
+}
+
+function readSheetRows(workbook, sheetName) {
+  const sheet = workbook?.Sheets?.[sheetName];
+  if (!sheet) return [];
+  return xlsx.utils.sheet_to_json(sheet, { defval: null });
+}
+
+function normalizeExperimentRq4Payload(raw, sourceLabel) {
+  if (!raw || typeof raw !== "object") return null;
+  const summaryRows = getArray(raw.summaryRows).map((row) => ({
+    metric: safeString(row.metric),
+    mean: typeof row.mean === "string" && !row.mean.trim() ? null : (toFiniteNumberOrNull(row.mean) ?? safeString(row.mean)),
+    sd: toFiniteNumberOrNull(row.sd),
+    target: safeString(row.target),
+    pass: toBooleanFlag(row.pass),
+  }));
+  const correlationRows = getArray(raw.correlationRows).map((row) => ({
+    variableX: safeString(row.variable_x),
+    variableY: safeString(row.variable_y),
+    n: toFiniteNumberOrNull(row.n),
+    r: toFiniteNumberOrNull(row.r),
+    p: toFiniteNumberOrNull(row.p),
+    threshold: safeString(row.threshold),
+    pass: toBooleanFlag(row.pass),
+  }));
+  const logicRows = getArray(raw.logicRows).map((row) => ({
+    check: safeString(row.check),
+    variableX: safeString(row.variable_x),
+    variableY: safeString(row.variable_y),
+    r: toFiniteNumberOrNull(row.r),
+    p: toFiniteNumberOrNull(row.p),
+    threshold: safeString(row.threshold),
+    pass: toBooleanFlag(row.pass),
+  }));
+  const regressionRows = getArray(raw.regressionRows);
+  const block1 = regressionRows.find((row) => safeString(row.block).toLowerCase() === "block1") || {};
+  const block2 = regressionRows.find((row) => safeString(row.block).toLowerCase() === "block2") || {};
+  const coefficientRows = regressionRows
+    .filter((row) => {
+      const block = safeString(row.block).toLowerCase();
+      return block && !["block1", "block2", "predictor"].includes(block);
+    })
+    .map((row) => ({
+      predictor: safeString(row.block),
+      unstandardizedB: toFiniteNumberOrNull(row.r_squared),
+      standardizedBeta: toFiniteNumberOrNull(row.adjusted_r_squared),
+      standardError: toFiniteNumberOrNull(row.f_value),
+      t: toFiniteNumberOrNull(row.model_p),
+      p: toFiniteNumberOrNull(row.delta_r_squared),
+      tolerance: toFiniteNumberOrNull(row.f_change),
+      vif: toFiniteNumberOrNull(row.p_change),
+    }));
+  const studentRows = getArray(raw.studentRows).map((row) => ({
+    studentId: safeString(row.studentId),
+    groupLabel: safeString(row.groupLabel),
+    preMte: toFiniteNumberOrNull(row.pre_MTE_formA),
+    postMte: toFiniteNumberOrNull(row.post_MTE_formB),
+    totalTimeMin: toFiniteNumberOrNull(row.total_time_min),
+    totalExercises: toFiniteNumberOrNull(row.total_exercises),
+    overallAccuracy: toFiniteNumberOrNull(row.overall_accuracy),
+    avgPL: toFiniteNumberOrNull(row.avg_pL),
+    masteredCount: toFiniteNumberOrNull(row.mastered_count),
+    tutorQueries: toFiniteNumberOrNull(row.tutor_queries),
+    errorCount: toFiniteNumberOrNull(row.error_count),
+  }));
+  const metricValue = (metricKey) => summaryRows.find((item) => item.metric === metricKey)?.mean;
+  return {
+    source: sourceLabel,
+    rq4: {
+      sampleCount: studentRows.length,
+      summaryMetrics: summaryRows,
+      lowParticipationCount: Number(metricValue("low_participation_count") || 0),
+      significantPearsons: Number(metricValue("significant_pearsons") || 0),
+      strongPredictors: Number(metricValue("strong_predictors") || 0),
+      overallPass: String(metricValue("overall_pass") || "").toUpperCase() === "PASS",
+      correlations: correlationRows,
+      logicChecks: logicRows,
+      regression: {
+        block1: {
+          rSquared: toFiniteNumberOrNull(block1.r_squared),
+          adjustedRSquared: toFiniteNumberOrNull(block1.adjusted_r_squared),
+          fValue: toFiniteNumberOrNull(block1.f_value),
+          modelP: toFiniteNumberOrNull(block1.model_p),
+        },
+        block2: {
+          rSquared: toFiniteNumberOrNull(block2.r_squared),
+          adjustedRSquared: toFiniteNumberOrNull(block2.adjusted_r_squared),
+          fValue: toFiniteNumberOrNull(block2.f_value),
+          modelP: toFiniteNumberOrNull(block2.model_p),
+          deltaRSquared: toFiniteNumberOrNull(block2.delta_r_squared),
+          fChange: toFiniteNumberOrNull(block2.f_change),
+          pChange: toFiniteNumberOrNull(block2.p_change),
+        },
+        coefficients: coefficientRows,
+      },
+      students: studentRows,
+    },
+  };
+}
+
+function parseExperimentRq4Workbook(workbook) {
+  return normalizeExperimentRq4Payload(
+    {
+      summaryRows: readSheetRows(workbook, "rq4_summary"),
+      correlationRows: readSheetRows(workbook, "rq4_correlations"),
+      logicRows: readSheetRows(workbook, "rq4_logic_checks"),
+      regressionRows: readSheetRows(workbook, "rq4_hierarchical_regression"),
+      studentRows: readSheetRows(workbook, "scale_scores").filter(
+        (row) => safeString(row.groupLabel).toLowerCase() === "experimental" || Number(row.group) === 1,
+      ),
+    },
+    "local-workbook",
+  );
+}
+
+async function readExperimentRq4Data() {
+  try {
+    const fileStat = await fs.stat(EXPERIMENT_SIM_V2_FILE);
+    const sourceKey = `xlsx:${fileStat.mtimeMs}`;
+    if (experimentRq4Cache.sourceKey === sourceKey && experimentRq4Cache.data) {
+      return experimentRq4Cache.data;
+    }
+    const workbook = xlsx.readFile(EXPERIMENT_SIM_V2_FILE);
+    const parsed = parseExperimentRq4Workbook(workbook);
+    if (parsed?.rq4?.sampleCount) {
+      experimentRq4Cache = { sourceKey, data: parsed };
+      return parsed;
+    }
+  } catch {
+    // noop
+  }
+  try {
+    const seedStat = await fs.stat(EXPERIMENT_RQ4_SEED_FILE);
+    const sourceKey = `seed:${seedStat.mtimeMs}`;
+    if (experimentRq4Cache.sourceKey === sourceKey && experimentRq4Cache.data) {
+      return experimentRq4Cache.data;
+    }
+    const raw = await fs.readFile(EXPERIMENT_RQ4_SEED_FILE, "utf8");
+    const parsed = normalizeExperimentRq4Payload(JSON.parse(raw), "seed-json");
+    if (parsed?.rq4?.sampleCount) {
+      experimentRq4Cache = { sourceKey, data: parsed };
+      return parsed;
+    }
+  } catch {
+    // noop
+  }
+  return null;
 }
 
 function escapeHtml(value) {
@@ -2487,7 +2673,7 @@ app.post("/api/analytics", async (req, res) => {
     homeworkText: safeString(payload.homeworkText),
     homeworkImages: getArray(payload.homeworkImages),
     homeworkImageCount: Number(payload.homeworkImageCount || 0),
-    homeworkRhythmData: payload.homeworkRhythmData && typeof payload.homeworkRhythmData === "object" ? payload.homeworkRhythmData : null,
+    homeworkRhythmData: payload.homeworkRhythmData && typeof payload.homeworkRhythmData === "object" ? normalizeRhythmSubmission(payload.homeworkRhythmData) : null,
     homeworkStaffData: payload.homeworkStaffData && typeof payload.homeworkStaffData === "object" ? payload.homeworkStaffData : null,
     homeworkPianoData: payload.homeworkPianoData && typeof payload.homeworkPianoData === "object" ? payload.homeworkPianoData : null,
     homeworkVoiceTranscript: safeString(payload.homeworkVoiceTranscript),
@@ -2884,7 +3070,7 @@ app.post("/api/homework-review", async (req, res) => {
 });
 
 app.get("/api/teacher/overview", async (req, res) => {
-  const store = await readAnalyticsStore();
+  const [store, experimentSimulation] = await Promise.all([readAnalyticsStore(), readExperimentRq4Data()]);
   const records = [...store.records].sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
   const studentsMap = new Map();
   const lessonsMap = new Map();
@@ -2940,6 +3126,7 @@ app.get("/api/teacher/overview", async (req, res) => {
     students,
     lessons,
     records: records.slice(0, 80),
+    experimentSimulation,
   });
 });
 
