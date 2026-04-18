@@ -4844,9 +4844,16 @@ function TeacherDashboardPage() {
   const [reportPdfInfo, setReportPdfInfo] = useState(null);
   const [teacherSampleReportPreview, setTeacherSampleReportPreview] = useState(null);
   const [teacherSampleReportLoading, setTeacherSampleReportLoading] = useState(false);
+  const [rq4StudentQuery, setRq4StudentQuery] = useState("");
   const currentStudentRecord = (bktData?.students || []).find((item) => item.userId === currentStudentProfile.studentId) || null;
   const selectedPilotTemplate = REAL_STUDENT_PILOT_TEMPLATES.find((item) => item.id === selectedPilotTemplateId) || REAL_STUDENT_PILOT_TEMPLATES[0];
   const rq4Data = data?.experimentSimulation?.rq4 || null;
+  const filteredRq4Students = useMemo(() => {
+    const rows = rq4Data?.students || [];
+    const keyword = rq4StudentQuery.trim().toLowerCase();
+    if (!keyword) return rows;
+    return rows.filter((item) => String(item.studentId || "").toLowerCase().includes(keyword));
+  }, [rq4Data?.students, rq4StudentQuery]);
 
   useEffect(() => {
     try {
@@ -5400,37 +5407,68 @@ function TeacherDashboardPage() {
               </div>
             </div>
             <div className="subtle-card" style={{ padding: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>实验组学生样本</div>
-              <div style={{ overflowX: "auto", maxHeight: 360 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 700 }}>实验组 150 人完整数据</div>
+                <input
+                  value={rq4StudentQuery}
+                  onChange={(event) => setRq4StudentQuery(event.target.value)}
+                  placeholder="按学生 ID 搜索"
+                  style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", minWidth: 180 }}
+                />
+              </div>
+              <div style={{ overflowX: "auto", maxHeight: 420 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
                   <thead>
                     <tr style={{ textAlign: "left", color: "var(--color-text-secondary)" }}>
                       <th style={{ padding: "6px 8px" }}>学生</th>
+                      <th style={{ padding: "6px 8px" }}>前测</th>
                       <th style={{ padding: "6px 8px" }}>后测</th>
+                      <th style={{ padding: "6px 8px" }}>前测 IMMS</th>
+                      <th style={{ padding: "6px 8px" }}>后测 IMMS</th>
+                      <th style={{ padding: "6px 8px" }}>PU</th>
+                      <th style={{ padding: "6px 8px" }}>PEU</th>
                       <th style={{ padding: "6px 8px" }}>时长</th>
                       <th style={{ padding: "6px 8px" }}>题量</th>
                       <th style={{ padding: "6px 8px" }}>正确率</th>
                       <th style={{ padding: "6px 8px" }}>P(L)</th>
                       <th style={{ padding: "6px 8px" }}>mastered</th>
+                      <th style={{ padding: "6px 8px" }}>导师提问</th>
+                      <th style={{ padding: "6px 8px" }}>错误数</th>
+                      <th style={{ padding: "6px 8px" }}>A/R/C/S 后测</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(rq4Data.students || []).slice(0, 24).map((item) => (
+                    {filteredRq4Students.map((item) => (
                       <tr key={`rq4-student-${item.studentId}`} style={{ borderTop: "1px solid rgba(17,17,17,0.08)" }}>
                         <td style={{ padding: "6px 8px" }}>{item.studentId}</td>
+                        <td style={{ padding: "6px 8px" }}>{item.preMte ?? "-"}</td>
                         <td style={{ padding: "6px 8px" }}>{item.postMte ?? "-"}</td>
+                        <td style={{ padding: "6px 8px" }}>{typeof item.preImmsTotal === "number" ? item.preImmsTotal.toFixed(3) : "-"}</td>
+                        <td style={{ padding: "6px 8px" }}>{typeof item.postImmsTotal === "number" ? item.postImmsTotal.toFixed(3) : "-"}</td>
+                        <td style={{ padding: "6px 8px" }}>{typeof item.puMean === "number" ? item.puMean.toFixed(3) : "-"}</td>
+                        <td style={{ padding: "6px 8px" }}>{typeof item.peuMean === "number" ? item.peuMean.toFixed(3) : "-"}</td>
                         <td style={{ padding: "6px 8px" }}>{item.totalTimeMin ?? "-"}</td>
                         <td style={{ padding: "6px 8px" }}>{item.totalExercises ?? "-"}</td>
                         <td style={{ padding: "6px 8px" }}>{typeof item.overallAccuracy === "number" ? item.overallAccuracy.toFixed(3) : "-"}</td>
                         <td style={{ padding: "6px 8px" }}>{typeof item.avgPL === "number" ? item.avgPL.toFixed(3) : "-"}</td>
                         <td style={{ padding: "6px 8px" }}>{item.masteredCount ?? "-"}</td>
+                        <td style={{ padding: "6px 8px" }}>{item.tutorQueries ?? "-"}</td>
+                        <td style={{ padding: "6px 8px" }}>{item.errorCount ?? "-"}</td>
+                        <td style={{ padding: "6px 8px" }}>
+                          {[
+                            typeof item.postAttention === "number" ? item.postAttention.toFixed(2) : "-",
+                            typeof item.postRelevance === "number" ? item.postRelevance.toFixed(2) : "-",
+                            typeof item.postConfidence === "number" ? item.postConfidence.toFixed(2) : "-",
+                            typeof item.postSatisfaction === "number" ? item.postSatisfaction.toFixed(2) : "-",
+                          ].join(" / ")}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               <div style={{ marginTop: 8, fontSize: 11, color: "var(--color-text-secondary)" }}>
-                当前展示前 24 名实验组学生，完整 150 名数据已写入后台源文件并可继续扩展导出。
+                当前显示 {filteredRq4Students.length} / {rq4Data.students?.length || 0} 名实验组学生的完整数据，教师后台已接入全部 150 名学生。
               </div>
             </div>
           </div>
