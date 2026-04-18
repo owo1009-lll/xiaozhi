@@ -3095,11 +3095,25 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
   const homeworkHasContent = submissionTypes.length > 0;
   const requiredSubmissionLabels = homeworkRequirement.requiredAnyOf.map((item) => HOMEWORK_CHANNEL_LABELS[item] || item).join(" / ");
 
-  const homeworkItems = [
-    `复习主题：围绕“${lessonKnowledgeSummary.weak.filter(p => p.pL < 0.45).map(p => p.title).join(" / ") || HOMEWORK_FOCUS[lesson.id] || lesson.t}”整理一页知识提纲。`,
-    `练习要求：完成 1 轮课堂错题回顾，重点检查 ${lessonKnowledgeSummary.weak.slice(0, 2).map(p => p.title + "(" + Math.round(p.pL * 100) + "%)").join(" / ") || Object.keys(stats.errorTypes)[0] || "音程判断与概念理解"}。`,
-    `学习追踪：本次学习约 ${studyMinutes} 分钟，共记录 ${stats.interactions} 次交互，平均掌握度 ${Math.round(lessonKnowledgeSummary.averageMastery * 100)}%，请写下今天最容易出错的 1 个知识点。`,
-  ];
+  const homeworkItems = (() => {
+    const bkt = lessonKnowledgeSummary;
+    const criticalWeak = bkt.weak.filter(p => p.pL < 0.45);
+    const anyWeak = bkt.weak.filter(p => p.pL < 0.75).slice(0, 2);
+    const avgPct = Math.round(bkt.averageMastery * 100);
+    const weakList = anyWeak.map(p => p.title + "(" + Math.round(p.pL * 100) + "%)").join(" / ");
+    const weakNames = anyWeak.map(p => p.title).join(" / ");
+    const focusTopic = HOMEWORK_FOCUS[lesson.id] || lesson.t;
+    const evalHelper = homeworkRequirement.helper;
+    return [
+      "复习主题：" + focusTopic +
+        (criticalWeak.length > 0 ? " - 重点补弱：" + criticalWeak.map(p => p.title + "(" + Math.round(p.pL*100) + "%)").join(" / ")
+        : anyWeak.length > 0 ? " - 巩固：" + weakList
+        : "，平均 " + avgPct + "%，掌握良好") + "。",
+      "作业说明：" + evalHelper,
+      "练习要求：重点检查 " + (weakNames || "各知识点") + "，当前平均掌握度 " + avgPct + "%" + "。",
+      "学习追踪：学习 " + studyMinutes + " 分钟，共 " + stats.interactions + " 次交互，平均 " + avgPct + "%。请写下今天最难理解的 1 个知识点。",
+    ];
+  })();
 
   const getKeyCenterX = useCallback((noteIndex) => {
     if (BK.includes(noteIndex)) {
