@@ -559,6 +559,25 @@ function normalizeTutorPrompt(text) {
     .trim();
 }
 
+function isNonInstructionalTutorPrompt(prompt) {
+  const normalized = normalizeTutorPrompt(prompt);
+  if (!normalized) return true;
+  if (/^[\d\s.,，。!?！？;；:：'"“”‘’\-_/\\]+$/.test(normalized)) return true;
+  if (/^(你在干嘛|你是谁|你会什么|你好|在吗|hello|hi|hey)$/i.test(normalized)) return true;
+  return false;
+}
+
+function buildTutorMetaFallback(prompt) {
+  const normalized = normalizeTutorPrompt(prompt);
+  if (/^(你在干嘛|你是谁|你会什么)$/i.test(normalized)) {
+    return "我在这里帮你解答当前课时的乐理问题。你可以直接问某个概念、题目、谱例或作业要求，例如“什么是等音？”或“C♯ 和 D♭ 是什么关系？”。";
+  }
+  if (/^(你好|在吗|hello|hi|hey)$/i.test(normalized)) {
+    return "你好，我是 AI 乐理导师。请直接输入你想问的乐理问题，我会按当前课时内容解释。";
+  }
+  return "这个输入太短，无法判断你要问的乐理问题。请直接输入一个具体问题，例如“什么是等音？”或“中央 C 在哪里？”。";
+}
+
 function extractChineseKeywords(text = "") {
   return [...new Set(
     safeString(text)
@@ -648,6 +667,7 @@ function getKnowledgePointMatchRanking(prompt, { imageName = "", system = "", li
     const directPoint = KNOWLEDGE_POINTS.find((point) => point.id === matchedImageHint[1]) || null;
     return directPoint ? [{ point: directPoint, score: 999 }] : [];
   }
+  if (isNonInstructionalTutorPrompt(cleanedPrompt)) return [];
   if (!promptKeywords.length && !normalizedPrompt) return [];
 
   const promptMatches = KNOWLEDGE_POINTS
@@ -705,6 +725,7 @@ function buildDiagnosticTutorFallback() {
 function shouldPreferLocalTutorResponse(prompt, intent, matchedPoints = [], system = "") {
   const normalizedPrompt = normalizeTutorPrompt(prompt);
   const normalizedSystem = normalizeTutorPrompt(system);
+  if (isNonInstructionalTutorPrompt(normalizedPrompt)) return true;
   if (/综合诊断|前 11 课|前11课|薄弱项|薄弱点|复习建议|复习顺序/.test(normalizedPrompt)) return true;
   if (!matchedPoints.length && /综合诊断|前 11 课|前11课/.test(normalizedSystem) && /诊断|复习|薄弱|建议|怎么学|如何学/.test(normalizedPrompt)) return true;
   if (intent.homework) return true;
@@ -757,6 +778,14 @@ function buildLocalTutorFallback(messages = [], { system = "" } = {}) {
   const prompt = extractLatestUserPrompt(messages);
   const imageName = extractLatestUserImageName(messages);
   const intent = detectTutorIntent({ prompt, imageName });
+  if (!imageName && isNonInstructionalTutorPrompt(prompt)) {
+    return {
+      text: buildTutorMetaFallback(prompt),
+      matchedPoint: null,
+      matchedPoints: [],
+      intent,
+    };
+  }
   const matchedPoints = getKnowledgePointMatchRanking(prompt, { imageName, system }, 2).map((item) => item.point);
   const matchedPoint = matchedPoints[0] || null;
   const normalizedPrompt = normalizeTutorPrompt(prompt);
