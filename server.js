@@ -583,7 +583,7 @@ function buildTutorMetaFallback(prompt) {
   if (/^(你好|在吗|hello|hi|hey)$/i.test(normalized)) {
     return "你好，我是 AI 乐理导师。请直接输入你想问的乐理问题，我会按当前课时内容解释。";
   }
-  return `你输入的是“${normalized || "空内容"}”。我可以继续回应，但它不是一个明确的乐理问题；如果你想学习当前课时，可以直接问“什么是等音？”或“中央 C 在哪里？”。`;
+  return `已收到：“${normalized || "空内容"}”。你可以继续输入任意内容；如果你想学习当前课时，可以直接问“什么是等音？”或“中央 C 在哪里？”。`;
 }
 
 function extractChineseKeywords(text = "") {
