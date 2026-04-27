@@ -214,6 +214,10 @@ function getVisionModelChain() {
   ]);
 }
 
+function isVisionCapableModel(model) {
+  return /vl|vision|ocr|omni/i.test(safeString(model));
+}
+
 function isRetryableModelError(error) {
   const detail = safeString(error?.message, "").toLowerCase();
   return Boolean(
@@ -312,12 +316,18 @@ async function createDashScopeCompatibleResponseDetailed({ system, messages = []
 
   const baseUrl = getOpenAIBaseUrl();
   const hasImages = hasImageMessages(messages);
-  const candidateModels = parseModelChain(modelOverride || modelChain, hasImages ? getVisionModelChain() : getDefaultTextModelChain());
+  const requestedModels = parseModelChain(modelOverride || modelChain, hasImages ? getVisionModelChain() : getDefaultTextModelChain());
+  const candidateModels = hasImages
+    ? requestedModels.filter((model) => isVisionCapableModel(model))
+    : requestedModels;
+  const normalizedCandidateModels = candidateModels.length
+    ? candidateModels
+    : (hasImages ? getVisionModelChain().filter((model) => isVisionCapableModel(model)) : getDefaultTextModelChain());
   let lastError = null;
 
-  for (const model of candidateModels) {
+  for (const model of normalizedCandidateModels) {
     try {
-      const supportsImages = /vl|vision|ocr|omni/i.test(model);
+      const supportsImages = isVisionCapableModel(model);
       const normalizedMessages = [];
       let needsOssResolve = false;
 
@@ -906,7 +916,8 @@ function isLowQualityTutorReply(text, messages = []) {
 }
 
 async function createTutorResponseWithFallback({ system, messages, rawMessages = messages, maxTokens, timeoutMs }) {
-  const modelChain = getTutorModelChain();
+  const hasImages = hasImageMessages(rawMessages) || hasImageMessages(messages);
+  const modelChain = hasImages ? getVisionModelChain() : getTutorModelChain();
   const strictSystem = `${safeString(system)}\n\n额外要求：\n1. 必须使用简体中文回答。\n2. 先直接回答，不要反问用户补充信息，除非完全无法判断。\n3. 如果是概念题，请先给定义，再给一个简短例子。\n4. 不要输出英文开场白。\n5. 如果用户上传图片，必须先描述图片中可见内容；如果图片不是乐理题、作业或课件，也要如实说明图中物体，不要硬套当前课时或作业批改模板。`;
   let lastText = "";
   const attemptedModels = [];
