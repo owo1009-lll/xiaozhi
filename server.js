@@ -600,13 +600,16 @@ function extractLatestUserImageName(messages = []) {
   return safeString(latestUserMessage?.imageName).trim();
 }
 
-function detectTutorIntent({ prompt = "", imageName = "" } = {}) {
+function detectTutorIntent({ prompt = "", imageName = "", imageUploaded = false } = {}) {
   const source = `${safeString(prompt)} ${safeString(imageName)}`.toLowerCase();
   const homeworkInfo = /作业是什么|课后作业是什么|有什么作业|作业要求|课后作业要求|怎么做作业|作业在哪里|课后作业在哪里/.test(source);
+  const nonHomeworkImage = /非作业|不是作业|不属于作业|不要按作业|不按作业|普通图片|生活图片|非乐理|不是乐理/.test(source);
   return {
+    imageUploaded: Boolean(imageUploaded),
+    nonHomeworkImage,
     homeworkInfo,
-    homework: !homeworkInfo && /提交|批改|纠错|反馈|提醒|作业.+错|作业.+改|检查作业|评价作业|学生作业|老师/.test(source),
-    image: Boolean(imageName) || /图片|拍照|读图|看图|课件|截图|图中/.test(source),
+    homework: !homeworkInfo && !nonHomeworkImage && /提交|批改|纠错|反馈|提醒|作业.+错|作业.+改|检查作业|评价作业|学生作业|老师/.test(source),
+    image: Boolean(imageUploaded) || Boolean(imageName) || /图片|拍照|读图|看图|课件|截图|图中/.test(source),
     teaching: /教学口吻|给学生解释|向学生解释|老师应该|如何举例/.test(source),
   };
 }
@@ -735,6 +738,7 @@ function buildDiagnosticTutorFallback() {
 function shouldPreferLocalTutorResponse(prompt, intent, matchedPoints = [], system = "") {
   const normalizedPrompt = normalizeTutorPrompt(prompt);
   const normalizedSystem = normalizeTutorPrompt(system);
+  if (intent.imageUploaded) return false;
   if (isNonInstructionalTutorPrompt(normalizedPrompt)) return true;
   if (intent.homeworkInfo) return true;
   if (/综合诊断|前 11 课|前11课|薄弱项|薄弱点|复习建议|复习顺序/.test(normalizedPrompt)) return true;
@@ -793,10 +797,15 @@ function buildConceptTutorFallback(point, intent, prompt) {
   ].filter(Boolean).join("");
 }
 
+function buildNonHomeworkImageFallback() {
+  return "这张图看起来不是乐理作业图片。当前视觉模型没有稳定返回具体识别结果；你可以补一句想让我识别什么，例如“图里有哪些物体？”或“这是不是乐理题？”。";
+}
+
 function buildLocalTutorFallback(messages = [], { system = "" } = {}) {
   const prompt = extractLatestUserPrompt(messages);
+  const imageUploaded = hasImageMessages(messages);
   const imageName = extractLatestUserImageName(messages);
-  const intent = detectTutorIntent({ prompt, imageName });
+  const intent = detectTutorIntent({ prompt, imageName, imageUploaded });
   if (!imageName && isNonInstructionalTutorPrompt(prompt)) {
     return {
       text: buildTutorMetaFallback(prompt),
@@ -808,6 +817,14 @@ function buildLocalTutorFallback(messages = [], { system = "" } = {}) {
   if (!imageName && intent.homeworkInfo) {
     return {
       text: buildHomeworkInfoFallback(),
+      matchedPoint: null,
+      matchedPoints: [],
+      intent,
+    };
+  }
+  if (imageUploaded && intent.nonHomeworkImage) {
+    return {
+      text: buildNonHomeworkImageFallback(),
       matchedPoint: null,
       matchedPoints: [],
       intent,
@@ -873,12 +890,16 @@ function buildLocalTutorFallback(messages = [], { system = "" } = {}) {
 function isLowQualityTutorReply(text, messages = []) {
   const content = safeString(text).trim();
   const latestPrompt = extractLatestUserPrompt(messages);
+  const latestUserMessage = [...getArray(messages)]
+    .reverse()
+    .find((message) => safeString(message?.role, "user") !== "assistant");
+  const latestHasImage = Boolean(latestUserMessage?.imageDataUrl);
   if (!content) return true;
   if (looksLikeEnglishDominant(content)) return true;
   if (isGenericTutorFailureText(content)) return true;
   if (/问号|没有具体问题|请提供明确的问题|请提供更多信息|无法判断你的问题|无效的输入|系统错误|乱码|无明确语义|无法从中提取/.test(content)) return true;
   if (content.length < 12) return true;
-  if (latestPrompt && !/^[\s?.!,;:，。！？；：]+$/.test(latestPrompt) && !hasMeaningfulKeywordOverlap(content, latestPrompt)) {
+  if (!latestHasImage && latestPrompt && !/^[\s?.!,;:，。！？；：]+$/.test(latestPrompt) && !hasMeaningfulKeywordOverlap(content, latestPrompt)) {
     return true;
   }
   return false;
@@ -886,7 +907,7 @@ function isLowQualityTutorReply(text, messages = []) {
 
 async function createTutorResponseWithFallback({ system, messages, rawMessages = messages, maxTokens, timeoutMs }) {
   const modelChain = getTutorModelChain();
-  const strictSystem = `${safeString(system)}\n\n额外要求：\n1. 必须使用简体中文回答。\n2. 先直接回答，不要反问用户补充信息，除非完全无法判断。\n3. 如果是概念题，请先给定义，再给一个简短例子。\n4. 不要输出英文开场白。`;
+  const strictSystem = `${safeString(system)}\n\n额外要求：\n1. 必须使用简体中文回答。\n2. 先直接回答，不要反问用户补充信息，除非完全无法判断。\n3. 如果是概念题，请先给定义，再给一个简短例子。\n4. 不要输出英文开场白。\n5. 如果用户上传图片，必须先描述图片中可见内容；如果图片不是乐理题、作业或课件，也要如实说明图中物体，不要硬套当前课时或作业批改模板。`;
   let lastText = "";
   const attemptedModels = [];
   const localFallback = buildLocalTutorFallback(rawMessages, { system });
