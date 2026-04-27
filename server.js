@@ -567,6 +567,14 @@ function isNonInstructionalTutorPrompt(prompt) {
   return false;
 }
 
+function shouldSkipKnowledgePointMatching(prompt) {
+  const normalized = normalizeTutorPrompt(prompt);
+  if (!normalized) return true;
+  const hasTextKeyword = extractPromptKeywords(normalized).length > 0;
+  const hasMusicToken = /[A-G](?:[#♯b♭]?)(?:\d)?|[1-9]\/[1248]|C[#♯]|D[b♭]|中央\s*C/i.test(normalized);
+  return !hasTextKeyword && !hasMusicToken;
+}
+
 function buildTutorMetaFallback(prompt) {
   const normalized = normalizeTutorPrompt(prompt);
   if (/^(你在干嘛|你是谁|你会什么)$/i.test(normalized)) {
@@ -575,7 +583,7 @@ function buildTutorMetaFallback(prompt) {
   if (/^(你好|在吗|hello|hi|hey)$/i.test(normalized)) {
     return "你好，我是 AI 乐理导师。请直接输入你想问的乐理问题，我会按当前课时内容解释。";
   }
-  return "这个输入太短，无法判断你要问的乐理问题。请直接输入一个具体问题，例如“什么是等音？”或“中央 C 在哪里？”。";
+  return `你输入的是“${normalized || "空内容"}”。我可以继续回应，但它不是一个明确的乐理问题；如果你想学习当前课时，可以直接问“什么是等音？”或“中央 C 在哪里？”。`;
 }
 
 function extractChineseKeywords(text = "") {
@@ -594,8 +602,10 @@ function extractLatestUserImageName(messages = []) {
 
 function detectTutorIntent({ prompt = "", imageName = "" } = {}) {
   const source = `${safeString(prompt)} ${safeString(imageName)}`.toLowerCase();
+  const homeworkInfo = /作业是什么|课后作业是什么|有什么作业|作业要求|课后作业要求|怎么做作业|作业在哪里|课后作业在哪里/.test(source);
   return {
-    homework: /作业|课后|提交|批改|纠错|反馈|提醒|学生|老师/.test(source),
+    homeworkInfo,
+    homework: !homeworkInfo && /提交|批改|纠错|反馈|提醒|作业.+错|作业.+改|检查作业|评价作业|学生作业|老师/.test(source),
     image: Boolean(imageName) || /图片|拍照|读图|看图|课件|截图|图中/.test(source),
     teaching: /教学口吻|给学生解释|向学生解释|老师应该|如何举例/.test(source),
   };
@@ -667,7 +677,7 @@ function getKnowledgePointMatchRanking(prompt, { imageName = "", system = "", li
     const directPoint = KNOWLEDGE_POINTS.find((point) => point.id === matchedImageHint[1]) || null;
     return directPoint ? [{ point: directPoint, score: 999 }] : [];
   }
-  if (isNonInstructionalTutorPrompt(cleanedPrompt)) return [];
+  if (shouldSkipKnowledgePointMatching(cleanedPrompt)) return [];
   if (!promptKeywords.length && !normalizedPrompt) return [];
 
   const promptMatches = KNOWLEDGE_POINTS
@@ -690,7 +700,7 @@ function getKnowledgePointMatchRanking(prompt, { imageName = "", system = "", li
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, Math.max(1, limit));
-  if (/图片|拍照|作业|课后|批改/.test(cleanedPrompt) && systemMatches.length) return systemMatches;
+  if (/图片|拍照|批改|纠错|提交|反馈/.test(cleanedPrompt) && systemMatches.length) return systemMatches;
   return [];
 }
 
@@ -726,6 +736,7 @@ function shouldPreferLocalTutorResponse(prompt, intent, matchedPoints = [], syst
   const normalizedPrompt = normalizeTutorPrompt(prompt);
   const normalizedSystem = normalizeTutorPrompt(system);
   if (isNonInstructionalTutorPrompt(normalizedPrompt)) return true;
+  if (intent.homeworkInfo) return true;
   if (/综合诊断|前 11 课|前11课|薄弱项|薄弱点|复习建议|复习顺序/.test(normalizedPrompt)) return true;
   if (!matchedPoints.length && /综合诊断|前 11 课|前11课/.test(normalizedSystem) && /诊断|复习|薄弱|建议|怎么学|如何学/.test(normalizedPrompt)) return true;
   if (intent.homework) return true;
@@ -751,6 +762,14 @@ function buildHomeworkTutorFallback(point, prompt) {
     /节奏|拍号|切分|音值/.test(prompt) ? "如果是节奏作业，要特别检查每小节拍数是否完整、强弱位置是否清楚。" : "",
     /谱号|五线谱|中央 ?C|音组/.test(prompt) ? "如果是五线谱作业，要特别检查谱号是否正确、音位是否落在正确的线或间上。" : "",
   ].filter(Boolean).join("");
+}
+
+function buildHomeworkInfoFallback() {
+  return [
+    "课后作业是每节课学习后的练习与提交入口，用来检查你是否真正理解本课知识点。",
+    "通常可以包含三类内容：概念回答、节奏或记谱练习、上传图片让系统和教师检查。",
+    "你可以先完成页面里的作业要求，再把不确定的地方发给 AI 导师，例如“这道节奏题哪里错了？”或“这个等音写法对吗？”。",
+  ].join("");
 }
 
 function buildImageTutorFallback(point) {
@@ -781,6 +800,14 @@ function buildLocalTutorFallback(messages = [], { system = "" } = {}) {
   if (!imageName && isNonInstructionalTutorPrompt(prompt)) {
     return {
       text: buildTutorMetaFallback(prompt),
+      matchedPoint: null,
+      matchedPoints: [],
+      intent,
+    };
+  }
+  if (!imageName && intent.homeworkInfo) {
+    return {
+      text: buildHomeworkInfoFallback(),
       matchedPoint: null,
       matchedPoints: [],
       intent,
