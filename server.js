@@ -71,12 +71,14 @@ function safeString(value, fallback = "") {
 function buildTutorCacheKey({ system = "", messages = [], model = "", maxTokens = 0 }) {
   const normalizedMessages = getArray(messages);
   const latestUserMessage = [...normalizedMessages].reverse().find((message) => safeString(message.role, "user") !== "assistant") || {};
+  const imageDataUrl = safeString(latestUserMessage.imageDataUrl);
   return JSON.stringify({
     model,
     maxTokens,
     systemHint: safeString(system).trim().slice(0, 240),
     content: safeString(latestUserMessage.content).trim().slice(0, 600),
-    imageMarker: latestUserMessage.imageDataUrl ? safeString(latestUserMessage.imageDataUrl).slice(0, 200) : "",
+    imageName: safeString(latestUserMessage.imageName).trim().slice(0, 160),
+    imageMarker: imageDataUrl ? hashString(imageDataUrl) : "",
   });
 }
 
@@ -638,18 +640,17 @@ function scoreKnowledgePointMatch(point, normalizedPrompt, promptKeywords = []) 
 function getKnowledgePointMatchRanking(prompt, { imageName = "", system = "", limit = 3 } = {}) {
   const cleanedPrompt = normalizeTutorPrompt(prompt);
   const systemPrompt = normalizeTutorPrompt(system);
-  const normalizedPrompt = `${cleanedPrompt} ${systemPrompt}`.toLowerCase();
-  const promptKeywords = [...new Set([
-    ...extractPromptKeywords(cleanedPrompt),
-    ...extractPromptKeywords(systemPrompt),
-  ])];
+  const normalizedPrompt = cleanedPrompt.toLowerCase();
+  const promptKeywords = extractPromptKeywords(cleanedPrompt);
 
   const matchedImageHint = Object.entries(IMAGE_FILE_HINTS).find(([hint]) => safeString(imageName).toLowerCase().includes(hint));
   if (matchedImageHint) {
     const directPoint = KNOWLEDGE_POINTS.find((point) => point.id === matchedImageHint[1]) || null;
     return directPoint ? [{ point: directPoint, score: 999 }] : [];
   }
-  return KNOWLEDGE_POINTS
+  if (!promptKeywords.length && !normalizedPrompt) return [];
+
+  const promptMatches = KNOWLEDGE_POINTS
     .map((point) => ({
       point,
       score: scoreKnowledgePointMatch(point, normalizedPrompt, promptKeywords),
@@ -657,6 +658,20 @@ function getKnowledgePointMatchRanking(prompt, { imageName = "", system = "", li
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, Math.max(1, limit));
+  if (promptMatches.length) return promptMatches;
+
+  // Use lesson context only as a last resort for generic image/homework prompts.
+  const systemKeywords = extractPromptKeywords(systemPrompt);
+  const systemMatches = KNOWLEDGE_POINTS
+    .map((point) => ({
+      point,
+      score: scoreKnowledgePointMatch(point, systemPrompt.toLowerCase(), systemKeywords),
+    }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, Math.max(1, limit));
+  if (/图片|拍照|作业|课后|批改/.test(cleanedPrompt) && systemMatches.length) return systemMatches;
+  return [];
 }
 
 function findBestKnowledgePointMatch(prompt, options = {}) {
@@ -690,7 +705,8 @@ function buildDiagnosticTutorFallback() {
 function shouldPreferLocalTutorResponse(prompt, intent, matchedPoints = [], system = "") {
   const normalizedPrompt = normalizeTutorPrompt(prompt);
   const normalizedSystem = normalizeTutorPrompt(system);
-  if (/综合诊断|前 11 课|前11课|薄弱项|复习建议/.test(`${normalizedPrompt} ${normalizedSystem}`)) return true;
+  if (/综合诊断|前 11 课|前11课|薄弱项|薄弱点|复习建议|复习顺序/.test(normalizedPrompt)) return true;
+  if (!matchedPoints.length && /综合诊断|前 11 课|前11课/.test(normalizedSystem) && /诊断|复习|薄弱|建议|怎么学|如何学/.test(normalizedPrompt)) return true;
   if (intent.homework) return true;
   if (intent.image && matchedPoints.length) return true;
   if (intent.image) return false;
@@ -743,7 +759,12 @@ function buildLocalTutorFallback(messages = [], { system = "" } = {}) {
   const intent = detectTutorIntent({ prompt, imageName });
   const matchedPoints = getKnowledgePointMatchRanking(prompt, { imageName, system }, 2).map((item) => item.point);
   const matchedPoint = matchedPoints[0] || null;
-  if (/综合诊断|前 11 课|前11课|薄弱项|复习建议/.test(`${normalizeTutorPrompt(prompt)} ${normalizeTutorPrompt(system)}`)) {
+  const normalizedPrompt = normalizeTutorPrompt(prompt);
+  const isDiagnosticPrompt = /综合诊断|前 11 课|前11课|薄弱项|薄弱点|复习建议|复习顺序/.test(normalizedPrompt);
+  const isGenericDiagnosticRequest = !matchedPoint
+    && /综合诊断|前 11 课|前11课/.test(normalizeTutorPrompt(system))
+    && /诊断|复习|薄弱|建议|怎么学|如何学/.test(normalizedPrompt);
+  if (isDiagnosticPrompt || isGenericDiagnosticRequest) {
     return {
       text: buildDiagnosticTutorFallback(),
       matchedPoint: null,

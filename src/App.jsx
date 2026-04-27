@@ -6281,7 +6281,7 @@ export default function App() {
 
         <footer style={{ textAlign: "center", padding: "16px 14px", borderTop: "0.5px solid var(--color-border-tertiary)", fontSize: 0, color: "var(--color-text-tertiary)", background: "rgba(255,255,255,0.56)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, flexWrap: "wrap", marginTop: 0 }}>
-            <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>贡献者：Gaun Xingzhi</span>
+            <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>贡献者：Guan Xingzhi</span>
             <img src="/images/ucsi-logo-user.jpg" alt="UCSI University" style={{ height: 42, width: "auto", objectFit: "contain", display: "block" }} />
           </div>
         </footer>
