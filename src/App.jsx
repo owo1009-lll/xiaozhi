@@ -23,6 +23,29 @@ import {
   summarizeRhythmSubmission,
   summarizeStaffSubmission,
 } from "./homeworkSummary";
+import {
+  HOMEWORK_CHANNEL_LABELS,
+  RHYTHM_SYMBOLS,
+  STAFF_ROWS,
+  calculateMeasureDuration,
+  createDefaultPianoSubmission,
+  createDefaultRhythmSubmission,
+  createDefaultStaffSubmission,
+  getEvaluationDimensions,
+  getHomeworkRequirement,
+  getMeterBeats,
+  getRhythmValidation,
+  normalizeRhythmEntry,
+  normalizeRhythmMeasures,
+} from "./homeworkModel";
+import {
+  FeedbackBar,
+  LessonCharts,
+  PBar,
+  Stars,
+  Tag,
+  WeakPointExplanationCards,
+} from "./uiBasics";
 
 const LazyAITutorV2 = lazy(() => import("./AITutorV2.jsx"));
 const LazyTeacherDashboardPage = lazy(() => import("./TeacherDashboardPage.jsx"));
@@ -205,191 +228,6 @@ function nFreq(n, o) { return 440 * Math.pow(2, (NT.indexOf(n) - 9) / 12 + (o - 
 
 const CHAPTERS = PPT_CHAPTERS;
 const ALL_LESSONS = CHAPTERS.flatMap((chapter) => chapter.ls);
-
-function Tag({ children, color = "#111111", bg = "#F5F5F5" }) {
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "6px 10px",
-        borderRadius: 999,
-        fontSize: 11,
-        fontWeight: 600,
-        color,
-        background: bg,
-        border: "1px solid rgba(17,17,17,0.08)",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
-function PBar({ v = 0, max = 100, color = "#111111" }) {
-  const safeMax = Math.max(1, Number(max) || 100);
-  const percent = Math.max(0, Math.min(100, (Number(v) || 0) / safeMax * 100));
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: 8,
-        borderRadius: 999,
-        background: "rgba(17,17,17,0.08)",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          width: `${percent}%`,
-          height: "100%",
-          borderRadius: 999,
-          background: color,
-          transition: "width 0.25s ease",
-        }}
-      />
-    </div>
-  );
-}
-
-function Stars({ value = 0, onChange, size = 16 }) {
-  return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-      {[1, 2, 3, 4, 5].map((star) => {
-        const active = star <= value;
-        return (
-          <button
-            key={star}
-            type="button"
-            onClick={() => onChange?.(star)}
-            style={{
-              border: "none",
-              background: "transparent",
-              padding: 0,
-              margin: 0,
-              cursor: onChange ? "pointer" : "default",
-              fontSize: size,
-              lineHeight: 1,
-              color: active ? "#f59e0b" : "rgba(17,17,17,0.18)",
-            }}
-            aria-label={`评分 ${star} 星`}
-          >
-            ★
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function FeedbackBar({ ok, msg, onNext }) {
-  return (
-    <div
-      style={{
-        padding: "10px 14px",
-        borderRadius: 10,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 12,
-        background: ok ? "#EAF8F1" : "#FDECEC",
-        border: `1px solid ${ok ? "#9AD9BC" : "#F1B5B5"}`,
-        marginTop: 10,
-      }}
-    >
-      <span style={{ fontSize: 12, color: ok ? "#0F6E56" : "#B42318", fontWeight: 600 }}>
-        {ok ? "回答正确：" : "需要修正："}
-        {msg}
-      </span>
-      {onNext ? (
-        <button
-          type="button"
-          onClick={onNext}
-          style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#fff", cursor: "pointer", fontSize: 12 }}
-        >
-          下一题
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
-function LessonCharts({ lessonId }) {
-  const lessonsWithCharts = new Set(["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"]);
-  if (!lessonsWithCharts.has(lessonId)) return null;
-
-  const barSets = {
-    L1: [26, 39, 52, 78, 100],
-    L2: [22, 31, 48, 66, 84],
-    L3: [18, 30, 45, 63, 82],
-    L4: [25, 40, 58, 74, 92],
-    L5: [24, 36, 51, 68, 88],
-    L6: [28, 41, 57, 73, 90],
-    L7: [19, 34, 49, 62, 81],
-    L8: [23, 38, 54, 70, 86],
-    L9: [20, 37, 55, 72, 91],
-    L10: [21, 35, 53, 69, 87],
-    L11: [24, 42, 59, 76, 94],
-    L12: [30, 45, 60, 80, 100],
-  };
-  const bars = barSets[lessonId] || [30, 48, 66, 84, 100];
-
-  return (
-    <div style={{ display: "grid", gap: 12 }}>
-      <div className="subtle-card" style={{ padding: 14 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>知识点分布图</div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, minHeight: 124 }}>
-          {bars.map((value, index) => (
-            <div key={`${lessonId}-bar-${index}`} style={{ flex: 1, textAlign: "center" }}>
-              <div style={{ height: 96, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                <div style={{ width: "100%", maxWidth: 34, height: `${value}%`, borderRadius: 10, background: "#111111" }} />
-              </div>
-              <div style={{ fontSize: 10, color: "var(--color-text-tertiary)", marginTop: 6 }}>{`点 ${index + 1}`}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="subtle-card" style={{ padding: 14 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>学习重点提示</div>
-        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-          图表用于辅助理解当前课时的知识重心。建议先阅读课前预习，再结合图示完成课堂练习。
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function WeakPointExplanationCards({ items = [], titleMap = {} }) {
-  if (!items.length) return null;
-  return (
-    <div style={{ display: "grid", gap: 12, marginBottom: 12 }}>
-      {items.map((item) => (
-        <div key={item.knowledgePointId} style={{ padding: 14, borderRadius: 14, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
-            {titleMap[item.knowledgePointId] || item.knowledgePointId}
-          </div>
-          <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
-            {item.explanation}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
-            <div style={{ padding: 10, borderRadius: 12, background: "rgba(17,17,17,0.03)" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>易错点</div>
-              <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, whiteSpace: "pre-line" }}>
-                {item.misunderstandings.map((line) => `• ${line}`).join("\n")}
-              </div>
-            </div>
-            <div style={{ padding: 10, borderRadius: 12, background: "rgba(83,74,183,0.06)" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>做题抓手</div>
-              <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, whiteSpace: "pre-line" }}>
-                {item.practiceGuide.map((line) => `• ${line}`).join("\n")}
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function InteractivePitchFrequencyWidgetCn() {
   const noteItems = [
@@ -1813,141 +1651,6 @@ async function syncKnowledgeSummary(lessonId) {
 
 function createKnowledgeMappingKey(lessonId, signature) {
   return `${lessonId}:${String(signature || "").slice(0, 120)}`;
-}
-
-const HOMEWORK_METER_MAP = {
-  L4: "4/4",
-  L9: "2/4",
-  L10: "4/4",
-  L11: "4/4",
-  L12: "4/4",
-};
-
-const RHYTHM_SYMBOLS = [
-  { id: "whole", label: "全音符", duration: 4, kind: "note" },
-  { id: "half", label: "二分音符", duration: 2, kind: "note" },
-  { id: "quarter", label: "四分音符", duration: 1, kind: "note" },
-  { id: "eighth", label: "八分音符", duration: 0.5, kind: "note" },
-  { id: "sixteenth", label: "十六分音符", duration: 0.25, kind: "note" },
-  { id: "dotted-half", label: "附点二分音符", duration: 3, kind: "note" },
-  { id: "dotted-quarter", label: "附点四分音符", duration: 1.5, kind: "note" },
-  { id: "dotted-eighth", label: "附点八分音符", duration: 0.75, kind: "note" },
-  { id: "whole-rest", label: "全休止符", duration: 4, kind: "rest" },
-  { id: "half-rest", label: "二分休止符", duration: 2, kind: "rest" },
-  { id: "quarter-rest", label: "四分休止符", duration: 1, kind: "rest" },
-  { id: "eighth-rest", label: "八分休止符", duration: 0.5, kind: "rest" },
-  { id: "sixteenth-rest", label: "十六分休止符", duration: 0.25, kind: "rest" },
-  { id: "tie", label: "连音", duration: 0, kind: "tie" },
-];
-
-const HOMEWORK_REQUIREMENTS = {};
-
-const LESSON_HOMEWORK_MATRIX = {
-  L1: { channels: ["text", "image", "piano"], requiredAnyOf: ["text", "image", "piano"], helper: "\u672c\u8bfe\u4ee5\u97f3\u9ad8\u3001\u9891\u7387\u548c\u952e\u4f4d\u5b9a\u4f4d\u4e3a\u4e3b\u3002", evaluationType: "pitch", extraDimensions: ["\u952e\u4f4d\u5b9a\u4f4d", "\u97f3\u9ad8\u5224\u65ad"] },
-  L2: { channels: ["text", "image"], requiredAnyOf: ["text", "image"], helper: "\u672c\u8bfe\u4ee5\u7406\u8bba\u5206\u6790\u4e0e\u6bd4\u8f83\u8bf4\u660e\u4e3a\u4e3b\u3002", evaluationType: "theory", extraDimensions: ["\u6982\u5ff5\u7406\u89e3", "\u5206\u6790\u6df1\u5ea6"] },
-  L3: { channels: ["text", "image", "staff"], requiredAnyOf: ["image", "staff"], helper: "\u672c\u8bfe\u91cd\u70b9\u662f\u8c31\u53f7\u4e0e\u4e94\u7ebf\u8c31\u8bfb\u5199\u3002", evaluationType: "staff", extraDimensions: ["\u8c31\u53f7\u8bc6\u522b", "\u97f3\u4f4d\u51c6\u786e", "\u8bb0\u8c31\u89c4\u8303"] },
-  L4: { channels: ["text", "image", "rhythm"], requiredAnyOf: ["image", "rhythm"], helper: "\u672c\u8bfe\u4ee5\u97f3\u7b26\u3001\u4f11\u6b62\u7b26\u4e0e\u9644\u70b9\u8f93\u5165\u4e3a\u4e3b\u3002", evaluationType: "rhythm", extraDimensions: ["\u62cd\u53f7\u7406\u89e3", "\u65f6\u503c\u5b8c\u6574", "\u8282\u594f\u4e66\u5199"] },
-  L5: { channels: ["text", "image", "staff"], requiredAnyOf: ["text", "image", "staff"], helper: "\u672c\u8bfe\u88c5\u9970\u97f3\u4f5c\u4e1a\u9700\u7ed3\u5408\u8c31\u4f8b\u4e0e\u6587\u5b57\u8bf4\u660e\u3002", evaluationType: "staff", extraDimensions: ["\u88c5\u9970\u97f3\u8bc6\u522b", "\u8bb0\u8c31\u89c4\u8303", "\u8c31\u9762\u8868\u8fbe"] },
-  L6: { channels: ["text", "image"], requiredAnyOf: ["text", "image"], helper: "\u672c\u8bfe\u4ee5\u672f\u8bed\u7406\u89e3\u548c\u4e50\u8c31\u5206\u6790\u4e3a\u4e3b\u3002", evaluationType: "theory", extraDimensions: ["\u672f\u8bed\u4f7f\u7528", "\u5206\u6790\u6df1\u5ea6"] },
-  L7: { channels: ["text", "image"], requiredAnyOf: ["text", "image"], helper: "\u672c\u8bfe\u4ee5\u53cd\u590d\u4e0e\u7565\u5199\u8bb0\u53f7\u7684\u7ed3\u6784\u7406\u89e3\u4e3a\u4e3b\u3002", evaluationType: "theory", extraDimensions: ["\u7ed3\u6784\u7406\u89e3", "\u8def\u7ebf\u5224\u65ad"] },
-  L8: { channels: ["text", "image", "voice"], requiredAnyOf: ["text", "image", "voice"], helper: "\u672c\u8bfe\u652f\u6301\u672f\u8bed\u53e3\u8ff0\u4e0e\u6587\u5b57\u6574\u7406\u3002", evaluationType: "theory", extraDimensions: ["\u672f\u8bed\u4f7f\u7528", "\u8868\u8fbe\u6e05\u6670\u5ea6"] },
-  L9: { channels: ["text", "image", "rhythm"], requiredAnyOf: ["image", "rhythm"], helper: "\u672c\u8bfe\u91cd\u70b9\u662f\u62cd\u53f7\u4e0b\u7684\u8282\u594f\u8bbe\u8ba1\u3002", evaluationType: "rhythm", extraDimensions: ["\u62cd\u53f7\u7406\u89e3", "\u65f6\u503c\u5b8c\u6574", "\u91cd\u97f3\u89c4\u5f8b"] },
-  L10: { channels: ["text", "image", "rhythm"], requiredAnyOf: ["image", "rhythm"], helper: "\u672c\u8bfe\u91cd\u70b9\u662f\u97f3\u503c\u7ec4\u5408\u4e0e\u8fde\u97f3\u5199\u6cd5\u3002", evaluationType: "rhythm", extraDimensions: ["\u7ec4\u5408\u89c4\u8303", "\u8fde\u97f3\u4f7f\u7528", "\u8282\u594f\u4e66\u5199"] },
-  L11: { channels: ["text", "image", "rhythm"], requiredAnyOf: ["image", "rhythm"], helper: "\u672c\u8bfe\u91cd\u70b9\u662f\u5207\u5206\u8282\u594f\u4e0e\u91cd\u97f3\u8fc1\u79fb\u3002", evaluationType: "rhythm", extraDimensions: ["\u91cd\u97f3\u8fc1\u79fb", "\u5207\u5206\u5199\u6cd5", "\u8282\u594f\u4e66\u5199"] },
-  L12: { channels: ["text", "image", "rhythm", "staff", "piano"], requiredAnyOf: ["text", "image", "rhythm", "staff", "piano"], helper: "\u672c\u8bfe\u4e3a\u7efc\u5408\u590d\u4e60\uff0c\u53ef\u7ec4\u5408\u63d0\u4ea4\u591a\u79cd\u4f5c\u4e1a\u5f62\u5f0f\u3002", evaluationType: "mixed", extraDimensions: ["\u7efc\u5408\u5e94\u7528", "\u77e5\u8bc6\u8fc1\u79fb", "\u95ee\u9898\u8bca\u65ad"] },
-};
-
-const HOMEWORK_CHANNEL_LABELS = {
-  text: "\u6587\u5b57\u8bf4\u660e",
-  image: "\u62cd\u7167\u4e0a\u4f20",
-  rhythm: "\u8282\u594f\u7f16\u8f91",
-  staff: "\u4e94\u7ebf\u8c31\u4fee\u6b63",
-  piano: "\u94a2\u7434\u8f93\u5165",
-  voice: "\u8bed\u97f3\u8f93\u5165",
-};
-
-const BASE_EVALUATION_DIMENSIONS = ["\u5b8c\u6210\u5ea6", "\u51c6\u786e\u6027", "\u89c4\u8303\u6027", "\u8868\u8fbe\u6e05\u6670\u5ea6", "\u63d0\u4ea4\u8d28\u91cf"];
-
-const STAFF_ROWS = [
-  { row: 0, label: "G5" }, { row: 1, label: "F5" }, { row: 2, label: "E5" }, { row: 3, label: "D5" },
-  { row: 4, label: "C5" }, { row: 5, label: "B4" }, { row: 6, label: "A4" }, { row: 7, label: "G4" },
-  { row: 8, label: "F4" }, { row: 9, label: "E4" }, { row: 10, label: "D4" }, { row: 11, label: "C4" },
-  { row: 12, label: "B3" },
-];
-
-function createDefaultRhythmSubmission(lessonId) {
-  return {
-    meter: HOMEWORK_METER_MAP[lessonId] || "4/4",
-    measures: [[], []],
-    activeMeasure: 0,
-  };
-}
-
-function createDefaultStaffSubmission() {
-  return {
-    clef: "treble",
-    activeSlot: 0,
-    accidental: "natural",
-    noteValue: "quarter",
-    dotted: false,
-    notes: [],
-  };
-}
-
-function createDefaultPianoSubmission() {
-  return {
-    octave: 4,
-    notes: [],
-  };
-}
-
-function getMeterBeats(meter) {
-  const [top, bottom] = String(meter || "4/4").split("/");
-  const numerator = Number(top || 4);
-  const denominator = Number(bottom || 4);
-  if (!numerator || !denominator) return 4;
-  return numerator * (4 / denominator);
-}
-
-function calculateMeasureDuration(measure = []) {
-  return measure.reduce((sum, item) => sum + Number(item?.duration || 0), 0);
-}
-
-function getHomeworkRequirement(lessonId, lessonTitle) {
-  return LESSON_HOMEWORK_MATRIX[lessonId] || {
-    channels: ["text", "image"],
-    requiredAnyOf: ["text", "image"],
-    evaluationType: "theory",
-    extraDimensions: ["\u6982\u5ff5\u7406\u89e3", "\u5206\u6790\u6df1\u5ea6"],
-    helper: `${lessonTitle} \u5efa\u8bae\u63d0\u4ea4\u6587\u5b57\u8bf4\u660e\u6216\u62cd\u7167\u4f5c\u4e1a\u3002`,
-  };
-}
-
-function getEvaluationDimensions(requirement) {
-  return [...BASE_EVALUATION_DIMENSIONS, ...(requirement?.extraDimensions || [])];
-}
-
-function getRhythmValidation(rhythmSubmission) {
-  const normalizedSubmission = normalizeRhythmSubmission(rhythmSubmission);
-  if (!normalizedSubmission?.measures) {
-    return { complete: false, issues: [] };
-  }
-  const targetBeats = getMeterBeats(normalizedSubmission.meter);
-  const issues = [];
-  normalizedSubmission.measures.forEach((measure = [], index) => {
-    const beats = calculateMeasureDuration(measure);
-    if (!measure.length) {
-      issues.push(`第 ${index + 1} 小节尚未填写。`);
-      return;
-    }
-    if (beats < targetBeats) issues.push(`第 ${index + 1} 小节拍数不足。`);
-    if (beats > targetBeats) issues.push(`第 ${index + 1} 小节超出拍号要求。`);
-    const lastItem = measure[measure.length - 1];
-    if (lastItem?.tieToNext && index === normalizedSubmission.measures.length - 1) {
-      issues.push(`第 ${index + 1} 小节最后一个音带有连音，但后面没有对应音符。`);
-    }
-  });
-  return { complete: issues.length === 0, issues };
 }
 
 function formatStructuredEvaluation(evaluation) {

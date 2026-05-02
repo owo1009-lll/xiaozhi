@@ -40,7 +40,7 @@ export function summarizeRhythmSubmission(rhythmSubmission) {
   const normalizedSubmission = normalizeRhythmSubmission(rhythmSubmission);
   if (!normalizedSubmission?.measures) return "未填写节奏。";
   return normalizedSubmission.measures
-    .map((measure, index) => `第${index + 1}小节：${(measure || []).map((item) => `${decodeEscapedUnicodeText(item.label)}${item.tieToNext ? "~" : ""}`).join(" / ") || "空"}`)
+    .map((measure, index) => `第 ${index + 1} 小节：${(measure || []).map((item) => `${decodeEscapedUnicodeText(item.label)}${item.tieToNext ? "~" : ""}`).join(" / ") || "空"}`)
     .join("；");
 }
 
