@@ -2734,6 +2734,40 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+app.get("/api/status", async (req, res) => {
+  const provider = (process.env.AI_PROVIDER || "openai").toLowerCase();
+  const [analyticsStore, bktStore] = await Promise.all([
+    readAnalyticsStore(),
+    readBktSummaryStore(),
+  ]);
+  const bktTrackedCount = getBktKnowledgePoints().length;
+  res.json({
+    ok: true,
+    deployment: {
+      environment: process.env.VERCEL_ENV || process.env.NODE_ENV || "local",
+      commit: process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT || "local",
+      url: process.env.VERCEL_URL || "",
+      checkedAt: nowIso(),
+    },
+    ai: {
+      provider,
+      configured: provider === "gemini" ? Boolean(process.env.GEMINI_API_KEY) : Boolean(process.env.OPENAI_API_KEY),
+      tutorModel: provider === "openai" ? getTutorModel() : process.env.GEMINI_MODEL || "gemini-2.5-flash",
+      tutorModelChain: provider === "openai" ? getTutorModelChain() : undefined,
+      visionModelChain: provider === "openai" && isDashScopeCompatibleMode() ? getVisionModelChain() : undefined,
+    },
+    teacher: {
+      overviewOk: Array.isArray(analyticsStore.records),
+      overviewRecords: analyticsStore.records?.length || 0,
+      bktOk: Array.isArray(bktStore.records),
+      bktRecords: bktStore.records?.length || 0,
+      bktTrackedKnowledgePoints: bktTrackedCount,
+      diagnosticKnowledgePoints: KNOWLEDGE_POINTS.length - bktTrackedCount,
+      totalKnowledgePoints: KNOWLEDGE_POINTS.length,
+    },
+  });
+});
+
 app.post("/api/analytics", async (req, res) => {
   const payload = req.body || {};
   if (!payload.studentId || !payload.lessonId) {

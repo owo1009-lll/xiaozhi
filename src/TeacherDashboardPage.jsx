@@ -1,12 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { buildPilotTemplateCsv, buildPilotTemplateJson, REAL_STUDENT_PILOT_TEMPLATES } from "./studentPilotTemplate";
 import { clearVirtualStudentsFromLocalStorage, createVirtualStudents, writeVirtualStudentsToLocalStorage } from "./musicaiBkt";
+import { KNOWLEDGE_POINTS, getBktKnowledgePoints } from "./musicaiKnowledge";
 import { summarizePianoSubmission, summarizeRhythmSubmission, summarizeStaffSubmission } from "./homeworkSummary";
 import { getStudentProfile } from "./studentProfile";
 
 const TEACHER_AUTH_STORAGE_KEY = "musicai.teacher.auth";
 const TEACHER_LOGIN_USERNAME = "gxz";
 const TEACHER_LOGIN_PASSWORD = "19991009";
+const TOTAL_KNOWLEDGE_POINT_COUNT = KNOWLEDGE_POINTS.length;
+const BKT_TRACKED_KNOWLEDGE_POINT_COUNT = getBktKnowledgePoints().length;
+const DIAGNOSTIC_KNOWLEDGE_POINT_COUNT = TOTAL_KNOWLEDGE_POINT_COUNT - BKT_TRACKED_KNOWLEDGE_POINT_COUNT;
+const TEACHER_DASHBOARD_TABS = [
+  { id: "overview", label: "概览" },
+  { id: "rq4", label: "RQ4" },
+  { id: "reports", label: "学生报告" },
+  { id: "bkt", label: "BKT 验证" },
+  { id: "export", label: "样本导出" },
+];
 
 export default function TeacherDashboardPage() {
   const [data, setData] = useState(null);
@@ -39,6 +50,7 @@ export default function TeacherDashboardPage() {
   const [teacherSampleReportPreview, setTeacherSampleReportPreview] = useState(null);
   const [teacherSampleReportLoading, setTeacherSampleReportLoading] = useState(false);
   const [rq4StudentQuery, setRq4StudentQuery] = useState("");
+  const [activeDashboardTab, setActiveDashboardTab] = useState("overview");
   const currentStudentRecord = (bktData?.students || []).find((item) => item.userId === currentStudentProfile.studentId) || null;
   const selectedPilotTemplate = REAL_STUDENT_PILOT_TEMPLATES.find((item) => item.id === selectedPilotTemplateId) || REAL_STUDENT_PILOT_TEMPLATES[0];
   const rq4Data = data?.experimentSimulation?.rq4 || null;
@@ -106,7 +118,12 @@ export default function TeacherDashboardPage() {
   const loadTeacherBktOverview = useCallback(async () => {
     const bktResponse = await fetch("/api/teacher/bkt-overview");
     const bktJson = await parseResponseJson(bktResponse, "教师后台 BKT 概览");
-    setCheckState("bkt", "success", `成功（知识点 ${bktJson.summary?.totalKnowledgePoints ?? 0} 个）`);
+    const trackedCount = bktJson.summary?.totalKnowledgePoints ?? BKT_TRACKED_KNOWLEDGE_POINT_COUNT;
+    setCheckState(
+      "bkt",
+      "success",
+      `成功（BKT 追踪 ${trackedCount} 个；综合诊断 ${DIAGNOSTIC_KNOWLEDGE_POINT_COUNT} 个；总计 ${TOTAL_KNOWLEDGE_POINT_COUNT} 个）`,
+    );
     return bktJson;
   }, [parseResponseJson, setCheckState]);
 
@@ -373,6 +390,11 @@ export default function TeacherDashboardPage() {
     anchor.click();
   }, []);
 
+  const tabPanelStyle = (tabId, baseStyle = {}) => ({
+    ...baseStyle,
+    display: activeDashboardTab === tabId ? baseStyle.display : "none",
+  });
+
   if (!authChecked) {
     return <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>正在校验教师后台权限...</div>;
   }
@@ -434,6 +456,15 @@ export default function TeacherDashboardPage() {
               </div>
             );
           })}
+          <div className="subtle-card" style={{ padding: 12 }}>
+            <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 6 }}>知识点口径</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#111111" }}>
+              BKT {bktData?.summary?.totalKnowledgePoints ?? BKT_TRACKED_KNOWLEDGE_POINT_COUNT} / 全部 {TOTAL_KNOWLEDGE_POINT_COUNT}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.6, marginTop: 6 }}>
+              BKT 只追踪 L1-L11 的 {BKT_TRACKED_KNOWLEDGE_POINT_COUNT} 个过程性知识点；L12 的 {DIAGNOSTIC_KNOWLEDGE_POINT_COUNT} 个综合复习点用于诊断展示，不计入自适应掌握度更新。
+            </div>
+          </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginTop: 14 }}>
           <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
@@ -454,7 +485,34 @@ export default function TeacherDashboardPage() {
         ) : null}
       </div>
 
-      <div className="section-card" style={{ marginBottom: 18 }}>
+      <div className="section-card" style={{ marginBottom: 18, padding: 10 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {TEACHER_DASHBOARD_TABS.map((tab) => {
+            const active = activeDashboardTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveDashboardTab(tab.id)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  border: "1px solid rgba(17,17,17,0.12)",
+                  background: active ? "#111111" : "#ffffff",
+                  color: active ? "#ffffff" : "#111111",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 700,
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="section-card" style={tabPanelStyle("export", { marginBottom: 18 })}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>导出教师样本报告</div>
@@ -499,14 +557,14 @@ export default function TeacherDashboardPage() {
         ) : null}
       </div>
 
-      <div className="metric-grid" style={{ marginBottom: 18 }}>
+      <div className="metric-grid" style={tabPanelStyle("overview", { marginBottom: 18 })}>
         {metricCard("数据记录数", data.summary.totalRecords)}
         {metricCard("学生数", data.summary.totalStudents)}
         {metricCard("平均得分", `${data.summary.averageScore}%`)}
         {metricCard("已提交作业", data.summary.totalHomeworkSubmitted)}
       </div>
 
-      {rq4Data ? (
+      {activeDashboardTab === "rq4" && rq4Data ? (
         <div className="section-card" style={{ marginBottom: 18 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
             <div>
@@ -669,7 +727,7 @@ export default function TeacherDashboardPage() {
         </div>
       ) : null}
 
-      {bktLoadError ? (
+      {activeDashboardTab === "bkt" && bktLoadError ? (
         <div className="section-card" style={{ marginBottom: 18, borderColor: "rgba(185,28,28,0.18)", background: "rgba(254,242,242,0.9)" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#991b1b", marginBottom: 6 }}>BKT 面板加载失败</div>
           <div style={{ fontSize: 12, color: "#7f1d1d", lineHeight: 1.8 }}>
@@ -680,7 +738,7 @@ export default function TeacherDashboardPage() {
         </div>
       ) : null}
 
-      <div className="section-card" style={{ marginBottom: 18 }}>
+      <div className="section-card" style={tabPanelStyle("reports", { marginBottom: 18 })}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>10-20 名真实学生试点模板</div>
@@ -737,7 +795,7 @@ export default function TeacherDashboardPage() {
         ) : null}
       </div>
 
-      <div className="section-card" style={{ marginBottom: 18 }}>
+      <div className="section-card" style={tabPanelStyle("reports", { marginBottom: 18 })}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>自动导出单个学生 PDF 学习报告</div>
@@ -812,7 +870,7 @@ export default function TeacherDashboardPage() {
         ) : null}
       </div>
 
-      <div className="section-card" style={{ marginBottom: 18 }}>
+      <div className="section-card" style={tabPanelStyle("bkt", { marginBottom: 18 })}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>知识点级 BKT 测试面板</div>
@@ -831,7 +889,7 @@ export default function TeacherDashboardPage() {
         </div>
       </div>
 
-      <div className="section-card" style={{ marginBottom: 18 }}>
+      <div className="section-card" style={tabPanelStyle("bkt", { marginBottom: 18 })}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>2 小时 BKT 验证报告</div>
@@ -850,7 +908,7 @@ export default function TeacherDashboardPage() {
         </div>
       </div>
 
-      <div className="section-card" style={{ marginBottom: 18 }}>
+      <div className="section-card" style={tabPanelStyle("bkt", { marginBottom: 18 })}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>150 名随机学生深度测试</div>
@@ -864,7 +922,7 @@ export default function TeacherDashboardPage() {
         </div>
       </div>
 
-      <div className="lesson-layout" style={{ marginBottom: 18 }}>
+      <div className="lesson-layout" style={tabPanelStyle("overview", { marginBottom: 18 })}>
         <div className="section-card">
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>学生学习概览</div>
           <div style={{ display: "grid", gap: 8 }}>
@@ -895,7 +953,7 @@ export default function TeacherDashboardPage() {
         </div>
       </div>
 
-      {bktData?.ok ? (
+      {activeDashboardTab === "bkt" && bktData?.ok ? (
         <div className="lesson-layout" style={{ marginBottom: 18 }}>
           <div className="section-card">
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>当前学生知识点 P(L) 明细</div>
@@ -977,7 +1035,7 @@ export default function TeacherDashboardPage() {
         </div>
       ) : null}
 
-      {bktData?.latestTestRun ? (
+      {activeDashboardTab === "bkt" && bktData?.latestTestRun ? (
         <div className="section-card" style={{ marginBottom: 18 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
             <div>
@@ -1082,7 +1140,7 @@ export default function TeacherDashboardPage() {
         </div>
       ) : null}
 
-      {bktData?.latestDeepRun ? (
+      {activeDashboardTab === "bkt" && bktData?.latestDeepRun ? (
         <div className="section-card" style={{ marginBottom: 18 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
             <div>
@@ -1225,7 +1283,7 @@ export default function TeacherDashboardPage() {
         </div>
       ) : null}
 
-      <div className="section-card">
+      <div className="section-card" style={tabPanelStyle("overview")}>
         <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>最近学习记录</div>
         <div style={{ display: "grid", gap: 8 }}>
           {data.records.map((record, index) => (

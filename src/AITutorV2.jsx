@@ -17,6 +17,14 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const imageStageTimerRef = useRef([]);
+  const responseSourceLabel = useMemo(() => {
+    if (!responseMeta) return "";
+    const modelUsed = String(responseMeta.modelUsed || "");
+    if (responseMeta.imageUploaded || /vl|vision/i.test(modelUsed)) return "视觉模型";
+    if (/local-priority|fallback/i.test(modelUsed)) return "本地兜底";
+    if (modelUsed) return "云端模型";
+    return "";
+  }, [responseMeta]);
 
   const contentSections = getKnowledgePointsForLesson(lessonId).map((item) => ({
     h: item.title,
@@ -113,6 +121,7 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
           cached: Boolean(json?.cached),
           modelUsed: json?.modelUsed || "",
           retried: Boolean(json?.retried),
+          imageUploaded: Boolean(imageDataUrl),
         });
         setImageDataUrl("");
         setImageName("");
@@ -148,6 +157,7 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
         {responseMeta ? (
           <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 4 }}>
             {responseMeta.cached ? "本次回答命中缓存" : "本次回答来自实时生成"}
+            {responseSourceLabel ? ` · 来源：${responseSourceLabel}` : ""}
             {responseMeta.elapsedMs ? ` · ${responseMeta.elapsedMs} ms` : ""}
             {responseMeta.modelUsed ? ` · ${responseMeta.modelUsed}` : ""}
             {responseMeta.retried ? " · 已自动重试一次" : ""}
