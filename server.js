@@ -574,6 +574,7 @@ function isNonInstructionalTutorPrompt(prompt) {
   if (!normalized) return true;
   if (/^[\d\s.,，。!?！？;；:：'"“”‘’\-_/\\]+$/.test(normalized)) return true;
   if (/^(你在干嘛|你是谁|你会什么|你好|在吗|hello|hi|hey)$/i.test(normalized)) return true;
+  if (/^(随便说两句可以吗|随便说两句|随便说|聊聊|可以聊天吗|可以闲聊吗|可以问无关问题吗)$/i.test(normalized)) return true;
   return false;
 }
 
@@ -592,6 +593,9 @@ function buildTutorMetaFallback(prompt) {
   }
   if (/^(你好|在吗|hello|hi|hey)$/i.test(normalized)) {
     return "你好，我是 AI 乐理导师。请直接输入你想问的乐理问题，我会按当前课时内容解释。";
+  }
+  if (/随便|聊聊|聊天|闲聊|无关/.test(normalized)) {
+    return "可以。你可以自由输入问题；如果问题和乐理无关，我会先按普通问题回应，必要时再提醒你回到当前课时。";
   }
   return `已收到：“${normalized || "空内容"}”。你可以继续输入任意内容；如果你想学习当前课时，可以直接问“什么是等音？”或“中央 C 在哪里？”。`;
 }
@@ -858,7 +862,7 @@ function buildLocalTutorFallback(messages = [], { system = "" } = {}) {
   if (!matchedPoint) {
     if (intent.homework) {
       return {
-        text: "这是一道作业辅导类问题。当前模型没有稳定给出答案，建议你直接说明作业要求、拍号或谱号信息，我会按“批改提醒 + 常见错误 + 示例”的结构继续解释。",
+        text: "我还没有看到具体作业内容。请上传作业图片，或把题干、你的答案、拍号/谱号信息发来；我会按“先判断题目要求 → 指出错误 → 给出修改例子”的结构帮你检查。",
         matchedPoint: null,
         matchedPoints: [],
         intent,
@@ -866,14 +870,14 @@ function buildLocalTutorFallback(messages = [], { system = "" } = {}) {
     }
     if (intent.image) {
       return {
-        text: "这是一道图片讲解类问题。当前模型没有稳定识别图片内容，建议你补一句图片主题，例如“这是高音谱号课件”或“这是 4/4 拍节奏图”，我会直接按知识点讲解。",
+        text: "我需要更明确的图片线索。你可以补一句图片主题，例如“这是高音谱号课件”或“这是 4/4 拍节奏图”；如果已经上传图片，我会优先按图中可见内容识别。",
         matchedPoint: null,
         matchedPoints: [],
         intent,
       };
     }
     return {
-      text: "这个问题可以继续提问，但当前模型没有稳定给出答案。建议你把问题改成“定义 + 例子”形式，或上传对应题目图片，我会按课程知识点继续解释。",
+      text: "这个问题可以继续提问。为了让我回答得更准，你可以补充一个具体对象，例如“请解释等音，并给一个例子”或“这张节奏图哪里错了”。",
       matchedPoint: null,
       matchedPoints: [],
       intent,
@@ -924,10 +928,11 @@ async function createTutorResponseWithFallback({ system, messages, rawMessages =
   const localFallback = buildLocalTutorFallback(rawMessages, { system });
   const latestPrompt = extractLatestUserPrompt(rawMessages);
 
-  if ((isAiCircuitBreakerOpen() || shouldPreferLocalTutorResponse(latestPrompt, localFallback.intent, localFallback.matchedPoints, system)) && localFallback.text) {
+  const canUseCircuitLocalFallback = isAiCircuitBreakerOpen() && !hasImages;
+  if ((canUseCircuitLocalFallback || shouldPreferLocalTutorResponse(latestPrompt, localFallback.intent, localFallback.matchedPoints, system)) && localFallback.text) {
     return {
       text: localFallback.text,
-      model: isAiCircuitBreakerOpen() ? `local-priority(circuit-open:${aiCircuitBreaker.reason})` : "local-priority",
+      model: canUseCircuitLocalFallback ? `local-priority(circuit-open:${aiCircuitBreaker.reason})` : "local-priority",
       retried: false,
     };
   }
@@ -3343,7 +3348,11 @@ app.post("/api/tutor", async (req, res) => {
     };
   });
   const tutorModel = getTutorModel();
-  const normalizedMaxTokens = Math.min(Number(maxTokens) || 320, 320);
+  const requestHasImage = hasImageMessages(rawSafeMessages);
+  const normalizedMaxTokens = Math.min(
+    Number(maxTokens) || (requestHasImage ? 420 : 320),
+    requestHasImage ? 520 : 320,
+  );
   const startedAt = Date.now();
   const cacheKey = buildTutorCacheKey({
     system: system || "你是一位专业的大学音乐理论教师和 AI 辅导员。请用中文简洁、准确地回答。任何带问号的句子都应视为正常提问，不要误判为无效输入。",

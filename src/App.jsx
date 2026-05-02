@@ -4595,7 +4595,7 @@ function AITutorV2({ lessonId, lessonTitle }) {
       setLoadingStage("正在整理问题并生成解释…");
     }
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), imageDataUrl ? 30000 : 18000);
+    const timeoutId = window.setTimeout(() => controller.abort(), imageDataUrl ? 45000 : 18000);
     try {
       const requestMessages = nextMsgs.slice(-5);
       const response = await fetch("/api/tutor", {
@@ -4603,7 +4603,7 @@ function AITutorV2({ lessonId, lessonTitle }) {
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({
-          maxTokens: imageDataUrl ? 280 : 220,
+          maxTokens: imageDataUrl ? 420 : 220,
           system: tutorSystem,
           messages: requestMessages.map((item) => ({
             role: item.role,
