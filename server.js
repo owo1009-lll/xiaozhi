@@ -35,6 +35,9 @@ let analyticsWriteQueue = Promise.resolve();
 let bktSummaryWriteQueue = Promise.resolve();
 let bktTestWriteQueue = Promise.resolve();
 let experimentRq4Cache = { sourceKey: "", data: null };
+let runtimeAnalyticsStore = null;
+let runtimeBktSummaryStore = null;
+let runtimeBktTestStore = null;
 const tutorResponseCache = new Map();
 const tutorInflightRequests = new Map();
 const AI_CIRCUIT_BREAKER_WINDOW_MS = 5 * 60 * 1000;
@@ -1376,6 +1379,9 @@ function dataUrlToBuffer(dataUrl) {
 }
 
 async function readAnalyticsStore() {
+  if (runtimeAnalyticsStore && Array.isArray(runtimeAnalyticsStore.records) && runtimeAnalyticsStore.records.length) {
+    return runtimeAnalyticsStore;
+  }
   try {
     const raw = await fs.readFile(ANALYTICS_FILE, "utf8");
     const parsed = JSON.parse(raw);
@@ -1395,14 +1401,22 @@ async function readAnalyticsStore() {
 }
 
 async function writeAnalyticsStore(store) {
+  runtimeAnalyticsStore = store;
   analyticsWriteQueue = analyticsWriteQueue.then(async () => {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(ANALYTICS_FILE, JSON.stringify(store, null, 2), "utf8");
+    try {
+      await fs.mkdir(DATA_DIR, { recursive: true });
+      await fs.writeFile(ANALYTICS_FILE, JSON.stringify(store, null, 2), "utf8");
+    } catch (error) {
+      console.warn("Analytics store is running in memory-only mode:", error?.message || error);
+    }
   });
   await analyticsWriteQueue;
 }
 
 async function readBktSummaryStore() {
+  if (runtimeBktSummaryStore && Array.isArray(runtimeBktSummaryStore.records) && runtimeBktSummaryStore.records.length) {
+    return runtimeBktSummaryStore;
+  }
   try {
     const raw = await fs.readFile(BKT_SUMMARY_FILE, "utf8");
     const parsed = JSON.parse(raw);
@@ -1431,14 +1445,22 @@ async function readBktSummaryStore() {
 }
 
 async function writeBktSummaryStore(store) {
+  runtimeBktSummaryStore = store;
   bktSummaryWriteQueue = bktSummaryWriteQueue.then(async () => {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(BKT_SUMMARY_FILE, JSON.stringify(store, null, 2), "utf8");
+    try {
+      await fs.mkdir(DATA_DIR, { recursive: true });
+      await fs.writeFile(BKT_SUMMARY_FILE, JSON.stringify(store, null, 2), "utf8");
+    } catch (error) {
+      console.warn("BKT summary store is running in memory-only mode:", error?.message || error);
+    }
   });
   await bktSummaryWriteQueue;
 }
 
 async function readBktTestStore() {
+  if (runtimeBktTestStore && typeof runtimeBktTestStore === "object") {
+    return runtimeBktTestStore;
+  }
   try {
     const raw = await fs.readFile(BKT_TEST_FILE, "utf8");
     const parsed = JSON.parse(raw);
@@ -1454,9 +1476,14 @@ async function readBktTestStore() {
 }
 
 async function writeBktTestStore(store) {
+  runtimeBktTestStore = store;
   bktTestWriteQueue = bktTestWriteQueue.then(async () => {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(BKT_TEST_FILE, JSON.stringify(store, null, 2), "utf8");
+    try {
+      await fs.mkdir(DATA_DIR, { recursive: true });
+      await fs.writeFile(BKT_TEST_FILE, JSON.stringify(store, null, 2), "utf8");
+    } catch (error) {
+      console.warn("BKT test store is running in memory-only mode:", error?.message || error);
+    }
   });
   await bktTestWriteQueue;
 }
