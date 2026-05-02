@@ -192,7 +192,7 @@ function playTone(freq, dur = 0.4, type = "piano", vol = 0.2) {
   o.stop(now + dur);
 }
 const NT = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-const CN = ["do","鍗嘾o","re","鍗噐e","mi","fa","鍗噁a","sol","鍗噑ol","la","鍗噇a","si"];
+const CN = ["do","升do","re","升re","mi","fa","升fa","sol","升sol","la","升la","si"];
 const WK = [0,2,4,5,7,9,11];
 const BK = [1,3,6,8,10];
 function nFreq(n, o) { return 440 * Math.pow(2, (NT.indexOf(n) - 9) / 12 + (o - 4)); }

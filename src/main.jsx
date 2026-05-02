@@ -21,7 +21,7 @@ class ErrorBoundary extends React.Component {
       return (
         <div className="app-error">
           <h1>页面加载失败</h1>
-          <p>前端脚本运行时出错，请刷新页面或换用 Chrome / Edge 浏览器。</p>
+          <p>前端脚本运行时出错，请刷新页面或改用 Chrome / Edge 浏览器。</p>
           <pre>{this.state.error.message}</pre>
         </div>
       );
@@ -36,5 +36,5 @@ createRoot(document.getElementById("root")).render(
     <ErrorBoundary>
       <App />
     </ErrorBoundary>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
