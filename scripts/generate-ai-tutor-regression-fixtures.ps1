@@ -91,6 +91,99 @@ $g.FillRectangle($bread, 390, 260, 220, 120)
 $g.FillRectangle($water, 710, 230, 100, 210)
 Save-Canvas $canvas
 
+$canvas = New-Canvas (Join-Path $targetDir "fixture-01-treble.png")
+$g = $canvas.Graphics
+$g.DrawString("Treble Clef Fixture", $fontTitle, $black, 40, 35)
+$g.DrawString("G clef. The second line is G.", $font, $black, 55, 120)
+for ($i = 0; $i -lt 5; $i++) {
+  $y = 250 + ($i * 32)
+  $g.DrawLine($pen, 70, $y, 850, $y)
+}
+$g.DrawString("G", $font, $black, 120, 300)
+$g.FillEllipse($black, 430, 298, 48, 32)
+$g.DrawString("Question: identify treble clef and line note.", $small, $black, 55, 500)
+Save-Canvas $canvas
+
+$canvas = New-Canvas (Join-Path $targetDir "fixture-02-bass.png")
+$g = $canvas.Graphics
+$g.DrawString("Bass Clef Fixture", $fontTitle, $black, 40, 35)
+$g.DrawString("F clef. The fourth line is F.", $font, $black, 55, 120)
+for ($i = 0; $i -lt 5; $i++) {
+  $y = 250 + ($i * 32)
+  $g.DrawLine($pen, 70, $y, 850, $y)
+}
+$g.DrawString("F", $font, $black, 120, 270)
+$g.FillEllipse($black, 430, 266, 48, 32)
+$g.DrawString("Question: explain bass clef.", $small, $black, 55, 500)
+Save-Canvas $canvas
+
+$canvas = New-Canvas (Join-Path $targetDir "fixture-03-dot-note.png")
+$g = $canvas.Graphics
+$g.DrawString("Dotted Note Fixture", $fontTitle, $black, 40, 35)
+$g.DrawString("Dotted quarter note = 1.5 beats", $font, $black, 55, 130)
+$g.FillEllipse($black, 150, 260, 70, 48)
+$g.DrawLine($pen, 220, 280, 220, 170)
+$g.FillEllipse($black, 245, 270, 14, 14)
+$g.DrawString("quarter + dot = one and a half beats", $small, $black, 55, 410)
+Save-Canvas $canvas
+
+$canvas = New-Canvas (Join-Path $targetDir "fixture-04-meter.png")
+$g = $canvas.Graphics
+$g.DrawString("Meter Fixture", $fontTitle, $black, 40, 35)
+$g.DrawString("Time signature: 4/4", $font, $black, 55, 130)
+$g.DrawString("Strong - weak - medium strong - weak", $font, $black, 55, 220)
+$g.DrawString("Question: explain the accent pattern.", $small, $black, 55, 320)
+Save-Canvas $canvas
+
+$canvas = New-Canvas (Join-Path $targetDir "fixture-05-semitone.png")
+$g = $canvas.Graphics
+$g.DrawString("Whole Tone and Semitone", $fontTitle, $black, 40, 35)
+$g.DrawString("C to C# = semitone", $font, $black, 55, 140)
+$g.DrawString("C to D = whole tone", $font, $black, 55, 220)
+$g.DrawString("Question: compare the two distances.", $small, $black, 55, 320)
+Save-Canvas $canvas
+
+$canvas = New-Canvas (Join-Path $targetDir "fixture-06-enharmonic.png")
+$g = $canvas.Graphics
+$g.DrawString("Enharmonic Fixture", $fontTitle, $black, 40, 35)
+$g.DrawString("C# = Db", $fontTitle, $blue, 55, 160)
+$g.DrawString("Same pitch, different names.", $font, $black, 55, 260)
+$g.DrawString("Question: explain enharmonic notes.", $small, $black, 55, 360)
+Save-Canvas $canvas
+
+$canvas = New-Canvas (Join-Path $targetDir "fixture-07-dynamics.png")
+$g = $canvas.Graphics
+$g.DrawString("Dynamics Fixture", $fontTitle, $black, 40, 35)
+$g.DrawString("p  <  mf  <  f", $fontTitle, $black, 80, 160)
+$g.DrawString("crescendo means gradually louder", $font, $black, 55, 270)
+$g.DrawString("Question: explain dynamic markings.", $small, $black, 55, 370)
+Save-Canvas $canvas
+
+$canvas = New-Canvas (Join-Path $targetDir "fixture-08-repeat.png")
+$g = $canvas.Graphics
+$g.DrawString("Repeat Sign Fixture", $fontTitle, $black, 40, 35)
+$g.DrawString("D.C. al Fine", $fontTitle, $black, 80, 160)
+$g.DrawString("Return to the beginning and play to Fine.", $font, $black, 55, 270)
+$g.DrawString("Question: explain the repeat route.", $small, $black, 55, 370)
+Save-Canvas $canvas
+
+$canvas = New-Canvas (Join-Path $targetDir "fixture-09-syncopation.png")
+$g = $canvas.Graphics
+$g.DrawString("Syncopation Fixture", $fontTitle, $black, 40, 35)
+$g.DrawString("Accent shifts to a weak beat", $font, $black, 55, 150)
+$g.DrawString("1  &  2  &  3  &  4  &", $font, $black, 55, 240)
+$g.DrawString("      >           >", $fontTitle, $red, 55, 290)
+$g.DrawString("Question: explain syncopation.", $small, $black, 55, 410)
+Save-Canvas $canvas
+
+$canvas = New-Canvas (Join-Path $targetDir "fixture-10-middle-c.png")
+$g = $canvas.Graphics
+$g.DrawString("Middle C Fixture", $fontTitle, $black, 40, 35)
+$g.DrawString("Middle C = C4", $fontTitle, $blue, 55, 145)
+$g.DrawString("It sits between treble and bass staves.", $font, $black, 55, 260)
+$g.DrawString("Question: explain common notation for middle C.", $small, $black, 55, 360)
+Save-Canvas $canvas
+
 $fontTitle.Dispose()
 $font.Dispose()
 $small.Dispose()

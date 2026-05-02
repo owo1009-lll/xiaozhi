@@ -1,7 +1,6 @@
 ﻿import "dotenv/config";
 import express from "express";
 import OpenAI from "openai";
-import xlsx from "xlsx";
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
@@ -23,11 +22,9 @@ const app = express();
 const port = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, "data");
 const SEED_DIR = path.join(__dirname, "seed");
-const EXPERIMENT_SIM_DIR = path.join(DATA_DIR, "experiment-sim");
 const ANALYTICS_FILE = path.join(DATA_DIR, "teacher-analytics.json");
 const BKT_SUMMARY_FILE = path.join(DATA_DIR, "teacher-bkt-summary.json");
 const BKT_TEST_FILE = path.join(DATA_DIR, "bkt-test-results.json");
-const EXPERIMENT_SIM_V2_FILE = path.join(EXPERIMENT_SIM_DIR, "experiment-sim-package-v2.xlsx");
 const ANALYTICS_SEED_FILE = path.join(SEED_DIR, "teacher-analytics.seed.json");
 const BKT_SUMMARY_SEED_FILE = path.join(SEED_DIR, "teacher-bkt-summary.seed.json");
 const EXPERIMENT_RQ4_SEED_FILE = path.join(SEED_DIR, "experiment-rq4.seed.json");
@@ -1454,12 +1451,6 @@ function toBooleanFlag(value) {
   return ["true", "pass", "yes", "ok", "1", "成功", "通过"].includes(normalized);
 }
 
-function readSheetRows(workbook, sheetName) {
-  const sheet = workbook?.Sheets?.[sheetName];
-  if (!sheet) return [];
-  return xlsx.utils.sheet_to_json(sheet, { defval: null });
-}
-
 function normalizeExperimentRq4Payload(raw, sourceLabel) {
   if (!raw || typeof raw !== "object") return null;
   const summaryRows = getArray(raw.summaryRows).map((row) => ({
@@ -1566,37 +1557,7 @@ function normalizeExperimentRq4Payload(raw, sourceLabel) {
   };
 }
 
-function parseExperimentRq4Workbook(workbook) {
-  return normalizeExperimentRq4Payload(
-    {
-      summaryRows: readSheetRows(workbook, "rq4_summary"),
-      correlationRows: readSheetRows(workbook, "rq4_correlations"),
-      logicRows: readSheetRows(workbook, "rq4_logic_checks"),
-      regressionRows: readSheetRows(workbook, "rq4_hierarchical_regression"),
-      studentRows: readSheetRows(workbook, "scale_scores").filter(
-        (row) => safeString(row.groupLabel).toLowerCase() === "experimental" || Number(row.group) === 1,
-      ),
-    },
-    "local-workbook",
-  );
-}
-
 async function readExperimentRq4Data() {
-  try {
-    const fileStat = await fs.stat(EXPERIMENT_SIM_V2_FILE);
-    const sourceKey = `xlsx:${fileStat.mtimeMs}`;
-    if (experimentRq4Cache.sourceKey === sourceKey && experimentRq4Cache.data) {
-      return experimentRq4Cache.data;
-    }
-    const workbook = xlsx.readFile(EXPERIMENT_SIM_V2_FILE);
-    const parsed = parseExperimentRq4Workbook(workbook);
-    if (parsed?.rq4?.sampleCount) {
-      experimentRq4Cache = { sourceKey, data: parsed };
-      return parsed;
-    }
-  } catch {
-    // noop
-  }
   try {
     const seedStat = await fs.stat(EXPERIMENT_RQ4_SEED_FILE);
     const sourceKey = `seed:${seedStat.mtimeMs}`;

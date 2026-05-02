@@ -8,3 +8,9 @@ npm-debug.log*
 netlify-drop/
 video-build/
 data/
+artifacts/
+public/regression-images/
+.claude/
+tmp-*.txt
+tmp-*.log
+_old_app.jsx

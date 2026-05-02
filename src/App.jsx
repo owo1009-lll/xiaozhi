@@ -1791,7 +1791,7 @@ function getStudentProfile() {
     try {
       const parsed = JSON.parse(cached);
       if (parsed?.studentId) {
-        const hasGarbledLabel = /[�瀛鏈湴]/.test(String(parsed.studentLabel || "")) && !/学生|本地学生/.test(String(parsed.studentLabel || ""));
+        const hasGarbledLabel = /[\uFFFD\u701B\u93C8\uE100\u6E74]/.test(String(parsed.studentLabel || "")) && !/学生|本地学生/.test(String(parsed.studentLabel || ""));
         if (hasGarbledLabel) {
           const repaired = {
             ...parsed,

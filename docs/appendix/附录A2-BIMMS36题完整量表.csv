@@ -1,0 +1,37 @@
+﻿题号,维度,英文题干,中文题干,是否反向题,SPSS变量名
+1,Attention,There was something interesting at the beginning of this lesson that got my attention.,这节课一开始就有某些内容吸引了我的注意力。,No,IMMS_A1
+2,Attention,These materials are eye-catching.,这些学习材料在视觉上很吸引人。,No,IMMS_A2
+3,Attention,The quality of the writing helped to hold my attention.,内容的表达方式有助于我保持注意力。,No,IMMS_A3
+4,Attention,This lesson is so abstract that it was hard to keep my attention on it.,这节课内容太抽象了，很难让我集中注意力。,Yes (R),IMMS_A4_R
+5,Attention,The pages of this lesson look dry and unappealing.,这节课的页面看起来枯燥且没有吸引力。,Yes (R),IMMS_A5_R
+6,Attention,The way the information is arranged on the pages helped keep my attention.,信息在页面上的排列方式有助于我保持注意力。,No,IMMS_A6
+7,Attention,This lesson has things that stimulated my curiosity.,这节课有一些内容激发了我的好奇心。,No,IMMS_A7
+8,Attention,The amount of repetition in this lesson caused me to get bored sometimes.,这节课重复的内容太多，有时会让我感到无聊。,Yes (R),IMMS_A8_R
+9,Attention,I learned some things that were surprising or unexpected.,我学到了一些令人惊喜或意想不到的内容。,No,IMMS_A9
+10,Attention,"The variety of reading passages, exercises, illustrations, etc., helped keep my attention on the lesson.",阅读材料、练习、图示等的多样性有助于我保持对课程的关注。,No,IMMS_A10
+11,Attention,The style of writing is boring.,写作风格很无聊。,Yes (R),IMMS_A11_R
+12,Attention,There are so many words on each page that it is irritating.,每页文字太多，让人感到烦躁。,Yes (R),IMMS_A12_R
+13,Relevance,It is clear to me how the content of this material is related to things I already know.,我清楚这些材料的内容与我已有知识之间的关联。,No,IMMS_R1
+14,Relevance,"There were stories, pictures, or examples that showed me how this material could be important to some people.",有故事、图片或例子让我了解到这些材料对某些人来说可能很重要。,No,IMMS_R2
+15,Relevance,Completing this lesson successfully was important to me.,成功完成这节课对我来说很重要。,No,IMMS_R3
+16,Relevance,The content of this material is relevant to my interests.,这些材料的内容与我的兴趣相关。,No,IMMS_R4
+17,Relevance,There are explanations or examples of how people use the knowledge in this lesson.,有关于人们如何使用本课知识的解释或例子。,No,IMMS_R5
+18,Relevance,The content and style of writing in this lesson convey the impression that its content is worth knowing.,这节课的内容和写作风格让人觉得这些知识值得学习。,No,IMMS_R6
+19,Relevance,This lesson was not relevant to my needs because I already knew most of it.,这节课与我的需求无关，因为我已经掌握了大部分内容。,Yes (R),IMMS_R7_R
+20,Relevance,"I could relate the content of this lesson to things I have seen, done, or thought about in my own life.",我可以将这节课的内容与自己生活中看到、做过或想过的事情联系起来。,No,IMMS_R8
+21,Relevance,The content of this lesson will be useful to me.,这节课的内容对我将来会有用。,No,IMMS_R9
+22,Confidence,"When I first looked at this lesson, I had the impression that it would be easy for me.",当我第一次看到这节课时，我觉得对我来说会很简单。,No,IMMS_C1
+23,Confidence,This material was more difficult to understand than I would like for it to be.,这些材料比我期望的更难理解。,Yes (R),IMMS_C2_R
+24,Confidence,"After reading the introductory information, I felt confident that I knew what I was supposed to learn from this lesson.",阅读完介绍信息后，我有信心知道我应该从这节课中学到什么。,No,IMMS_C3
+25,Confidence,Many of the pages had so much information that it was hard to pick out and remember the important points.,很多页面信息量太大，很难挑出和记住重要内容。,Yes (R),IMMS_C4_R
+26,Confidence,"As I worked on this lesson, I was confident that I could learn the content.",在学习这节课时，我有信心能够学会这些内容。,No,IMMS_C5
+27,Confidence,The exercises in this lesson were too difficult.,这节课的练习太难了。,Yes (R),IMMS_C6_R
+28,Confidence,"After working on this lesson for a while, I was confident that I would be able to pass a test on it.",学习这节课一段时间后，我有信心能通过相关考试。,No,IMMS_C7
+29,Confidence,I could not really understand quite a bit of the material in this lesson.,这节课中有不少内容我真的不太理解。,Yes (R),IMMS_C8_R
+30,Confidence,The good organization of the content helped me be confident that I would learn this material.,内容的良好组织让我有信心能学好这些材料。,No,IMMS_C9
+31,Satisfaction,Completing the exercises in this lesson gave me a satisfying feeling of accomplishment.,完成这节课的练习让我有一种令人满足的成就感。,No,IMMS_S1
+32,Satisfaction,I enjoyed this lesson so much that I would like to know more about this topic.,我非常享受这节课，希望能了解更多关于这个主题的内容。,No,IMMS_S2
+33,Satisfaction,I really enjoyed studying this lesson.,我真的很喜欢学习这节课。,No,IMMS_S3
+34,Satisfaction,"The wording of feedback after the exercises, or of other comments in this lesson, helped me feel rewarded for my effort.",练习后的反馈措辞或课程中的其他评语让我觉得自己的努力得到了回报。,No,IMMS_S4
+35,Satisfaction,I felt good about successfully completing this lesson.,成功完成这节课让我感觉很好。,No,IMMS_S5
+36,Satisfaction,It was a pleasure to work on such a well-designed lesson.,学习这样一节设计精良的课程是一种享受。,No,IMMS_S6

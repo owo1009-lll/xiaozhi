@@ -1,0 +1,14 @@
+﻿题号,维度,英文题干,中文题干,是否反向题,SPSS变量名
+1,PU,Using this system improved my learning efficiency.,使用这个系统提高了我的学习效率。,No,TAM_PU1
+2,PU,Using this system enhanced my understanding of music theory.,使用这个系统增强了我对乐理的理解。,No,TAM_PU2
+3,PU,Using this system made it easier to learn music theory concepts.,使用这个系统使学习乐理概念变得更容易。,No,TAM_PU3
+4,PU,Using this system improved my academic performance in music theory.,使用这个系统提高了我的乐理学习成绩。,No,TAM_PU4
+5,PU,I find this system useful for my music theory study.,我觉得这个系统对我的乐理学习有用。,No,TAM_PU5
+6,PU,"Overall, this system is a useful learning tool.",总的来说，这个系统是一个有用的学习工具。,No,TAM_PU6
+7,PEU,Learning to operate this system was easy for me.,学习操作这个系统对我来说很容易。,No,TAM_PEU1
+8,PEU,I find it easy to get this system to do what I want it to do.,我觉得让这个系统按我的意愿运行很容易。,No,TAM_PEU2
+9,PEU,My interaction with this system is clear and understandable.,我与这个系统的交互是清晰且易于理解的。,No,TAM_PEU3
+10,PEU,I find this system to be flexible to interact with.,我觉得与这个系统的交互很灵活。,No,TAM_PEU4
+11,PEU,It was easy for me to become skilful at using this system.,我很容易就能熟练使用这个系统。,No,TAM_PEU5
+12,PEU,The interface of this system is user-friendly.,这个系统的界面对用户友好。,No,TAM_PEU6
+13,PEU,"Overall, I find this system easy to use.",总的来说，我觉得这个系统很容易使用。,No,TAM_PEU7

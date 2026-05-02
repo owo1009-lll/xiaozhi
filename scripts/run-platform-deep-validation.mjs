@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import http from "node:http";
+import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { chromium, devices } from "playwright";
 import { app } from "../server.js";
@@ -17,6 +18,8 @@ const RESULT_SUFFIX = REPORT_TAG ? `-${REPORT_TAG}` : "-latest";
 const RESULT_JSON = path.join(DATA_DIR, `platform-deep-validation${RESULT_SUFFIX}.json`);
 const RESULT_CSV = path.join(DATA_DIR, `platform-deep-validation${RESULT_SUFFIX}.csv`);
 const RESULT_HTML = path.join(DATA_DIR, `platform-deep-validation${RESULT_SUFFIX}.html`);
+const IMAGE_DIR = path.join(ROOT, "public", "regression-images");
+const FIXTURE_SCRIPT = path.join(ROOT, "scripts", "generate-ai-tutor-regression-fixtures.ps1");
 
 function nowIso() {
   return new Date().toISOString();
@@ -66,6 +69,35 @@ function getMimeType(filePath) {
   if (extension === ".png") return "image/png";
   if (extension === ".jpg" || extension === ".jpeg") return "image/jpeg";
   return "application/octet-stream";
+}
+
+function runPowershellScript(filePath) {
+  return new Promise((resolve, reject) => {
+    const child = spawn("powershell.exe", ["-ExecutionPolicy", "Bypass", "-File", filePath], {
+      cwd: ROOT,
+      stdio: "inherit",
+    });
+    child.on("exit", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`PowerShell script failed with code ${code}`));
+    });
+    child.on("error", reject);
+  });
+}
+
+async function ensureImageFixtures() {
+  const requiredFiles = IMAGE_CASES.map((item) => path.join(IMAGE_DIR, item.imageFile));
+  const missing = [];
+  for (const filePath of requiredFiles) {
+    try {
+      await fs.access(filePath);
+    } catch {
+      missing.push(filePath);
+    }
+  }
+  if (missing.length > 0) {
+    await runPowershellScript(FIXTURE_SCRIPT);
+  }
 }
 
 async function mapWithConcurrency(items, limit, worker) {
@@ -130,7 +162,7 @@ function looksBrokenText(text) {
   if (!value.trim()) return true;
   if (value.includes("${") || value.includes("undefined") || value.includes("null")) return true;
   if (value.includes("\uFFFD")) return true;
-  const mojibakeMatches = value.match(/[鈥銆鐨鍦浠璇鏄闊鎷瀛涔]/g) || [];
+  const mojibakeMatches = value.match(/[\u9225\u9286\u9428\u9366\u6D60\u7487\u93C4\u95CA\u93B7\u701B\u6D94]/g) || [];
   return mojibakeMatches.length >= 8;
 }
 
@@ -181,7 +213,7 @@ async function callTutor(baseUrl, lessonCase, imageCase = null) {
     : `你是一位大学乐理课程教师。当前课程：${lessonCase.title}。\n请始终用中文回复，说明要清楚、准确、简洁。\n课程内容：\n${contextText}`;
   const message = {
     role: "user",
-    content: imageCase?.prompt || lessonCase.prompt,
+    content: imageCase?.prompt || lessonCase.tutorPrompt || lessonCase.prompt || "",
   };
   if (imageCase) {
     const imagePath = path.join(ROOT, "public", "regression-images", imageCase.imageFile);
@@ -523,6 +555,7 @@ async function writeReports(report) {
 }
 
 async function main() {
+  await ensureImageFixtures();
   const { server, baseUrl } = await startServer();
   try {
     const simulation = {
