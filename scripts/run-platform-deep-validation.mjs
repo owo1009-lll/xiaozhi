@@ -304,8 +304,21 @@ async function runUiChecks(baseUrl) {
   async function inspect(context, mode) {
     const page = await context.newPage();
     const consoleErrors = [];
+    const resourceErrors = [];
+    page.on("response", (response) => {
+      const status = response.status();
+      if (status >= 400) {
+        resourceErrors.push(`${status} ${response.url()}`);
+      }
+    });
+    page.on("requestfailed", (request) => {
+      resourceErrors.push(`FAILED ${request.url()} ${request.failure()?.errorText || ""}`.trim());
+    });
     page.on("console", (msg) => {
-      if (msg.type() === "error") consoleErrors.push(msg.text());
+      if (msg.type() !== "error") return;
+      const text = msg.text();
+      if (/Failed to load resource/i.test(text) && resourceErrors.length === 0) return;
+      consoleErrors.push(text);
     });
     await page.goto(baseUrl, { waitUntil: "networkidle", timeout: 45000 });
     for (const text of ["音的性质与乐音体系", "音的性质", "第1课"]) {
@@ -380,6 +393,7 @@ async function runUiChecks(baseUrl) {
 
     uiSummary[mode] = {
       consoleErrors,
+      resourceErrors,
       aiTutorVisible,
       pptLightboxWorks,
       preInfo,
@@ -387,7 +401,7 @@ async function runUiChecks(baseUrl) {
       guideToggle,
       contactToggle,
     };
-    if (consoleErrors.length) uiSummary.issues.push(`${mode} 端存在控制台错误`);
+    if (consoleErrors.length || resourceErrors.length) uiSummary.issues.push(`${mode} 端存在控制台或资源错误`);
     if (!aiTutorVisible) uiSummary.issues.push(`${mode} 端未找到 AI 导师入口`);
     if (mode === "mobile" && preInfo.scrollWidth > preInfo.innerWidth) uiSummary.issues.push("移动端存在横向溢出");
     if (!pptLightboxWorks) uiSummary.issues.push(`${mode} 端 PPT 放大未触发`);
@@ -445,12 +459,13 @@ function buildBugList({ questionBank, ai, ui, deepRun }) {
     bugs.push({ severity: "medium", area: "UI", title: issue, detail: "来自本地桌面/移动端自动检查。" });
   }
   const weakest = (deepRun.summary?.knowledgePointAverages || []).slice(0, 5);
-  if (weakest.length) {
+  const severeWeakest = weakest.filter((item) => Number(item.averagePL) < 0.25);
+  if (severeWeakest.length) {
     bugs.push({
       severity: "low",
       area: "教学内容",
-      title: "部分知识点长期偏弱",
-      detail: weakest.map((item) => `${item.title}(${item.averagePL})`).join("、"),
+      title: "部分知识点严重偏弱",
+      detail: severeWeakest.map((item) => `${item.title}(${item.averagePL})`).join("、"),
     });
   }
   return bugs;

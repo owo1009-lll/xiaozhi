@@ -31,15 +31,8 @@ import {
   getHomeworkRequirement,
   getRhythmValidation,
 } from "./homeworkModel";
-import {
-  FeedbackBar,
-  LessonCharts,
-  PBar,
-  Stars,
-  Tag,
-  WeakPointExplanationCards,
-} from "./uiBasics";
-import { BK, CN, NT, WK, nFreq, playTone, unlockAudioSystem } from "./musicAudio";
+import { LessonCharts, PBar, Stars, Tag, WeakPointExplanationCards } from "./uiBasics";
+import { BK, NT, WK, nFreq, playTone, unlockAudioSystem } from "./musicAudio";
 import {
   HomeworkEvaluationCard,
   HomeworkImageUploader,
@@ -79,13 +72,13 @@ function createKnowledgeMappingKey(lessonId, signature) {
 
 function formatStructuredEvaluation(evaluation) {
   if (!evaluation) return "";
-  const strengths = (evaluation.strengths || []).join("?");
-  const issues = (evaluation.issues || []).join("?");
-  const suggestions = (evaluation.suggestions || []).join("?");
+  const strengths = (evaluation.strengths || []).join("；");
+  const issues = (evaluation.issues || []).join("；");
+  const suggestions = (evaluation.suggestions || []).join("；");
   return [
-    `??????${evaluation.overallComment || "????????"}`,
-    `?????${issues || "???????"}`,
-    `?????${suggestions || "??????"}${strengths ? `\n???${strengths}` : ""}`,
+    `完成度评价：${evaluation.overallComment || "已完成作业提交。"}`,
+    `错误说明：${issues || "暂无明显错误。"}`,
+    `修改建议：${suggestions || "请继续保持。"}${strengths ? `\n优势：${strengths}` : ""}`,
   ].join("\n");
 }
 
@@ -272,9 +265,9 @@ function getIntervalInfo(a, b) {
   if (a == null || b == null) return null;
   const raw = Math.abs(a - b) % 12;
   const diff = raw > 6 ? 12 - raw : raw;
-  if (diff === 1) return { label: "半音", color: "#1f2937", detail: "这两个音之间是相邻半音关系。" };
-  if (diff === 2) return { label: "全音", color: "#111111", detail: "这两个音之间是标准全音关系。" };
-  return { label: "其他", color: "#6b7280", detail: "这两个音之间不是全音或半音。", isError: true };
+  if (diff === 1) return { label: "半音", semitones: diff, color: "#1f2937", detail: "这两个音之间是相邻半音关系。" };
+  if (diff === 2) return { label: "全音", semitones: diff, color: "#111111", detail: "这两个音之间是标准全音关系。" };
+  return { label: "其他", semitones: diff, color: "#6b7280", detail: "这两个音之间不是全音或半音。", isError: true };
 }
 
 function LessonLearningWorkspaceLegacy() {

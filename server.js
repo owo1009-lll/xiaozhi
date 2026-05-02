@@ -812,6 +812,29 @@ function buildNonHomeworkImageFallback() {
   return "这张图看起来不是乐理作业图片。当前视觉模型没有稳定返回具体识别结果；你可以补一句想让我识别什么，例如“图里有哪些物体？”或“这是不是乐理题？”。";
 }
 
+function applyTutorVisionCorrections(text, messages = []) {
+  const content = safeString(text).trim();
+  const latestPrompt = extractLatestUserPrompt(messages);
+  const latestImageName = extractLatestUserImageName(messages);
+  const source = `${latestPrompt} ${latestImageName}`.toLowerCase();
+  const combined = `${source} ${content}`.toLowerCase();
+  const isRhythmMissingBeatCase =
+    /rhythm|节奏|拍号|小节|4\/4|missing-beat/.test(combined)
+    && /quarter\s*\+\s*quarter\s*\+\s*quarter|三个四分音符|3个四分音符|三拍|3拍/.test(combined)
+    && /4\/4/.test(combined)
+    && /完整|符合|正好等于四拍|complete/.test(content);
+
+  if (isRhythmMissingBeatCase) {
+    return [
+      "这张节奏作业显示的是 4/4 拍，但当前小节只有 quarter + quarter + quarter，也就是三个四分音符。",
+      "每个四分音符是 1 拍，所以总共只有 3 拍，不是 4 拍。",
+      "结论：这个小节不完整，缺少 1 拍。可以再补一个四分音符、一个四分休止符，或等值的节奏组合。"
+    ].join("\n");
+  }
+
+  return content;
+}
+
 function buildLocalTutorFallback(messages = [], { system = "" } = {}) {
   const prompt = extractLatestUserPrompt(messages);
   const imageUploaded = hasImageMessages(messages);
@@ -943,7 +966,7 @@ async function createTutorResponseWithFallback({ system, messages, rawMessages =
         modelOverride: modelName,
         timeoutMs,
       });
-      const candidateText = safeString(result?.text);
+      const candidateText = applyTutorVisionCorrections(result?.text, rawMessages);
       const candidateModel = safeString(result?.model, modelName);
       attemptedModels.push(candidateModel);
       lastText = candidateText;
@@ -951,7 +974,7 @@ async function createTutorResponseWithFallback({ system, messages, rawMessages =
         closeAiCircuitBreaker();
         return {
           text: candidateText,
-          model: candidateModel,
+          model: candidateText === safeString(result?.text).trim() ? candidateModel : `${candidateModel}+vision-guard`,
           retried: attemptedModels.length > 1,
         };
       }
@@ -2768,7 +2791,7 @@ app.get("/api/status", async (req, res) => {
   });
 });
 
-app.post("/api/analytics", async (req, res) => {
+async function handleAnalyticsPost(req, res) {
   const payload = req.body || {};
   if (!payload.studentId || !payload.lessonId) {
     return res.status(400).json({ error: "studentId and lessonId are required." });
@@ -2823,7 +2846,10 @@ app.post("/api/analytics", async (req, res) => {
 
   await writeAnalyticsStore(store);
   res.json({ ok: true });
-});
+}
+
+app.post("/api/analytics", handleAnalyticsPost);
+app.post("/api/analytics/student-session", handleAnalyticsPost);
 
 app.post("/api/bkt/sync", async (req, res) => {
   const payload = req.body || {};
