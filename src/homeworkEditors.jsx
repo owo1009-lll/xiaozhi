@@ -22,17 +22,17 @@ function HomeworkImageUploader({
     <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>拍照上传与图片附件</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>Photo Upload and Image Attachments</div>
           <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
-            手机端可直接拍照上传作业纸、节奏型或五线谱图片。
+            On mobile, students can photograph worksheets, rhythm patterns, or staff notation directly.
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button onClick={() => cameraInputRef.current?.click()} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>
-            拍照上传
+            Take Photo
           </button>
           <button onClick={() => fileInputRef.current?.click()} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", color: "#111111", cursor: "pointer" }}>
-            相册上传
+            Upload Image
           </button>
         </div>
       </div>
@@ -42,19 +42,19 @@ function HomeworkImageUploader({
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10 }}>
           {images.map((image, index) => (
             <div key={`${image.name}-${index}`} style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(17,17,17,0.1)", background: "#f8f8f8" }}>
-              <img src={image.dataUrl} alt={image.name || `作业图片${index + 1}`} style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
+              <img src={image.dataUrl} alt={image.name || `Homework image ${index + 1}`} style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
               <div style={{ padding: 8, fontSize: 10, color: "var(--color-text-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {image.name || `图片 ${index + 1}`}
+                {image.name || `Image ${index + 1}`}
               </div>
               <button onClick={() => onRemoveImage(index)} style={{ position: "absolute", top: 8, right: 8, width: 24, height: 24, borderRadius: 999, border: "1px solid rgba(17,17,17,0.16)", background: "rgba(255,255,255,0.96)", cursor: "pointer", fontSize: 12 }}>
-                ×
+                x
               </button>
             </div>
           ))}
         </div>
       ) : (
         <div style={{ padding: 14, borderRadius: 10, background: "#f8f8f8", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-          当前尚未上传图片。若作业需要书写节奏型、五线谱或手写分析，可直接拍照后提交。
+          No images uploaded yet. If the assignment requires rhythm writing, staff notation, or handwritten analysis, take a photo and submit it here.
         </div>
       )}
     </div>
@@ -112,9 +112,9 @@ function RhythmHomeworkEditorV2({ rhythmSubmission, onChange, onPlay }) {
     <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>节奏编辑器</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>Rhythm Editor</div>
           <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
-            以小节为单位输入节奏，系统会检查每小节拍数是否完整。
+            Enter rhythm measure by measure. The system checks whether each measure has the required number of beats.
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -123,7 +123,7 @@ function RhythmHomeworkEditorV2({ rhythmSubmission, onChange, onPlay }) {
           </select>
           {[0, 1].map((measureIndex) => (
             <button key={measureIndex} onClick={() => onChange((prev) => ({ ...prev, activeMeasure: measureIndex }))} style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid rgba(17,17,17,0.12)", background: activeMeasure === measureIndex ? "#111111" : "#ffffff", color: activeMeasure === measureIndex ? "#ffffff" : "#111111", cursor: "pointer" }}>
-              第 {measureIndex + 1} 小节
+              Measure {measureIndex + 1}
             </button>
           ))}
         </div>
@@ -132,38 +132,38 @@ function RhythmHomeworkEditorV2({ rhythmSubmission, onChange, onPlay }) {
         {rhythmSymbols.map((symbol) => (
           <button key={symbol.id} onClick={() => appendSymbol(symbol)} style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.1)", background: "#f8f8f8", cursor: "pointer", textAlign: "left" }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>{symbol.label}</div>
-            <div style={{ fontSize: 10, color: "var(--color-text-tertiary)", marginTop: 4 }}>{symbol.kind === "tie" ? "连接前后音" : `${symbol.duration} 拍`}</div>
+            <div style={{ fontSize: 10, color: "var(--color-text-tertiary)", marginTop: 4 }}>{symbol.kind === "tie" ? "Connect adjacent notes" : `${symbol.duration} beats`}</div>
           </button>
         ))}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
         {measures.map((measure, index) => {
           const currentBeats = calculateMeasureDuration(measure);
-          const status = currentBeats === targetBeats ? "完整" : currentBeats < targetBeats ? "未满" : "超拍";
+          const status = currentBeats === targetBeats ? "Complete" : currentBeats < targetBeats ? "Short" : "Overfull";
           const statusColor = currentBeats === targetBeats ? "#166534" : currentBeats < targetBeats ? "#92400e" : "#b91c1c";
           return (
             <div key={`measure-v2-${index}`} style={{ padding: 10, borderRadius: 10, border: activeMeasure === index ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)", background: activeMeasure === index ? "#fafafa" : "#ffffff" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#111111" }}>第 {index + 1} 小节</div>
-                <div style={{ fontSize: 10, fontWeight: 600, color: statusColor }}>{`${currentBeats}/${targetBeats} 拍 · ${status}`}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#111111" }}>Measure {index + 1}</div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: statusColor }}>{`${currentBeats}/${targetBeats} beats - ${status}`}</div>
               </div>
               <div style={{ minHeight: 58, display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {measure.length ? measure.map((item, itemIndex) => (
                   <span key={`${item.id}-${itemIndex}`} style={{ padding: "6px 8px", borderRadius: 999, background: "#111111", color: "#ffffff", fontSize: 10 }}>
                     {item.label}{item.tieToNext ? "~" : ""}
                   </span>
-                )) : <span style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>当前小节尚未录入。</span>}
+                )) : <span style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>This measure is empty.</span>}
               </div>
             </div>
           );
         })}
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-        <button onClick={() => onPlay?.(measures[activeMeasure] || [])} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>试听当前小节</button>
-        <button onClick={toggleTieOnLast} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>为最后一个音加连音</button>
-        <button onClick={removeLastSymbol} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>撤销上一步</button>
-        <button onClick={clearMeasure} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>清空当前小节</button>
-        <button onClick={resetAll} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#f5f5f5", cursor: "pointer" }}>重置两小节</button>
+        <button onClick={() => onPlay?.(measures[activeMeasure] || [])} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>Play Current Measure</button>
+        <button onClick={toggleTieOnLast} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>Tie Last Note</button>
+        <button onClick={removeLastSymbol} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>Undo Last Step</button>
+        <button onClick={clearMeasure} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>Clear Current Measure</button>
+        <button onClick={resetAll} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#f5f5f5", cursor: "pointer" }}>Reset Two Measures</button>
       </div>
     </div>
   );
@@ -213,32 +213,32 @@ function StaffHomeworkEditorV2({ staffSubmission, onChange }) {
     <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>五线谱修正器</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>Staff Correction Editor</div>
           <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
-            支持谱号、升降号、音值和连音弧的基础修正，适合大学乐理作业录入。
+            Adjust clef, accidentals, note values, and ties for college-level music theory homework.
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <select value={staffSubmission?.clef || "treble"} onChange={(e) => onChange((prev) => ({ ...prev, clef: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)" }}>
-            <option value="treble">高音谱号</option>
-            <option value="bass">低音谱号</option>
+            <option value="treble">Treble Clef</option>
+            <option value="bass">Bass Clef</option>
           </select>
           <select value={staffSubmission?.accidental || "natural"} onChange={(e) => onChange((prev) => ({ ...prev, accidental: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)" }}>
-            <option value="natural">还原</option>
-            <option value="sharp">升号</option>
-            <option value="flat">降号</option>
+            <option value="natural">Natural</option>
+            <option value="sharp">Sharp</option>
+            <option value="flat">Flat</option>
           </select>
           <select value={staffSubmission?.noteValue || "quarter"} onChange={(e) => onChange((prev) => ({ ...prev, noteValue: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)" }}>
-            <option value="whole">全音符</option>
-            <option value="half">二分音符</option>
-            <option value="quarter">四分音符</option>
+            <option value="whole">Whole note</option>
+            <option value="half">Half note</option>
+            <option value="quarter">Quarter note</option>
           </select>
         </div>
       </div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
         {noteSlots.map((item, slot) => (
           <button key={`slot-v2-${slot}`} onClick={() => onChange((prev) => ({ ...prev, activeSlot: slot }))} style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid rgba(17,17,17,0.12)", background: staffSubmission?.activeSlot === slot ? "#111111" : "#ffffff", color: staffSubmission?.activeSlot === slot ? "#ffffff" : "#111111", cursor: "pointer" }}>
-            音位 {slot + 1}{item ? ` · ${item.pitch}` : ""}
+            Slot {slot + 1}{item ? ` - ${item.pitch}` : ""}
           </button>
         ))}
       </div>
@@ -281,9 +281,9 @@ function StaffHomeworkEditorV2({ staffSubmission, onChange }) {
         })}
       </svg>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-        <button onClick={toggleTieForCurrent} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>为当前音位切换连音</button>
-        <button onClick={removeCurrentSlot} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>删除当前音位</button>
-        <button onClick={resetAll} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#f5f5f5", cursor: "pointer" }}>重置五线谱</button>
+        <button onClick={toggleTieForCurrent} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>Toggle Tie for Current Slot</button>
+        <button onClick={removeCurrentSlot} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>Delete Current Slot</button>
+        <button onClick={resetAll} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#f5f5f5", cursor: "pointer" }}>Reset Staff</button>
       </div>
     </div>
   );
@@ -306,20 +306,20 @@ function HomeworkPianoEditor({ pianoSubmission, onChange }) {
     <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>钢琴输入器</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>Piano Input</div>
           <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
-            点击琴键录入音高序列，适用于音高、音级与基础键盘定位作业。
+            Click piano keys to enter a pitch sequence for pitch, scale-degree, and keyboard-location homework.
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <select value={octave} onChange={(e) => onChange((prev) => ({ ...prev, octave: Number(e.target.value) }))} style={{ padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)" }}>
-            {[3, 4, 5].map((value) => <option key={value} value={value}>{value} 组</option>)}
+            {[3, 4, 5].map((value) => <option key={value} value={value}>Octave {value}</option>)}
           </select>
           <button onClick={() => onChange((prev) => ({ ...prev, notes: (prev.notes || []).slice(0, -1) }))} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>
-            撤销
+            Undo
           </button>
           <button onClick={() => onChange((prev) => ({ ...prev, notes: [] }))} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#f5f5f5", cursor: "pointer" }}>
-            清空
+            Clear
           </button>
         </div>
       </div>
@@ -331,7 +331,7 @@ function HomeworkPianoEditor({ pianoSubmission, onChange }) {
         ))}
       </div>
       <div style={{ marginTop: 10, padding: 10, borderRadius: 10, background: "#f8f8f8", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-        {notes.length ? notes.map((item) => `${item.note}${item.octave}`).join(" - ") : "当前尚未录入钢琴音高。"}
+        {notes.length ? notes.map((item) => `${item.note}${item.octave}`).join(" - ") : "No piano pitches entered yet."}
       </div>
     </div>
   );
@@ -354,41 +354,41 @@ function HomeworkVoiceInput({
     <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>语音输入</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>Voice Input</div>
           <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
-            支持浏览器实时识别与录音转写，适合术语解释、口头分析与作业补充说明。
+            Use live browser recognition or recording transcription for term explanations, oral analysis, and homework notes.
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {voiceSupported ? (
             <>
               <button onClick={onStartListening} disabled={listening} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: listening ? "#f1f1f1" : "#111111", color: listening ? "#666666" : "#ffffff", cursor: listening ? "default" : "pointer" }}>
-                开始实时识别
+                Start Live Recognition
               </button>
               <button onClick={onStopListening} disabled={!listening} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: !listening ? "default" : "pointer" }}>
-                停止识别
+                Stop Recognition
               </button>
             </>
           ) : (
-            <span style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>当前浏览器不支持实时语音识别。</span>
+            <span style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>This browser does not support live speech recognition.</span>
           )}
           <button onClick={onStartRecording} disabled={transcribing} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: transcribing ? "default" : "pointer" }}>
-            开始录音
+            Start Recording
           </button>
           <button onClick={onStopRecording} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#f5f5f5", cursor: "pointer" }}>
-            结束录音并转写
+            Stop and Transcribe
           </button>
         </div>
       </div>
       <div style={{ padding: 10, borderRadius: 10, background: "#f8f8f8", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-        <div><strong>识别文本：</strong>{transcript.trim() || "尚未生成语音转写。"}</div>
-        <div style={{ marginTop: 6 }}><strong>录音文件：</strong>{audioSubmission?.name || "尚未录音"}</div>
-        {transcribing ? <div style={{ marginTop: 6, color: "#92400e" }}>正在转写录音，请稍候…</div> : null}
+        <div><strong>Transcript: </strong>{transcript.trim() || "No transcript generated yet."}</div>
+        <div style={{ marginTop: 6 }}><strong>Audio file: </strong>{audioSubmission?.name || "No recording yet"}</div>
+        {transcribing ? <div style={{ marginTop: 6, color: "#92400e" }}>Transcribing the recording. Please wait...</div> : null}
         {error ? <div style={{ marginTop: 6, color: "#b91c1c" }}>{error}</div> : null}
       </div>
       <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }}>
         <button onClick={onApplyTranscript} disabled={!transcript.trim()} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: !transcript.trim() ? "default" : "pointer" }}>
-          将转写内容写入文字说明
+          Apply Transcript to Written Explanation
         </button>
       </div>
     </div>
@@ -399,7 +399,7 @@ function HomeworkEvaluationCard({ evaluation }) {
   if (!evaluation) {
     return (
       <div style={{ padding: 12, borderRadius: 12, background: "#f8f8f8", border: "1px solid rgba(17,17,17,0.08)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-        提交作业后，这里会显示结构化课程评价与 AI 初评结果。
+        After submission, structured course feedback and the AI first review will appear here.
       </div>
     );
   }
@@ -407,9 +407,9 @@ function HomeworkEvaluationCard({ evaluation }) {
   const scoreEntries = Object.entries(evaluation.scores || {});
   return (
     <div style={{ padding: 12, borderRadius: 12, background: "#f8f8f8", border: "1px solid rgba(17,17,17,0.08)" }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: "#111111", marginBottom: 8 }}>课程评价</div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: "#111111", marginBottom: 8 }}>Course Evaluation</div>
       <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
-        {evaluation.overallComment || "暂无评价。"}
+        {evaluation.overallComment || "No evaluation yet."}
       </div>
       {scoreEntries.length ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginBottom: 10 }}>
@@ -429,20 +429,20 @@ function HomeworkEvaluationCard({ evaluation }) {
       <div style={{ display: "grid", gap: 8 }}>
         {Array.isArray(evaluation.strengths) && evaluation.strengths.length ? (
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 4 }}>优点</div>
-            <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>{evaluation.strengths.join("；")}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 4 }}>Strengths</div>
+            <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>{evaluation.strengths.join("; ")}</div>
           </div>
         ) : null}
         {Array.isArray(evaluation.issues) && evaluation.issues.length ? (
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 4 }}>待修正问题</div>
-            <div style={{ fontSize: 11, color: "#b91c1c", lineHeight: 1.8 }}>{evaluation.issues.join("；")}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 4 }}>Issues to Fix</div>
+            <div style={{ fontSize: 11, color: "#b91c1c", lineHeight: 1.8 }}>{evaluation.issues.join("; ")}</div>
           </div>
         ) : null}
         {Array.isArray(evaluation.suggestions) && evaluation.suggestions.length ? (
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 4 }}>修改建议</div>
-            <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>{evaluation.suggestions.join("；")}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 4 }}>Revision Suggestions</div>
+            <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>{evaluation.suggestions.join("; ")}</div>
           </div>
         ) : null}
       </div>

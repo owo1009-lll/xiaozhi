@@ -32,7 +32,7 @@ function buildConceptPool(point) {
   const padded = [...subs];
   let i = 0;
   while (padded.length < 5) {
-    padded.push(cyclePick(subs, i) || `${point.title}的相关概念 ${i + 1}`);
+    padded.push(cyclePick(subs, i) || `${point.title} related concept ${i + 1}`);
     i += 1;
   }
   return padded.slice(0, 5);
@@ -48,7 +48,7 @@ function buildScenarioPool(point) {
   const padded = [...base];
   let i = 0;
   while (padded.length < 5) {
-    padded.push(`${point.title}的应用练习 ${i + 1}`);
+    padded.push(`${point.title} application task ${i + 1}`);
     i += 1;
   }
   return padded.slice(0, 5);
@@ -61,7 +61,7 @@ function buildTextbookFactPool(point) {
   const padded = [...facts];
   let i = 0;
   while (padded.length < 5) {
-    padded.push(cyclePick(subs, i) || `${point.title}的具体知识 ${i + 1}`);
+    padded.push(cyclePick(subs, i) || `${point.title} specific fact ${i + 1}`);
     i += 1;
   }
   return padded.slice(0, 5);
@@ -74,7 +74,7 @@ function buildComparisonPool(point) {
   const padded = [...comps];
   let i = 0;
   while (padded.length < 5) {
-    padded.push(cyclePick(facts, i) || `${point.title}的对比要点 ${i + 1}`);
+    padded.push(cyclePick(facts, i) || `${point.title} comparison point ${i + 1}`);
     i += 1;
   }
   return padded.slice(0, 5);
@@ -106,7 +106,7 @@ function getPeerTitles(point, lessonPoints) {
 }
 
 function isReviewPoint(point) {
-  return point.lessonId === "L12" || /综合复习/.test(point.title);
+  return point.lessonId === "L12" || /Integrated Review|综合复习/.test(point.title);
 }
 
 function getEvidenceWeight(point, defaultWeight = "strong") {
@@ -145,59 +145,59 @@ function createQuestion({
 // ── Prompt template arrays (5 variants each to avoid repetition) ─────────────
 
 const RECOGNITION_PROMPTS = [
-  (title) => `关于"${title}"，下列哪项表述正确？`,
-  (title) => `"${title}"的组成内容中，包括以下哪一项？`,
-  (title) => `下列关于"${title}"的说法，正确的是：`,
-  (title) => `以下哪项内容属于"${title}"的学习范围？`,
-  (title) => `"${title}"所涵盖的知识中，下列哪项是准确的？`,
+  (title) => `Which statement about "${title}" is correct?`,
+  (title) => `Which item is included in "${title}"?`,
+  (title) => `Which description of "${title}" is accurate?`,
+  (title) => `Which item belongs to the learning scope of "${title}"?`,
+  (title) => `Which option is accurate for "${title}"?`,
 ];
 
 const KP_MATCH_PROMPTS = [
-  (fact) => `"${fact}"最直接对应下列哪个知识点？`,
-  (fact) => `掌握"${fact}"，主要是为了学习哪个知识点？`,
-  (fact) => `若题目涉及"${fact}"，它最可能归属于哪个知识点？`,
-  (fact) => `"${fact}"是下列哪个知识点的核心内容之一？`,
-  (fact) => `学习哪个知识点，最需要理解"${fact}"？`,
+  (fact) => `Which knowledge point does "${fact}" most directly match?`,
+  (fact) => `Understanding "${fact}" mainly supports which knowledge point?`,
+  (fact) => `If a question involves "${fact}", which knowledge point is it most likely testing?`,
+  (fact) => `"${fact}" is a core part of which knowledge point?`,
+  (fact) => `Which knowledge point most requires understanding "${fact}"?`,
 ];
 
 const EXCLUSION_PROMPTS = [
-  (title) => `下列哪一项不属于"${title}"的核心内容？`,
-  (title) => `下列哪项与"${title}"没有直接关系？`,
-  (title) => `学习"${title}"时，下列哪项不是必须掌握的？`,
-  (title) => `下列哪一项超出了"${title}"的知识范围？`,
-  (title) => `下列哪项描述的不是"${title}"的相关内容？`,
+  (title) => `Which option is not a core part of "${title}"?`,
+  (title) => `Which option is not directly related to "${title}"?`,
+  (title) => `Which item is not required when learning "${title}"?`,
+  (title) => `Which option falls outside the scope of "${title}"?`,
+  (title) => `Which description does not belong to "${title}"?`,
 ];
 
 const APPLICATION_PROMPTS = [
-  (scenario) => `"${scenario}"这一练习，主要考查哪个知识点？`,
-  (scenario) => `完成"${scenario}"这一任务，需要掌握哪个知识点？`,
-  (scenario) => `"${scenario}"是学习哪个知识点时的典型练习？`,
-  (scenario) => `练习"${scenario}"，最能体现对哪个知识点的掌握？`,
-  (scenario) => `学习哪个知识点后，才能完成"${scenario}"这一练习？`,
+  (scenario) => `Which knowledge point is mainly tested by the task "${scenario}"?`,
+  (scenario) => `Which knowledge point is needed to complete "${scenario}"?`,
+  (scenario) => `"${scenario}" is a typical exercise for which knowledge point?`,
+  (scenario) => `Practicing "${scenario}" best demonstrates mastery of which knowledge point?`,
+  (scenario) => `Which knowledge point should be learned before completing "${scenario}"?`,
 ];
 
 const ANALYSIS_PROMPTS = [
-  (title) => `若要判断学生是否真正掌握"${title}"，最可靠的评估依据是：`,
-  (title) => `关于"${title}"，以下哪项表述体现了最深层的理解？`,
-  (title) => `在"${title}"的综合学习中，哪项内容最能体现高阶思维？`,
-  (title) => `深入理解"${title}"时，下列哪项判断最为准确？`,
-  (title) => `若教师想检验学生对"${title}"的迁移能力，最应关注哪一项？`,
+  (title) => `What is the most reliable evidence that a student has mastered "${title}"?`,
+  (title) => `Which statement shows the deepest understanding of "${title}"?`,
+  (title) => `In integrated learning of "${title}", which option best reflects higher-order thinking?`,
+  (title) => `Which judgment is most accurate for a deep understanding of "${title}"?`,
+  (title) => `To test transfer ability for "${title}", what should the teacher focus on?`,
 ];
 
 const SPECIFIC_FACT_PROMPTS = [
-  (title) => `关于"${title}"，以下哪项具体表述正确？`,
-  (title) => `"${title}"中，下列哪个具体知识点符合乐理规范？`,
-  (title) => `根据基本乐理，"${title}"的以下描述中，哪项最准确？`,
-  (title) => `学习"${title}"时，下列哪项具体事实是正确的？`,
-  (title) => `"${title}"的专项知识中，以下哪个表述是准确的？`,
+  (title) => `Which specific statement about "${title}" is correct?`,
+  (title) => `Which specific fact in "${title}" follows music-theory rules?`,
+  (title) => `According to basic music theory, which description of "${title}" is most accurate?`,
+  (title) => `When learning "${title}", which specific fact is correct?`,
+  (title) => `Which specialized statement about "${title}" is accurate?`,
 ];
 
 const CONTRAST_PROMPTS = [
-  (title) => `以下哪项正确区分了"${title}"中的两个概念？`,
-  (title) => `关于"${title}"的对比分析，下列哪项是正确的？`,
-  (title) => `"${title}"学习中，下列哪项概念对比符合乐理规范？`,
-  (title) => `在"${title}"的深入学习中，哪项比较最为准确？`,
-  (title) => `以下哪项正确说明了"${title}"中两个概念的区别？`,
+  (title) => `Which option correctly distinguishes two concepts in "${title}"?`,
+  (title) => `Which comparison about "${title}" is correct?`,
+  (title) => `Which concept comparison in "${title}" follows music-theory rules?`,
+  (title) => `In deeper study of "${title}", which comparison is most accurate?`,
+  (title) => `Which option correctly explains the difference between two ideas in "${title}"?`,
 ];
 
 // ── Question builders ─────────────────────────────────────────────────────────
@@ -217,7 +217,7 @@ function buildRecognitionQuestions(point, concepts, peerFacts) {
       prompt: RECOGNITION_PROMPTS[index](point.title),
       options: buildOptions(concept, [d1, d2, d3]),
       answer: concept,
-      explanation: `"${point.title}"的相关内容包括"${concept}"。`,
+      explanation: `"${concept}" is part of "${point.title}".`,
     });
   });
 }
@@ -237,7 +237,7 @@ function buildKnowledgePointMatchQuestions(point, concepts, peerTitles) {
         cyclePick(peerTitles, index * 3 + 2, point.title),
       ]),
       answer: point.title,
-      explanation: `"${concept}"是"${point.title}"的核心内容之一。`,
+      explanation: `"${concept}" is one core part of "${point.title}".`,
     }),
   );
 }
@@ -255,7 +255,7 @@ function buildExclusionQuestions(point, concepts, peerFacts) {
       prompt: EXCLUSION_PROMPTS[index](point.title),
       options: buildOptions(wrong, distractors),
       answer: wrong,
-      explanation: `"${wrong}"不属于"${point.title}"的内容，其余选项均与该知识点直接相关。`,
+      explanation: `"${wrong}" does not belong to "${point.title}"; the other options are directly related.`,
     });
   });
 }
@@ -275,7 +275,7 @@ function buildApplicationQuestions(point, scenarios, peerTitles) {
         cyclePick(peerTitles, index * 3 + 2, point.title),
       ]),
       answer: point.title,
-      explanation: `"${scenario}"主要用于检验学生对"${point.title}"的掌握。`,
+      explanation: `"${scenario}" mainly checks mastery of "${point.title}".`,
     }),
   );
 }
@@ -296,7 +296,7 @@ function buildAnalysisQuestions(point, concepts, peerFacts) {
         cyclePick(peerFacts, index * 3 + 2, point.title),
       ]),
       answer: answerConcept,
-      explanation: `在"${point.title}"的深层理解中，"${answerConcept}"是较准确的判断依据。`,
+      explanation: `For deeper understanding of "${point.title}", "${answerConcept}" is a reliable basis for judgment.`,
     });
   });
 }
@@ -317,7 +317,7 @@ function buildSpecificFactQuestions(point, textbookFacts, peerFacts) {
       prompt: SPECIFIC_FACT_PROMPTS[index](point.title),
       options: buildOptions(fact, [d1, d2, d3]),
       answer: fact,
-      explanation: `"${point.title}"的具体知识：${fact}`,
+      explanation: `Specific fact for "${point.title}": ${fact}`,
     });
   });
 }
@@ -338,7 +338,7 @@ function buildContrastQuestions(point, comparisons, peerFacts) {
         cyclePick(peerFacts, index * 3 + 2, point.title),
       ]),
       answer: comparison,
-      explanation: `"${point.title}"中的正确对比分析：${comparison}`,
+      explanation: `Correct comparison for "${point.title}": ${comparison}`,
     }),
   );
 }

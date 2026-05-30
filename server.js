@@ -589,15 +589,15 @@ function shouldSkipKnowledgePointMatching(prompt) {
 function buildTutorMetaFallback(prompt) {
   const normalized = normalizeTutorPrompt(prompt);
   if (/^(你在干嘛|你是谁|你会什么)$/i.test(normalized)) {
-    return "我在这里帮你解答当前课时的乐理问题。你可以直接问某个概念、题目、谱例或作业要求，例如“什么是等音？”或“C♯ 和 D♭ 是什么关系？”。";
+    return "I am here to help with the current music theory lesson. Ask about a concept, exercise, score example, or homework requirement, such as \"What is enharmonic equivalence?\" or \"What is the relationship between C-sharp and D-flat?\".";
   }
   if (/^(你好|在吗|hello|hi|hey)$/i.test(normalized)) {
-    return "你好，我是 AI 乐理导师。请直接输入你想问的乐理问题，我会按当前课时内容解释。";
+    return "Hello, I am the AI Music Theory Tutor. Enter a music theory question and I will explain it using the current lesson context.";
   }
   if (/随便|聊聊|聊天|闲聊|无关/.test(normalized)) {
-    return "可以。你可以自由输入问题；如果问题和乐理无关，我会先按普通问题回应，必要时再提醒你回到当前课时。";
+    return "You can enter any question. If it is unrelated to music theory, I will answer briefly and then guide you back to the current lesson when useful.";
   }
-  return `已收到：“${normalized || "空内容"}”。你可以继续输入任意内容；如果你想学习当前课时，可以直接问“什么是等音？”或“中央 C 在哪里？”。`;
+  return `Received: "${normalized || "empty content"}". You can continue typing, or ask a lesson question such as "What is enharmonic equivalence?" or "Where is middle C?"`;
 }
 
 function extractChineseKeywords(text = "") {
@@ -616,15 +616,15 @@ function extractLatestUserImageName(messages = []) {
 
 function detectTutorIntent({ prompt = "", imageName = "", imageUploaded = false } = {}) {
   const source = `${safeString(prompt)} ${safeString(imageName)}`.toLowerCase();
-  const homeworkInfo = /作业是什么|课后作业是什么|有什么作业|作业要求|课后作业要求|怎么做作业|作业在哪里|课后作业在哪里/.test(source);
-  const nonHomeworkImage = /非作业|不是作业|不属于作业|不要按作业|不按作业|普通图片|生活图片|非乐理|不是乐理/.test(source);
+  const homeworkInfo = /what is the homework|homework requirement|how to do homework|where is homework|作业是什么|课后作业是什么|有什么作业|作业要求|课后作业要求|怎么做作业|作业在哪里|课后作业在哪里/i.test(source);
+  const nonHomeworkImage = /not homework|ordinary image|not music theory|非作业|不是作业|不属于作业|不要按作业|不按作业|普通图片|生活图片|非乐理|不是乐理/i.test(source);
   return {
     imageUploaded: Boolean(imageUploaded),
     nonHomeworkImage,
     homeworkInfo,
-    homework: !homeworkInfo && !nonHomeworkImage && /提交|批改|纠错|反馈|提醒|作业.+错|作业.+改|检查作业|评价作业|学生作业|老师/.test(source),
-    image: Boolean(imageUploaded) || Boolean(imageName) || /图片|拍照|读图|看图|课件|截图|图中/.test(source),
-    teaching: /教学口吻|给学生解释|向学生解释|老师应该|如何举例/.test(source),
+    homework: !homeworkInfo && !nonHomeworkImage && /submit|review|correct|feedback|homework|teacher|提交|批改|纠错|反馈|提醒|作业.+错|作业.+改|检查作业|评价作业|学生作业|老师/i.test(source),
+    image: Boolean(imageUploaded) || Boolean(imageName) || /image|photo|screenshot|slide|picture|图片|拍照|读图|看图|课件|截图|图中/i.test(source),
+    teaching: /teaching|explain to students|teacher should|example|教学口吻|给学生解释|向学生解释|老师应该|如何举例/i.test(source),
   };
 }
 
@@ -733,19 +733,19 @@ function buildCombinedConceptTutorFallback(points, prompt, intent) {
     .filter(Boolean)
     .slice(0, 2);
   return [
-    `这个问题涉及“${distinctPoints.map((point) => point.title).join("”和“")}”。`,
-    keyIdeas.length ? `你可以先抓住这些关键点：${keyIdeas.join("；")}。` : "",
-    examples.length ? `可以用这些例子快速理解：${examples.join("；")}。` : "",
-    intent.teaching ? "如果面对学生讲解，建议先区分概念，再给出规则和例子。" : "如果你愿意，我可以继续把这两个知识点并排对照讲解。",
+    `This question involves ${distinctPoints.map((point) => `"${point.title}"`).join(" and ")}. `,
+    keyIdeas.length ? `Focus on these key points first: ${keyIdeas.join("; ")}. ` : "",
+    examples.length ? `Use these examples for quick understanding: ${examples.join("; ")}. ` : "",
+    intent.teaching ? "For teaching, separate the concepts first, then give the rule and an example." : "I can also explain these two knowledge points side by side if needed.",
   ].filter(Boolean).join("");
 }
 
 function buildDiagnosticTutorFallback() {
   return [
-    "这节课是综合诊断课，不是重新背诵全部知识点。",
-    "它的目标是整合前 11 课内容，判断学生究竟卡在识谱、节奏、术语、装饰音还是综合分析。",
-    "最有效的做法是：先看错题和作业，再定位到具体薄弱知识点，最后给出下一步复习顺序。",
-    "如果你愿意，我可以继续按“薄弱点定位 + 复习建议”的结构展开说明。",
+    "This lesson is an integrated diagnostic lesson, not a full recitation of every knowledge point.",
+    "Its goal is to connect Lessons 1-11 and locate whether the learner is stuck on notation, rhythm, terminology, ornaments, or integrated analysis.",
+    "The most effective method is to review errors and homework, map them to weak knowledge points, then set the next review order.",
+    "I can continue with a weak-point diagnosis plus review plan if needed.",
   ].join("");
 }
 
@@ -755,8 +755,8 @@ function shouldPreferLocalTutorResponse(prompt, intent, matchedPoints = [], syst
   if (intent.imageUploaded) return false;
   if (isNonInstructionalTutorPrompt(normalizedPrompt)) return true;
   if (intent.homeworkInfo) return true;
-  if (/综合诊断|前 11 课|前11课|薄弱项|薄弱点|复习建议|复习顺序/.test(normalizedPrompt)) return true;
-  if (!matchedPoints.length && /综合诊断|前 11 课|前11课/.test(normalizedSystem) && /诊断|复习|薄弱|建议|怎么学|如何学/.test(normalizedPrompt)) return true;
+  if (/integrated diagnosis|weak point|review advice|review order|综合诊断|前 11 课|前11课|薄弱项|薄弱点|复习建议|复习顺序/i.test(normalizedPrompt)) return true;
+  if (!matchedPoints.length && /integrated diagnosis|lessons 1-11|综合诊断|前 11 课|前11课/i.test(normalizedSystem) && /diagnosis|review|weak|advice|how to study|诊断|复习|薄弱|建议|怎么学|如何学/i.test(normalizedPrompt)) return true;
   if (intent.homework) return true;
   if (intent.image && matchedPoints.length) return true;
   if (intent.image) return false;
@@ -768,25 +768,25 @@ function shouldPreferLocalTutorResponse(prompt, intent, matchedPoints = [], syst
 
 function buildHomeworkTutorFallback(point, prompt) {
   const checks = [
-    getArray(point.subConcepts)[0] || `先确认“${point.title}”的定义`,
-    getArray(point.subConcepts)[1] || "再核对书写是否符合规则",
-    getArray(point.subConcepts)[2] || "最后检查是否有常见混淆点",
+    getArray(point.subConcepts)[0] || `confirm the definition of "${point.title}"`,
+    getArray(point.subConcepts)[1] || "check whether the notation follows the rule",
+    getArray(point.subConcepts)[2] || "look for common confusion points",
   ].filter(Boolean).slice(0, 3);
   const example = getArray(point.easy)[0] || getArray(point.medium)[0] || "";
   return [
-    `这类课后作业优先围绕“${point.title}”来检查。`,
-    `批改时建议依次提醒学生：1. ${checks[0]}；2. ${checks[1] || checks[0]}；3. ${checks[2] || checks[1] || checks[0]}。`,
-    example ? `你可以直接给学生一个参照例子：${example}。` : "",
-    /节奏|拍号|切分|音值/.test(prompt) ? "如果是节奏作业，要特别检查每小节拍数是否完整、强弱位置是否清楚。" : "",
-    /谱号|五线谱|中央 ?C|音组/.test(prompt) ? "如果是五线谱作业，要特别检查谱号是否正确、音位是否落在正确的线或间上。" : "",
+    `Check this homework around "${point.title}" first. `,
+    `When reviewing, remind the student to: 1. ${checks[0]}; 2. ${checks[1] || checks[0]}; 3. ${checks[2] || checks[1] || checks[0]}. `,
+    example ? `A useful reference example is: ${example}. ` : "",
+    /rhythm|meter|syncopation|duration|节奏|拍号|切分|音值/i.test(prompt) ? "For rhythm homework, check that each measure has the full beat count and that accent positions are clear. " : "",
+    /clef|staff|middle ?c|register|谱号|五线谱|中央 ?C|音组/i.test(prompt) ? "For staff homework, check the clef and whether each pitch sits on the correct line or space. " : "",
   ].filter(Boolean).join("");
 }
 
 function buildHomeworkInfoFallback() {
   return [
-    "课后作业是每节课学习后的练习与提交入口，用来检查你是否真正理解本课知识点。",
-    "通常可以包含三类内容：概念回答、节奏或记谱练习、上传图片让系统和教师检查。",
-    "你可以先完成页面里的作业要求，再把不确定的地方发给 AI 导师，例如“这道节奏题哪里错了？”或“这个等音写法对吗？”。",
+    "Homework is the post-lesson practice and submission area used to check whether you understand the lesson's knowledge points.",
+    "It can include concept answers, rhythm or notation work, and uploaded images for system and teacher review.",
+    "Complete the page requirements first, then ask the AI Tutor about uncertain points such as a rhythm error or enharmonic spelling.",
   ].join("");
 }
 
@@ -794,9 +794,9 @@ function buildImageTutorFallback(point) {
   const keyIdeas = getArray(point.subConcepts).slice(0, 3);
   const example = getArray(point.easy)[0] || "";
   return [
-    `从图片上下文看，这张图大概率对应“${point.title}”。`,
-    keyIdeas.length ? `读图时先抓住这几个关键词：${keyIdeas.join("；")}。` : "",
-    example ? `如果要向学生讲解，可以先用这个例子入手：${example}。` : "",
+    `From the image context, this most likely relates to "${point.title}". `,
+    keyIdeas.length ? `Start by identifying these key ideas: ${keyIdeas.join("; ")}. ` : "",
+    example ? `A good teaching example is: ${example}. ` : "",
   ].filter(Boolean).join("");
 }
 
@@ -804,15 +804,15 @@ function buildConceptTutorFallback(point, intent, prompt) {
   const keyIdeas = selectRelevantSubConcepts(point, prompt);
   const example = getArray(point.easy)[0] || getArray(point.medium)[0] || "";
   return [
-    `关于“${point.title}”，这是本课的重要知识点。`,
-    keyIdeas.length ? `你先抓住这几个要点：${keyIdeas.join("；")}。` : "",
-    example ? `可以先用这个例子理解：${example}。` : "",
-    intent.teaching ? "如果你要面对学生讲解，建议按“定义、规则、例子”三步来说明。" : "如果你愿意，我也可以继续把它拆成“定义、规则、例题”三步讲清楚。",
+    `"${point.title}" is an important concept in this lesson. `,
+    keyIdeas.length ? `Focus on these key ideas first: ${keyIdeas.join("; ")}. ` : "",
+    example ? `Use this example to understand it: ${example}. ` : "",
+    intent.teaching ? "For teaching, explain it in three steps: definition, rule, and example." : "I can also break it down into definition, rule, and practice example if needed.",
   ].filter(Boolean).join("");
 }
 
 function buildNonHomeworkImageFallback() {
-  return "这张图看起来不是乐理作业图片。当前视觉模型没有稳定返回具体识别结果；你可以补一句想让我识别什么，例如“图里有哪些物体？”或“这是不是乐理题？”。";
+  return "This image does not look like music-theory homework. The vision model did not return a stable result, so add one sentence about what you want identified.";
 }
 
 function applyTutorVisionCorrections(text, messages = []) {
@@ -829,9 +829,9 @@ function applyTutorVisionCorrections(text, messages = []) {
 
   if (isRhythmMissingBeatCase) {
     return [
-      "这张节奏作业显示的是 4/4 拍，但当前小节只有 quarter + quarter + quarter，也就是三个四分音符。",
-      "每个四分音符是 1 拍，所以总共只有 3 拍，不是 4 拍。",
-      "结论：这个小节不完整，缺少 1 拍。可以再补一个四分音符、一个四分休止符，或等值的节奏组合。"
+      "This rhythm homework is in 4/4, but the current measure contains only quarter + quarter + quarter.",
+      "Each quarter note is 1 beat, so the total is 3 beats, not 4.",
+      "Conclusion: the measure is incomplete and is missing 1 beat. Add a quarter note, a quarter rest, or an equivalent rhythm value."
     ].join("\n");
   }
 
@@ -870,10 +870,10 @@ function buildLocalTutorFallback(messages = [], { system = "" } = {}) {
   const matchedPoints = getKnowledgePointMatchRanking(prompt, { imageName, system }, 2).map((item) => item.point);
   const matchedPoint = matchedPoints[0] || null;
   const normalizedPrompt = normalizeTutorPrompt(prompt);
-  const isDiagnosticPrompt = /综合诊断|前 11 课|前11课|薄弱项|薄弱点|复习建议|复习顺序/.test(normalizedPrompt);
+  const isDiagnosticPrompt = /integrated diagnosis|diagnosis|weak point|review advice|review order|综合诊断|前 11 课|前11课|薄弱项|薄弱点|复习建议|复习顺序/i.test(normalizedPrompt);
   const isGenericDiagnosticRequest = !matchedPoint
-    && /综合诊断|前 11 课|前11课/.test(normalizeTutorPrompt(system))
-    && /诊断|复习|薄弱|建议|怎么学|如何学/.test(normalizedPrompt);
+    && /integrated diagnosis|lessons 1-11|综合诊断|前 11 课|前11课/i.test(normalizeTutorPrompt(system))
+    && /diagnosis|review|weak|advice|how to study|诊断|复习|薄弱|建议|怎么学|如何学/i.test(normalizedPrompt);
   if (isDiagnosticPrompt || isGenericDiagnosticRequest) {
     return {
       text: buildDiagnosticTutorFallback(),
@@ -885,7 +885,7 @@ function buildLocalTutorFallback(messages = [], { system = "" } = {}) {
   if (!matchedPoint) {
     if (intent.homework) {
       return {
-        text: "我还没有看到具体作业内容。请上传作业图片，或把题干、你的答案、拍号/谱号信息发来；我会按“先判断题目要求 → 指出错误 → 给出修改例子”的结构帮你检查。",
+        text: "I do not have the specific homework content yet. Upload an image or send the question, your answer, and the meter or clef information. I will check it by identifying the task, pointing out errors, and giving a corrected example.",
         matchedPoint: null,
         matchedPoints: [],
         intent,
@@ -893,14 +893,14 @@ function buildLocalTutorFallback(messages = [], { system = "" } = {}) {
     }
     if (intent.image) {
       return {
-        text: "我需要更明确的图片线索。你可以补一句图片主题，例如“这是高音谱号课件”或“这是 4/4 拍节奏图”；如果已经上传图片，我会优先按图中可见内容识别。",
+        text: "I need a clearer image cue. Add one sentence about the image topic, such as treble-clef notes or a 4/4 rhythm example.",
         matchedPoint: null,
         matchedPoints: [],
         intent,
       };
     }
     return {
-      text: "这个问题可以继续提问。为了让我回答得更准，你可以补充一个具体对象，例如“请解释等音，并给一个例子”或“这张节奏图哪里错了”。",
+      text: "You can continue with this question. To make the answer more precise, name a specific target such as enharmonic spelling, a rhythm error, or a clef-reading example.",
       matchedPoint: null,
       matchedPoints: [],
       intent,
@@ -911,7 +911,7 @@ function buildLocalTutorFallback(messages = [], { system = "" } = {}) {
     text = buildHomeworkTutorFallback(matchedPoint, prompt);
   } else if (intent.image) {
     text = buildImageTutorFallback(matchedPoint);
-  } else if (/区别|比较|联系|不同/.test(normalizeTutorPrompt(prompt)) && matchedPoints.length > 1) {
+  } else if (/difference|compare|relationship|different|区别|比较|联系|不同/i.test(normalizeTutorPrompt(prompt)) && matchedPoints.length > 1) {
     text = buildCombinedConceptTutorFallback(matchedPoints, prompt, intent);
   } else {
     text = buildConceptTutorFallback(matchedPoint, intent, prompt);
@@ -932,7 +932,7 @@ function isLowQualityTutorReply(text, messages = []) {
     .find((message) => safeString(message?.role, "user") !== "assistant");
   const latestHasImage = Boolean(latestUserMessage?.imageDataUrl);
   if (!content) return true;
-  if (looksLikeEnglishDominant(content)) return true;
+  if (!looksLikeEnglishDominant(content) && countMatches(content, /[\u4e00-\u9fff]/g) >= 12) return true;
   if (isGenericTutorFailureText(content)) return true;
   if (/问号|没有具体问题|请提供明确的问题|请提供更多信息|无法判断你的问题|无效的输入|系统错误|乱码|无明确语义|无法从中提取/.test(content)) return true;
   if (content.length < 12) return true;
@@ -945,7 +945,7 @@ function isLowQualityTutorReply(text, messages = []) {
 async function createTutorResponseWithFallback({ system, messages, rawMessages = messages, maxTokens, timeoutMs }) {
   const hasImages = hasImageMessages(rawMessages) || hasImageMessages(messages);
   const modelChain = hasImages ? getVisionModelChain() : getTutorModelChain();
-  const strictSystem = `${safeString(system)}\n\n额外要求：\n1. 必须使用简体中文回答。\n2. 先直接回答，不要反问用户补充信息，除非完全无法判断。\n3. 如果是概念题，请先给定义，再给一个简短例子。\n4. 不要输出英文开场白。\n5. 如果用户上传图片，必须先描述图片中可见内容；如果图片不是乐理题、作业或课件，也要如实说明图中物体，不要硬套当前课时或作业批改模板。`;
+  const strictSystem = `${safeString(system)}\n\nAdditional requirements:\n1. Reply in clear English.\n2. Answer directly before asking follow-up questions unless the request is impossible to interpret.\n3. For concept questions, give a definition first, then one short example.\n4. If the user uploads an image, first describe what is visible. If the image is not a music theory question, homework, or slide, say so honestly instead of forcing it into the lesson template.`;
   let lastText = "";
   const attemptedModels = [];
   const localFallback = buildLocalTutorFallback(rawMessages, { system });
@@ -994,7 +994,7 @@ async function createTutorResponseWithFallback({ system, messages, rawMessages =
 
   const localFallbackText = localFallback.text;
   return {
-    text: localFallbackText || lastText || "抱歉，我暂时没有生成稳定回答，请稍后重试。",
+    text: localFallbackText || lastText || "Sorry, I could not generate a stable answer. Please try again later.",
     model: `${attemptedModels.filter(Boolean).join(" -> ")}${localFallbackText ? " -> local-fallback" : ""}`,
     retried: attemptedModels.length > 1,
   };
@@ -1103,12 +1103,12 @@ function hasPianoContent(pianoSubmission) {
 
 function getSubmissionTypes(payload = {}) {
   const types = [];
-  if (safeString(payload.text).trim()) types.push("文字说明");
-  if (getArray(payload.images).length) types.push("拍照上传");
-  if (hasRhythmContent(payload.rhythmSubmission)) types.push("节奏编辑");
-  if (hasStaffContent(payload.staffSubmission)) types.push("五线谱修正");
-  if (hasPianoContent(payload.pianoSubmission)) types.push("钢琴输入");
-  if (safeString(payload.voiceTranscript).trim() || payload.audioSubmission?.name) types.push("语音输入");
+  if (safeString(payload.text).trim()) types.push("Written explanation");
+  if (getArray(payload.images).length) types.push("Image upload");
+  if (hasRhythmContent(payload.rhythmSubmission)) types.push("Rhythm editor");
+  if (hasStaffContent(payload.staffSubmission)) types.push("Staff correction");
+  if (hasPianoContent(payload.pianoSubmission)) types.push("Piano input");
+  if (safeString(payload.voiceTranscript).trim() || payload.audioSubmission?.name) types.push("Voice input");
   return types;
 }
 
@@ -1120,15 +1120,15 @@ function getRhythmIssues(rhythmSubmission) {
   const issues = [];
   normalizedSubmission.measures.forEach((measure = [], index) => {
     if (!measure.length) {
-      issues.push(`第 ${index + 1} 小节为空`);
+      issues.push(`Measure ${index + 1} is empty`);
       return;
     }
     const duration = measure.reduce((sum, item) => sum + Number(item?.duration || 0), 0);
-    if (duration < beats) issues.push(`第 ${index + 1} 小节拍数不足`);
-    if (duration > beats) issues.push(`第 ${index + 1} 小节拍数超出`);
+    if (duration < beats) issues.push(`Measure ${index + 1} has too few beats`);
+    if (duration > beats) issues.push(`Measure ${index + 1} exceeds the meter`);
     const last = measure[measure.length - 1];
     if (last?.tieToNext && index === normalizedSubmission.measures.length - 1) {
-      issues.push(`第 ${index + 1} 小节末尾连音缺少后续音符`);
+      issues.push(`The tie at the end of measure ${index + 1} has no following note`);
     }
   });
   return issues;
@@ -1138,7 +1138,7 @@ function buildHeuristicScores(payload = {}) {
   const context = payload.evaluationContext || {};
   const dimensions = Array.isArray(context.dimensions) && context.dimensions.length
     ? context.dimensions
-    : ["完成度", "准确性", "规范性", "表达清晰度", "提交质量"];
+    : ["Completion", "Accuracy", "Notation standard", "Clarity", "Submission quality"];
 
   const text = safeString(payload.text).trim();
   const images = getArray(payload.images);
@@ -1158,85 +1158,85 @@ function buildHeuristicScores(payload = {}) {
     dimensions.forEach((label) => {
       scores[label] = 35;
     });
-    issues.push("当前未提交任何可评阅内容");
-    suggestions.push("至少补充一种作业形式后再提交");
+    issues.push("No reviewable content was submitted");
+    suggestions.push("Add at least one submission format before submitting");
   } else {
-    strengths.push(`已提交：${submissionTypes.join("、")}`);
+    strengths.push(`Submitted: ${submissionTypes.join(", ")}`);
   }
 
   if (text.length >= 80) {
-    strengths.push("文字说明较完整");
-    if (scores["表达清晰度"] != null) scores["表达清晰度"] = 90;
+    strengths.push("The written explanation is fairly complete");
+    if (scores.Clarity != null) scores.Clarity = 90;
   } else if (text.length > 0) {
-    issues.push("文字说明偏简略");
-    if (scores["表达清晰度"] != null) scores["表达清晰度"] = 68;
-    suggestions.push("补充概念解释、分析步骤或自我反思");
-  } else if (scores["表达清晰度"] != null) {
-    scores["表达清晰度"] = 60;
+    issues.push("The written explanation is too brief");
+    if (scores.Clarity != null) scores.Clarity = 68;
+    suggestions.push("Add concept explanation, analysis steps, or self-reflection");
+  } else if (scores.Clarity != null) {
+    scores.Clarity = 60;
   }
 
   if (images.length) {
-    strengths.push("已附作业图片，便于教师复核");
-    if (scores["提交质量"] != null) scores["提交质量"] = Math.max(scores["提交质量"], 86);
+    strengths.push("Images were attached for teacher review");
+    if (scores["Submission quality"] != null) scores["Submission quality"] = Math.max(scores["Submission quality"], 86);
   } else {
-    suggestions.push("建议保留拍照上传，便于教师复核原始作业");
+    suggestions.push("Attach a photo when possible so the teacher can review the original work");
   }
 
   const rhythmIssues = getRhythmIssues(rhythmSubmission);
   if (hasRhythmContent(rhythmSubmission)) {
-    tags.push("节奏作业");
+    tags.push("Rhythm homework");
     if (rhythmIssues.length) {
       issues.push(...rhythmIssues);
-      if (scores["准确性"] != null) scores["准确性"] = Math.min(scores["准确性"], 64);
-      if (scores["时值完整"] != null) scores["时值完整"] = 58;
-      if (scores["拍号理解"] != null) scores["拍号理解"] = 62;
-      suggestions.push("按拍号逐小节检查时值总和，并确认连音位置");
+      if (scores.Accuracy != null) scores.Accuracy = Math.min(scores.Accuracy, 64);
+      if (scores["Duration completeness"] != null) scores["Duration completeness"] = 58;
+      if (scores["Meter understanding"] != null) scores["Meter understanding"] = 62;
+      suggestions.push("Check the duration total measure by measure and confirm tie placement");
     } else {
-      strengths.push("节奏小节拍数完整");
-      if (scores["准确性"] != null) scores["准确性"] = Math.max(scores["准确性"], 88);
-      if (scores["时值完整"] != null) scores["时值完整"] = 90;
-      if (scores["拍号理解"] != null) scores["拍号理解"] = 88;
+      strengths.push("Rhythm measures have complete beat counts");
+      if (scores.Accuracy != null) scores.Accuracy = Math.max(scores.Accuracy, 88);
+      if (scores["Duration completeness"] != null) scores["Duration completeness"] = 90;
+      if (scores["Meter understanding"] != null) scores["Meter understanding"] = 88;
     }
   }
 
   if (hasStaffContent(staffSubmission)) {
-    tags.push("五线谱作业");
+    tags.push("Staff notation homework");
     if ((staffSubmission.notes || []).length < 3) {
-      issues.push("五线谱录入音符较少");
-      suggestions.push("补足谱号、音位和音值信息");
+      issues.push("Too few staff notes were entered");
+      suggestions.push("Add clef, pitch position, and note-value information");
     } else {
-      strengths.push("已完成五线谱点选修正");
+      strengths.push("Staff notation correction was completed");
     }
-    if (scores["谱号识别"] != null) scores["谱号识别"] = staffSubmission.clef ? 86 : 62;
-    if (scores["音位准确"] != null) scores["音位准确"] = (staffSubmission.notes || []).length >= 3 ? 84 : 66;
-    if (scores["记谱规范"] != null) scores["记谱规范"] = 80;
+    if (scores["Clef recognition"] != null) scores["Clef recognition"] = staffSubmission.clef ? 86 : 62;
+    if (scores["Pitch placement"] != null) scores["Pitch placement"] = (staffSubmission.notes || []).length >= 3 ? 84 : 66;
+    if (scores["Notation standard"] != null) scores["Notation standard"] = 80;
   }
 
   if (hasPianoContent(pianoSubmission)) {
-    tags.push("钢琴作业");
-    strengths.push("已录入钢琴音高序列");
-    if (scores["键位定位"] != null) scores["键位定位"] = 88;
-    if (scores["音高判断"] != null) scores["音高判断"] = 86;
+    tags.push("Piano homework");
+    strengths.push("A piano pitch sequence was entered");
+    if (scores["Keyboard location"] != null) scores["Keyboard location"] = 88;
+    if (scores["Pitch judgment"] != null) scores["Pitch judgment"] = 86;
   }
 
   if (voiceTranscript) {
-    tags.push("语音作业");
-    strengths.push("已提交语音转写内容");
+    tags.push("Voice homework");
+    strengths.push("Voice transcript content was submitted");
   }
 
   const evaluationType = safeString(context.evaluationType, "theory");
   if (evaluationType === "theory") {
-    if (scores["概念理解"] != null) scores["概念理解"] = text.length >= 50 ? 86 : 70;
-    if (scores["术语使用"] != null) scores["术语使用"] = text.length >= 50 ? 82 : 68;
-    if (scores["分析深度"] != null) scores["分析深度"] = text.length >= 90 ? 84 : 66;
+    if (scores["Concept understanding"] != null) scores["Concept understanding"] = text.length >= 50 ? 86 : 70;
+    if (scores["Term usage"] != null) scores["Term usage"] = text.length >= 50 ? 82 : 68;
+    if (scores["Analytical depth"] != null) scores["Analytical depth"] = text.length >= 90 ? 84 : 66;
   }
 
   if (evaluationType === "mixed") {
-    tags.push("综合复习");
-    strengths.push("作业包含多模态输入");
-    if (scores["综合应用"] != null) scores["综合应用"] = submissionTypes.length >= 3 ? 90 : 76;
-    if (scores["知识迁移"] != null) scores["知识迁移"] = text.length >= 60 ? 84 : 72;
-    if (scores["问题诊断"] != null) scores["问题诊断"] = hasRhythmContent(rhythmSubmission) || hasStaffContent(staffSubmission) ? 82 : 70;
+    tags.push("Integrated review");
+    strengths.push("The homework includes multimodal input");
+    if (scores["Integrated application"] != null) scores["Integrated application"] = submissionTypes.length >= 3 ? 90 : 76;
+    if (scores["Knowledge transfer"] != null) scores["Knowledge transfer"] = text.length >= 60 ? 84 : 72;
+    if (scores["Problem diagnosis"] != null) scores["Problem diagnosis"] = hasRhythmContent(rhythmSubmission) || hasStaffContent(staffSubmission) ? 82 : 70;
   }
 
   const overallScore = Math.round(
@@ -1244,18 +1244,18 @@ function buildHeuristicScores(payload = {}) {
   );
 
   const overallComment = [
-    `本次作业完成度约为 ${overallScore} 分。`,
-    submissionTypes.length ? `已提交 ${submissionTypes.join("、")}。` : "尚未形成有效提交。",
-    issues.length ? `当前最需要修正的是：${issues[0]}。` : "当前未发现明显结构性缺漏，建议进入教师复核。",
+    `This homework is approximately ${overallScore}/100 complete. `,
+    submissionTypes.length ? `Submitted: ${submissionTypes.join(", ")}. ` : "No valid submission has formed yet. ",
+    issues.length ? `The most urgent revision is: ${issues[0]}.` : "No obvious structural gap was found; teacher review is recommended.",
   ].join("");
 
   if (!suggestions.length) {
-    suggestions.push("继续保持当前提交质量，并结合教师反馈做二次修改");
+    suggestions.push("Maintain the current submission quality and revise again with teacher feedback");
   }
   if (!issues.length) {
-    tags.push("待教师复核");
+    tags.push("Awaiting teacher review");
   } else {
-    tags.push("需针对性修正");
+    tags.push("Targeted revision needed");
   }
 
   return {
@@ -1269,11 +1269,11 @@ function buildHeuristicScores(payload = {}) {
 }
 
 function formatEvaluationAsText(evaluation) {
-  if (!evaluation) return "系统已记录作业，等待教师复核。";
+  if (!evaluation) return "The system recorded the homework and is waiting for teacher review.";
   return [
-    `完成度评价：${evaluation.overallComment || "已生成作业评价。"}`,
-    `错误说明：${evaluation.issues?.length ? evaluation.issues.join("；") : "暂未发现明显错误，建议教师继续复核。"}`,
-    `修改建议：${evaluation.suggestions?.length ? evaluation.suggestions.join("；") : "继续保持当前完成质量。"}`,
+    `Completion review: ${evaluation.overallComment || "Homework evaluation generated."}`,
+    `Issues: ${evaluation.issues?.length ? evaluation.issues.join("; ") : "No obvious error found; teacher review is still recommended."}`,
+    `Suggestions: ${evaluation.suggestions?.length ? evaluation.suggestions.join("; ") : "Maintain the current completion quality."}`,
   ].join("\n");
 }
 
@@ -1296,9 +1296,9 @@ async function buildAiEvaluation(payload, fallbackEvaluation) {
   if (provider === "openai" && isDashScopeCompatibleMode() && isAiCircuitBreakerOpen()) {
     return null;
   }
-  const system = "你是一名大学乐理教师。请根据学生作业生成 JSON，字段必须包含 overallComment、strengths、issues、suggestions、tags，所有内容使用中文。";
+  const system = "You are a university music theory teacher. Generate JSON for the student's homework. The fields must include overallComment, strengths, issues, suggestions, and tags. All content must be in English.";
   const prompt = JSON.stringify({
-    lessonTitle: safeString(payload.lessonTitle, "当前课时"),
+    lessonTitle: safeString(payload.lessonTitle, "Current lesson"),
     homeworkPrompt: safeString(payload.homeworkPrompt),
     text: safeString(payload.text),
     voiceTranscript: safeString(payload.voiceTranscript),
@@ -1313,7 +1313,7 @@ async function buildAiEvaluation(payload, fallbackEvaluation) {
     { role: "user", content: prompt },
     ...getArray(payload.images).slice(0, 4).map((image, index) => ({
       role: "user",
-      content: `这是学生提交的作业图片 ${index + 1}，请结合图片进行评阅。`,
+      content: `This is homework image ${index + 1} submitted by the student. Review it together with the text submission.`,
       imageDataUrl: safeString(image?.dataUrl),
     })),
   ].filter((message) => safeString(message.content) || message.imageDataUrl);
@@ -3126,7 +3126,7 @@ app.post("/api/bkt/label", async (req, res) => {
         candidates: lessonCandidates,
       });
       const text = await createOpenAITextResponse({
-        system: "你是一名乐理教学系统的知识点标注器。请只返回 JSON，字段包含 knowledgePointId、confidence、reason。",
+        system: "You are a knowledge-point labeler for a music theory learning system. Return only JSON with knowledgePointId, confidence, and reason.",
         messages: [{ role: "user", content: prompt }],
         maxTokens: 300,
       });
@@ -3135,7 +3135,7 @@ app.post("/api/bkt/label", async (req, res) => {
         result = {
           knowledgePointId: String(parsed.knowledgePointId),
           confidence: Number(parsed.confidence || 0.6),
-          reason: safeString(parsed.reason, "AI 自动标注"),
+          reason: safeString(parsed.reason, "AI auto-label"),
         };
       }
     }
@@ -3148,7 +3148,7 @@ app.post("/api/bkt/label", async (req, res) => {
     result = {
       knowledgePointId: String(fallback.id),
       confidence: 0.35,
-      reason: "已回退到本课默认主知识点。",
+      reason: "Fell back to the default main knowledge point for this lesson.",
     };
   }
 
@@ -3168,7 +3168,7 @@ app.post("/api/transcribe", async (req, res) => {
       ok: true,
       text: "",
       mode: "fallback",
-      detail: "未配置阿里云 API Key，当前仅支持浏览器实时语音识别。",
+      detail: "No API key is configured; only browser live speech recognition is available.",
     });
   }
 
@@ -3187,7 +3187,7 @@ app.post("/api/transcribe", async (req, res) => {
         ok: true,
         text: "",
         mode: "fallback",
-        detail: "当前兼容模式接口未启用语音转写，已保留浏览器实时语音识别。",
+        detail: "Speech transcription is not enabled in the current compatibility mode; browser live recognition remains available.",
       });
     }
 
@@ -3403,7 +3403,7 @@ app.post("/api/tutor", async (req, res) => {
   );
   const startedAt = Date.now();
   const cacheKey = buildTutorCacheKey({
-    system: system || "你是一位专业的大学音乐理论教师和 AI 辅导员。请用中文简洁、准确地回答。任何带问号的句子都应视为正常提问，不要误判为无效输入。",
+    system: system || "You are a professional university music theory teacher and AI tutor. Reply concisely and accurately in English. Treat any sentence with a question mark as a normal question, not invalid input.",
     messages: rawSafeMessages,
     model: tutorModel,
     maxTokens: normalizedMaxTokens,
@@ -3430,7 +3430,7 @@ app.post("/api/tutor", async (req, res) => {
     let inflight = getTutorInflightRequest(cacheKey);
     if (!inflight) {
       inflight = createTutorResponseWithFallback({
-        system: system || "你是一位专业的大学音乐理论教师和 AI 辅导员。请用中文简洁、准确地回答。任何带问号的句子都应视为正常提问，不要误判为无效输入。",
+        system: system || "You are a professional university music theory teacher and AI tutor. Reply concisely and accurately in English. Treat any sentence with a question mark as a normal question, not invalid input.",
         messages: safeMessages,
         rawMessages: rawSafeMessages,
         maxTokens: normalizedMaxTokens,
@@ -3446,7 +3446,7 @@ app.post("/api/tutor", async (req, res) => {
       setTutorCachedResponse(cacheKey, text);
     }
     return res.json({
-      text: text || "抱歉，我暂时没有生成有效回答，请重试。",
+      text: text || "Sorry, I could not generate a valid answer. Please try again.",
       cached: false,
       elapsedMs: Date.now() - startedAt,
       modelUsed: result?.model || tutorModel,
@@ -3506,7 +3506,7 @@ async function createGeminiResponse({ system, messages, maxTokens }) {
     },
     body: JSON.stringify({
       systemInstruction: {
-        parts: [{ text: system || "你是一位专业的大学音乐理论教师和 AI 辅导员。请用中文简洁、准确地回答。" }],
+        parts: [{ text: system || "You are a professional university music theory teacher and AI tutor. Reply concisely and accurately in English." }],
       },
       contents: contents.length ? contents : [{
         role: "user",
@@ -3531,7 +3531,7 @@ async function createGeminiResponse({ system, messages, maxTokens }) {
   }
 
   return data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("\n").trim()
-    || "抱歉，我暂时没有生成有效回答，请重试。";
+    || "Sorry, I could not generate a valid answer. Please try again.";
 }
 
 app.use(express.static(path.join(__dirname, "dist")));

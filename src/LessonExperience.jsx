@@ -72,46 +72,46 @@ function createKnowledgeMappingKey(lessonId, signature) {
 
 function formatStructuredEvaluation(evaluation) {
   if (!evaluation) return "";
-  const strengths = (evaluation.strengths || []).join("；");
-  const issues = (evaluation.issues || []).join("；");
-  const suggestions = (evaluation.suggestions || []).join("；");
+  const strengths = (evaluation.strengths || []).join("; ");
+  const issues = (evaluation.issues || []).join("; ");
+  const suggestions = (evaluation.suggestions || []).join("; ");
   return [
-    `完成度评价：${evaluation.overallComment || "已完成作业提交。"}`,
-    `错误说明：${issues || "暂无明显错误。"}`,
-    `修改建议：${suggestions || "请继续保持。"}${strengths ? `\n优势：${strengths}` : ""}`,
+    `Completion review: ${evaluation.overallComment || "Homework submission completed."}`,
+    `Issue notes: ${issues || "No obvious errors found."}`,
+    `Revision advice: ${suggestions || "Keep the current quality."}${strengths ? `\nStrengths: ${strengths}` : ""}`,
   ].join("\n");
 }
 
 const LESSON_CONTENT = {};
 const LESSON_LEARNING_SECTIONS = {};
 const LESSON_QUIZ_BANK = {
-  L1: { id: "L1-Q1", lessonId: "L1", chapterId: "ch1", knowledgePointId: "L1_K1_pitchProperties", difficulty: "basic", prompt: "A4 的标准频率是多少？", options: ["220Hz", "440Hz", "523Hz"], answer: "440Hz", explanation: "A4=440Hz 是标准音高。" },
-  L2: { id: "L2-Q1", lessonId: "L2", chapterId: "ch1", knowledgePointId: "L2_K2_temperamentEnharmonic", difficulty: "medium", prompt: "十二平均律中相邻半音的频率比约是多少？", options: ["1.5", "1.25", "1.0595"], answer: "1.0595", explanation: "十二平均律将八度平均分成 12 份。" },
-  L3: { id: "L3-Q1", lessonId: "L3", chapterId: "ch2", knowledgePointId: "L3_K1_trebleClef", difficulty: "basic", prompt: "高音谱号的中心定位在线谱哪一线？", options: ["第二线", "第三线", "第四线"], answer: "第二线", explanation: "高音谱号将第二线定义为 G。" },
-  L4: { id: "L4-Q1", lessonId: "L4", chapterId: "ch2", knowledgePointId: "L4_K1_noteValues", difficulty: "basic", prompt: "四分音符通常等于几拍？", options: ["0.5 拍", "1 拍", "2 拍"], answer: "1 拍", explanation: "四分音符常作为一拍的基本单位。" },
-  L5: { id: "L5-Q1", lessonId: "L5", chapterId: "ch3", knowledgePointId: "L5_K1_trillMordent", difficulty: "basic", prompt: "颤音通常表现为什么？", options: ["相邻音快速交替", "持续延长同一音", "强拍重音"], answer: "相邻音快速交替", explanation: "颤音的核心特征是主音与邻音快速交替。" },
-  L6: { id: "L6-Q1", lessonId: "L6", chapterId: "ch3", knowledgePointId: "L6_K1_dynamics", difficulty: "basic", prompt: "Allegro 通常表示什么速度？", options: ["慢板", "中板", "快板"], answer: "快板", explanation: "Allegro 是常见的快板速度术语。" },
-  L7: { id: "L7-Q1", lessonId: "L7", chapterId: "ch4", knowledgePointId: "L7_K1_repeatSigns", difficulty: "basic", prompt: "D.C. 在乐谱中表示什么？", options: ["从头反复", "结束", "跳到尾声"], answer: "从头反复", explanation: "D.C. 即 Da Capo。" },
-  L8: { id: "L8-Q1", lessonId: "L8", chapterId: "ch4", knowledgePointId: "L8_K2_expressionTerms", difficulty: "basic", prompt: "Dolce 更接近哪种表情？", options: ["甜美柔和", "强烈激昂", "庄严缓慢"], answer: "甜美柔和", explanation: "Dolce 表示甜美、柔和。" },
-  L9: { id: "L9-Q1", lessonId: "L9", chapterId: "ch5", knowledgePointId: "L9_K1_timeSignatureMeter", difficulty: "basic", prompt: "3/4 拍每小节通常有几拍？", options: ["2 拍", "3 拍", "4 拍"], answer: "3 拍", explanation: "3/4 拍表示每小节三拍。" },
-  L10: { id: "L10-Q1", lessonId: "L10", chapterId: "ch5", knowledgePointId: "L10_K1_noteGrouping", difficulty: "basic", prompt: "附点会让原音符时值增加多少？", options: ["增加一半", "增加一倍", "减少一半"], answer: "增加一半", explanation: "附点增加原时值的一半。" },
-  L11: { id: "L11-Q1", lessonId: "L11", chapterId: "ch5", knowledgePointId: "L11_K1_syncopationTypes", difficulty: "medium", prompt: "切分音最核心的听觉效果是什么？", options: ["重音迁移", "速度变慢", "音高升高"], answer: "重音迁移", explanation: "切分音打破原有强弱关系。" },
-  L12: { id: "L12-Q1", lessonId: "L12", chapterId: "ch5", knowledgePointId: "L1_K1_pitchProperties", difficulty: "core", prompt: "综合诊断中最重要的目标是什么？", options: ["只背术语", "整合知识并应用", "只做听辨"], answer: "整合知识并应用", explanation: "综合诊断重在整合知识、定位薄弱点并推动迁移应用。" },
+  L1: { id: "L1-Q1", lessonId: "L1", chapterId: "ch1", knowledgePointId: "L1_K1_pitchProperties", difficulty: "basic", prompt: "What is the standard frequency of A4?", options: ["220Hz", "440Hz", "523Hz"], answer: "440Hz", explanation: "A4 = 440Hz is the standard reference pitch." },
+  L2: { id: "L2-Q1", lessonId: "L2", chapterId: "ch1", knowledgePointId: "L2_K2_temperamentEnharmonic", difficulty: "medium", prompt: "In equal temperament, what is the approximate ratio between adjacent semitones?", options: ["1.5", "1.25", "1.0595"], answer: "1.0595", explanation: "Equal temperament divides the octave into 12 equal parts." },
+  L3: { id: "L3-Q1", lessonId: "L3", chapterId: "ch2", knowledgePointId: "L3_K1_trebleClef", difficulty: "basic", prompt: "Which staff line is located by the center of the treble clef?", options: ["Second line", "Third line", "Fourth line"], answer: "Second line", explanation: "The treble clef defines the second line as G." },
+  L4: { id: "L4-Q1", lessonId: "L4", chapterId: "ch2", knowledgePointId: "L4_K1_noteValues", difficulty: "basic", prompt: "How many beats is a quarter note usually worth in 4/4?", options: ["0.5 beat", "1 beat", "2 beats"], answer: "1 beat", explanation: "A quarter note commonly functions as the basic one-beat unit." },
+  L5: { id: "L5-Q1", lessonId: "L5", chapterId: "ch3", knowledgePointId: "L5_K1_trillMordent", difficulty: "basic", prompt: "What does a trill usually indicate?", options: ["Rapid alternation with a neighbor note", "Sustaining the same note", "A strong-beat accent"], answer: "Rapid alternation with a neighbor note", explanation: "The core feature of a trill is rapid alternation between the main note and a neighbor note." },
+  L6: { id: "L6-Q1", lessonId: "L6", chapterId: "ch3", knowledgePointId: "L6_K1_dynamics", difficulty: "basic", prompt: "What tempo category does Allegro usually indicate?", options: ["Slow", "Moderate", "Fast"], answer: "Fast", explanation: "Allegro is a common fast tempo term." },
+  L7: { id: "L7-Q1", lessonId: "L7", chapterId: "ch4", knowledgePointId: "L7_K1_repeatSigns", difficulty: "basic", prompt: "What does D.C. mean in a score?", options: ["Return to the beginning", "End", "Jump to the coda"], answer: "Return to the beginning", explanation: "D.C. means Da Capo." },
+  L8: { id: "L8-Q1", lessonId: "L8", chapterId: "ch4", knowledgePointId: "L8_K2_expressionTerms", difficulty: "basic", prompt: "Which character is closest to Dolce?", options: ["Sweet and gentle", "Strong and fiery", "Majestic and slow"], answer: "Sweet and gentle", explanation: "Dolce means sweetly or gently." },
+  L9: { id: "L9-Q1", lessonId: "L9", chapterId: "ch5", knowledgePointId: "L9_K1_timeSignatureMeter", difficulty: "basic", prompt: "How many beats are usually in each measure of 3/4?", options: ["2 beats", "3 beats", "4 beats"], answer: "3 beats", explanation: "3/4 means three beats per measure." },
+  L10: { id: "L10-Q1", lessonId: "L10", chapterId: "ch5", knowledgePointId: "L10_K1_noteGrouping", difficulty: "basic", prompt: "How much does a dot add to the original note value?", options: ["One half", "One full value", "One half less"], answer: "One half", explanation: "A dot adds half of the original value." },
+  L11: { id: "L11-Q1", lessonId: "L11", chapterId: "ch5", knowledgePointId: "L11_K1_syncopationTypes", difficulty: "medium", prompt: "What is the core aural effect of syncopation?", options: ["Accent displacement", "Slower tempo", "Higher pitch"], answer: "Accent displacement", explanation: "Syncopation disrupts the expected strong-weak accent pattern." },
+  L12: { id: "L12-Q1", lessonId: "L12", chapterId: "ch5", knowledgePointId: "L1_K1_pitchProperties", difficulty: "core", prompt: "What is the most important goal in integrated diagnosis?", options: ["Memorize terms only", "Connect and apply knowledge", "Do listening tasks only"], answer: "Connect and apply knowledge", explanation: "Integrated diagnosis connects knowledge, locates weak points, and supports transfer." },
 };
 
 const LESSON_PRACTICE_EXTRA = {
-  L1: { id: "L1-Q2", lessonId: "L1", chapterId: "ch1", knowledgePointId: "L1_K1_pitchProperties", difficulty: "medium", prompt: "音量变化最直接对应什么？", options: ["频率", "振幅", "谱号"], answer: "振幅", explanation: "音量通常由振幅决定。" },
-  L2: { id: "L2-Q2", lessonId: "L2", chapterId: "ch1", knowledgePointId: "L2_K2_temperamentEnharmonic", difficulty: "medium", prompt: "泛音列中第二泛音最接近什么关系？", options: ["八度", "三度", "半音"], answer: "八度", explanation: "第二泛音与基音最接近八度关系。" },
-  L3: { id: "L3-Q2", lessonId: "L3", chapterId: "ch2", knowledgePointId: "L3_K2_bassClef", difficulty: "basic", prompt: "低音谱号主要定位哪个音？", options: ["F", "C", "G"], answer: "F", explanation: "低音谱号两点包围 F 所在线。" },
-  L4: { id: "L4-Q2", lessonId: "L4", chapterId: "ch2", knowledgePointId: "L4_K2_dotsAndTies", difficulty: "medium", prompt: "附点四分音符等于多少拍？", options: ["1 拍", "1.5 拍", "2 拍"], answer: "1.5 拍", explanation: "附点四分音符等于 1.5 拍。" },
-  L5: { id: "L5-Q2", lessonId: "L5", chapterId: "ch3", knowledgePointId: "L5_K2_turnAppoggiatura", difficulty: "medium", prompt: "哪种装饰音最接近主音与邻音往复？", options: ["波音", "颤音", "倚音"], answer: "颤音", explanation: "颤音是主音与邻音快速交替。" },
-  L6: { id: "L6-Q2", lessonId: "L6", chapterId: "ch3", knowledgePointId: "L6_K1_dynamics", difficulty: "basic", prompt: "mf 常表示什么力度层级？", options: ["很弱", "中强", "极强"], answer: "中强", explanation: "mf 即 mezzo forte。" },
-  L7: { id: "L7-Q2", lessonId: "L7", chapterId: "ch4", knowledgePointId: "L7_K2_dcDsCoda", difficulty: "basic", prompt: "Fine 常表示什么？", options: ["从头开始", "结束处", "跳到尾声"], answer: "结束处", explanation: "Fine 表示乐句或乐曲结束。" },
-  L8: { id: "L8-Q2", lessonId: "L8", chapterId: "ch4", knowledgePointId: "L8_K1_tempoTerms", difficulty: "core", prompt: "术语学习最稳的方法是什么？", options: ["一次死记", "分类复现", "只看中文"], answer: "分类复现", explanation: "术语记忆依赖分类和复现。" },
-  L9: { id: "L9-Q2", lessonId: "L9", chapterId: "ch5", knowledgePointId: "L9_K1_timeSignatureMeter", difficulty: "basic", prompt: "4/4 拍第一拍通常是什么属性？", options: ["弱拍", "次强拍", "强拍"], answer: "强拍", explanation: "4/4 的第一拍通常是强拍。" },
-  L10: { id: "L10-Q2", lessonId: "L10", chapterId: "ch5", knowledgePointId: "L10_K2_crossBarTies", difficulty: "medium", prompt: "连音线连接同音高音符时作用是什么？", options: ["改变音高", "时值相加", "改成休止"], answer: "时值相加", explanation: "连音线会把时值相加。" },
-  L11: { id: "L11-Q2", lessonId: "L11", chapterId: "ch5", knowledgePointId: "L11_K2_classicSyncopation", difficulty: "core", prompt: "切分最明显的感受是什么？", options: ["拍感平均", "重音迁移", "音高更高"], answer: "重音迁移", explanation: "切分音最核心的是重音迁移。" },
-  L12: { id: "L12-Q2", lessonId: "L12", chapterId: "ch5", knowledgePointId: "L9_K1_timeSignatureMeter", difficulty: "core", prompt: "综合诊断后最有效的复盘方式是什么？", options: ["只做会的题", "按错误类型复盘", "跳过基础"], answer: "按错误类型复盘", explanation: "按错误类型复盘更容易找到薄弱知识点并安排后续练习。" },
+  L1: { id: "L1-Q2", lessonId: "L1", chapterId: "ch1", knowledgePointId: "L1_K1_pitchProperties", difficulty: "medium", prompt: "What does a change in loudness most directly correspond to?", options: ["Frequency", "Amplitude", "Clef"], answer: "Amplitude", explanation: "Loudness is usually determined by amplitude." },
+  L2: { id: "L2-Q2", lessonId: "L2", chapterId: "ch1", knowledgePointId: "L2_K2_temperamentEnharmonic", difficulty: "medium", prompt: "What relationship is closest to the second harmonic above a fundamental?", options: ["Octave", "Third", "Half step"], answer: "Octave", explanation: "The second harmonic is one octave above the fundamental." },
+  L3: { id: "L3-Q2", lessonId: "L3", chapterId: "ch2", knowledgePointId: "L3_K2_bassClef", difficulty: "basic", prompt: "Which note does the bass clef primarily locate?", options: ["F", "C", "G"], answer: "F", explanation: "The two bass-clef dots surround the F line." },
+  L4: { id: "L4-Q2", lessonId: "L4", chapterId: "ch2", knowledgePointId: "L4_K2_dotsAndTies", difficulty: "medium", prompt: "How many beats is a dotted quarter note?", options: ["1 beat", "1.5 beats", "2 beats"], answer: "1.5 beats", explanation: "A dotted quarter note equals 1.5 beats." },
+  L5: { id: "L5-Q2", lessonId: "L5", chapterId: "ch3", knowledgePointId: "L5_K2_turnAppoggiatura", difficulty: "medium", prompt: "Which ornament most directly involves rapid alternation between the main note and a neighbor?", options: ["Mordent", "Trill", "Appoggiatura"], answer: "Trill", explanation: "A trill rapidly alternates between the main note and a neighbor note." },
+  L6: { id: "L6-Q2", lessonId: "L6", chapterId: "ch3", knowledgePointId: "L6_K1_dynamics", difficulty: "basic", prompt: "What dynamic level does mf usually indicate?", options: ["Very soft", "Moderately loud", "Extremely loud"], answer: "Moderately loud", explanation: "mf means mezzo forte." },
+  L7: { id: "L7-Q2", lessonId: "L7", chapterId: "ch4", knowledgePointId: "L7_K2_dcDsCoda", difficulty: "basic", prompt: "What does Fine usually indicate?", options: ["Return to the beginning", "Ending point", "Jump to the coda"], answer: "Ending point", explanation: "Fine marks the end of a phrase or piece." },
+  L8: { id: "L8-Q2", lessonId: "L8", chapterId: "ch4", knowledgePointId: "L8_K1_tempoTerms", difficulty: "core", prompt: "What is the most stable way to learn musical terms?", options: ["Memorize once", "Classify and review", "Look only at translation"], answer: "Classify and review", explanation: "Term memory depends on classification and repeated retrieval." },
+  L9: { id: "L9-Q2", lessonId: "L9", chapterId: "ch5", knowledgePointId: "L9_K1_timeSignatureMeter", difficulty: "basic", prompt: "What is the usual metric role of beat 1 in 4/4?", options: ["Weak beat", "Secondary strong beat", "Strong beat"], answer: "Strong beat", explanation: "The first beat of 4/4 is usually strong." },
+  L10: { id: "L10-Q2", lessonId: "L10", chapterId: "ch5", knowledgePointId: "L10_K2_crossBarTies", difficulty: "medium", prompt: "What does a tie do when it connects same-pitch notes?", options: ["Changes pitch", "Adds durations", "Turns them into rests"], answer: "Adds durations", explanation: "A tie adds the durations of same-pitch notes." },
+  L11: { id: "L11-Q2", lessonId: "L11", chapterId: "ch5", knowledgePointId: "L11_K2_classicSyncopation", difficulty: "core", prompt: "What is the clearest feeling created by syncopation?", options: ["Even accents", "Accent displacement", "Higher pitch"], answer: "Accent displacement", explanation: "The core of syncopation is displaced accent." },
+  L12: { id: "L12-Q2", lessonId: "L12", chapterId: "ch5", knowledgePointId: "L9_K1_timeSignatureMeter", difficulty: "core", prompt: "What is the most effective review method after integrated diagnosis?", options: ["Only do familiar questions", "Review by error type", "Skip fundamentals"], answer: "Review by error type", explanation: "Reviewing by error type makes it easier to identify weak points and plan follow-up practice." },
 };
 
 function ensureQuestionOptions(values = [], fallbackValues = []) {
@@ -130,31 +130,31 @@ function buildKnowledgePointQuestionSet(point, lessonPoints = []) {
   const conceptAnswer = point.subConcepts?.[0] || point.title;
   const conceptOptions = ensureQuestionOptions(
     [conceptAnswer, ...conceptPool],
-    ["基础概念辨识题", "术语闪卡", "综合分析题"],
+    ["Basic concept recognition", "Term flashcards", "Integrated analysis"],
   );
 
-  const exerciseAnswer = point.exerciseTypes?.[0] || "AI 导师问答";
+  const exerciseAnswer = point.exerciseTypes?.[0] || "AI Tutor Q&A";
   const exerciseOptions = ensureQuestionOptions(
     [exerciseAnswer, ...exercisePool],
-    ["AI 导师问答", "术语闪卡", "记谱练习 (Notation Exercise)", "节奏练习 (Rhythm Exercise)"],
+    ["AI Tutor Q&A", "Term flashcards", "Notation exercise", "Rhythm exercise"],
   );
 
   const easyAnswer = point.easy?.[0] || point.subConcepts?.[0] || point.title;
   const easyOptions = ensureQuestionOptions(
     [easyAnswer, ...easyPool],
-    ["基础概念辨识题", "相邻白键判断", "识别基本等音对：C♯=D♭", "什么决定了音的高低？"],
+    ["Basic concept recognition", "Adjacent white-key judgment", "Identify C-sharp/D-flat as enharmonic", "What determines pitch?"],
   );
 
   const mediumAnswer = point.medium?.[0] || point.easy?.[0] || point.title;
   const mediumOptions = ensureQuestionOptions(
     [mediumAnswer, ...mediumPool],
-    ["概念应用题", "混合时值识别", "等音的作曲选择原理", "含变化音的复杂识读"],
+    ["Concept application", "Mixed duration recognition", "Enharmonic spelling in composition", "Complex reading with accidentals"],
   );
 
   const hardAnswer = point.hard?.[0] || point.medium?.[0] || point.title;
   const hardOptions = ensureQuestionOptions(
     [hardAnswer, ...hardPool],
-    ["综合分析题", "跨多个音组的快速识别", "复杂节奏型的拍数推算", "大调音阶完整推导"],
+    ["Integrated analysis", "Fast recognition across registers", "Complex rhythm beat calculation", "Full major-scale derivation"],
   );
 
   return [
@@ -164,10 +164,10 @@ function buildKnowledgePointQuestionSet(point, lessonPoints = []) {
       chapterId: point.chapterId,
       knowledgePointId: point.id,
       difficulty: "basic",
-      prompt: `下列哪一项最直接对应“${point.title}”的核心概念？`,
+      prompt: `Which option most directly matches the core concept of "${point.title}"?`,
       options: conceptOptions,
       answer: conceptAnswer,
-      explanation: `${point.title}的核心概念包括：${conceptAnswer}。`,
+      explanation: `A core concept of ${point.title} is: ${conceptAnswer}.`,
     },
     {
       id: `${point.id}-supplement-2`,
@@ -175,10 +175,10 @@ function buildKnowledgePointQuestionSet(point, lessonPoints = []) {
       chapterId: point.chapterId,
       knowledgePointId: point.id,
       difficulty: "medium",
-      prompt: `学习“${point.title}”时，优先匹配哪类练习最合适？`,
+      prompt: `Which exercise type best fits early practice for "${point.title}"?`,
       options: exerciseOptions,
       answer: exerciseAnswer,
-      explanation: `${point.title}当前优先对应：${exerciseAnswer}。`,
+      explanation: `${point.title} is currently best matched with: ${exerciseAnswer}.`,
     },
     {
       id: `${point.id}-supplement-3`,
@@ -186,10 +186,10 @@ function buildKnowledgePointQuestionSet(point, lessonPoints = []) {
       chapterId: point.chapterId,
       knowledgePointId: point.id,
       difficulty: "basic",
-      prompt: `下列哪一项属于“${point.title}”的基础训练示例？`,
+      prompt: `Which option is a basic training example for "${point.title}"?`,
       options: easyOptions,
       answer: easyAnswer,
-      explanation: `${point.title}的基础训练示例包括：${easyAnswer}。`,
+      explanation: `A basic training example for ${point.title} is: ${easyAnswer}.`,
     },
     {
       id: `${point.id}-supplement-4`,
@@ -197,10 +197,10 @@ function buildKnowledgePointQuestionSet(point, lessonPoints = []) {
       chapterId: point.chapterId,
       knowledgePointId: point.id,
       difficulty: "medium",
-      prompt: `针对“${point.title}”的进阶练习，下列哪一项更匹配？`,
+      prompt: `Which option better matches intermediate practice for "${point.title}"?`,
       options: mediumOptions,
       answer: mediumAnswer,
-      explanation: `${point.title}的进阶训练可对应：${mediumAnswer}。`,
+      explanation: `Intermediate training for ${point.title} can use: ${mediumAnswer}.`,
     },
     {
       id: `${point.id}-supplement-5`,
@@ -208,10 +208,10 @@ function buildKnowledgePointQuestionSet(point, lessonPoints = []) {
       chapterId: point.chapterId,
       knowledgePointId: point.id,
       difficulty: "hard",
-      prompt: `如果要挑战“${point.title}”的高阶应用，下列哪一项更符合？`,
+      prompt: `Which option best fits advanced application of "${point.title}"?`,
       options: hardOptions,
       answer: hardAnswer,
-      explanation: `${point.title}的高阶应用可对应：${hardAnswer}。`,
+      explanation: `Advanced application for ${point.title} can use: ${hardAnswer}.`,
     },
   ].filter((item) => Array.isArray(item.options) && item.options.length >= 3);
 }
@@ -237,37 +237,37 @@ function createLessonPracticePool(lessonId, lessonTitle) {
       chapterId: "",
       knowledgePointId: lessonPoints[0]?.id || "",
       difficulty: "basic",
-      prompt: `${lessonTitle} 的核心知识点是什么？`,
-      options: [focus, "节拍器", "随机作答"],
+      prompt: `What is the core knowledge point of ${lessonTitle}?`,
+      options: [focus, "Metronome", "Random guessing"],
       answer: focus,
-      explanation: "本题用于回顾当前课时的核心重点。",
+      explanation: "This question reviews the current lesson focus.",
     });
   }
   return pool;
 }
 
 const HOMEWORK_FOCUS = {
-  L1: "音的四种属性与音级关系",
-  L2: "律制、泛音与等音概念",
-  L3: "谱号与五线谱读写",
-  L4: "音符、休止符与附点",
-  L5: "装饰音辨认与应用",
-  L6: "力度、速度与表情术语",
-  L7: "反复与缩写记号",
-  L8: "音乐术语记忆与分类",
-  L9: "节拍、拍号与强弱规律",
-  L10: "音值组合与连音写法",
-  L11: "切分音与重音迁移",
-  L12: "综合应用与复习提升",
+  L1: "Four properties of sound and pitch relationships",
+  L2: "Temperament, harmonics, and enharmonic spelling",
+  L3: "Clefs and staff reading/writing",
+  L4: "Notes, rests, and dotted values",
+  L5: "Ornament recognition and application",
+  L6: "Dynamics, tempo, and expression terms",
+  L7: "Repeats and abbreviation signs",
+  L8: "Musical term memory and classification",
+  L9: "Meter, time signatures, and accent patterns",
+  L10: "Duration grouping and tie notation",
+  L11: "Syncopation and accent displacement",
+  L12: "Integrated application and review",
 };
 
 function getIntervalInfo(a, b) {
   if (a == null || b == null) return null;
   const raw = Math.abs(a - b) % 12;
   const diff = raw > 6 ? 12 - raw : raw;
-  if (diff === 1) return { label: "半音", semitones: diff, color: "#1f2937", detail: "这两个音之间是相邻半音关系。" };
-  if (diff === 2) return { label: "全音", semitones: diff, color: "#111111", detail: "这两个音之间是标准全音关系。" };
-  return { label: "其他", semitones: diff, color: "#6b7280", detail: "这两个音之间不是全音或半音。", isError: true };
+  if (diff === 1) return { label: "Half step", semitones: diff, color: "#1f2937", detail: "These two notes are adjacent half steps." };
+  if (diff === 2) return { label: "Whole step", semitones: diff, color: "#111111", detail: "These two notes form a standard whole step." };
+  return { label: "Other", semitones: diff, color: "#6b7280", detail: "These two notes are neither a whole step nor a half step.", isError: true };
 }
 
 function LessonLearningWorkspaceLegacy() {
@@ -316,7 +316,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
     interactions: 0,
     errors: 0,
     errorTypes: {},
-    lastExplanation: "\u5148\u70b9\u51fb\u94a2\u7434\u952e\uff0c\u7cfb\u7edf\u4f1a\u6839\u636e\u4e24\u4e2a\u97f3\u7684\u8ddd\u79bb\u7ed9\u51fa\u97f3\u7a0b\u5ea6\u6570\u89e3\u91ca\u3002",
+    lastExplanation: "Click piano keys first. The system explains the interval distance between two selected notes.",
   }));
 
   useEffect(() => {
@@ -353,14 +353,14 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
     if (typeof window === "undefined") return;
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!Recognition) {
-      setVoiceError("当前浏览器不支持实时语音识别。");
+      setVoiceError("This browser does not support live speech recognition.");
       return;
     }
     if (speechRecognitionRef.current) {
       try { speechRecognitionRef.current.stop(); } catch {}
     }
     const recognition = new Recognition();
-    recognition.lang = "zh-CN";
+    recognition.lang = "en-US";
     recognition.continuous = true;
     recognition.interimResults = false;
     recognition.onstart = () => {
@@ -377,7 +377,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
       }
     };
     recognition.onerror = () => {
-      setVoiceError("语音识别失败，请改用录音转写。");
+      setVoiceError("Speech recognition failed. Please use recording transcription instead.");
       setVoiceListening(false);
     };
     recognition.onend = () => {
@@ -397,7 +397,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
 
   const startAudioRecording = useCallback(async () => {
     if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-      setVoiceError("当前浏览器不支持录音功能。");
+      setVoiceError("This browser does not support recording.");
       return;
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") return;
@@ -413,7 +413,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         stream.getTracks().forEach((track) => track.stop());
         mediaRecorderRef.current = null;
         if (!audioChunksRef.current.length) {
-          setVoiceError("未捕获到录音内容。");
+          setVoiceError("No recording content was captured.");
           return;
         }
         const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
@@ -435,10 +435,10 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
           if (response.ok && json.text) {
             setVoiceTranscript((prev) => prev ? `${prev}\n${json.text}` : json.text);
           } else {
-            setVoiceError(json?.error || "录音转写失败，请稍后重试。");
+            setVoiceError(json?.error || "Recording transcription failed. Please try again later.");
           }
         } catch {
-          setVoiceError("录音转写失败，请稍后重试。");
+          setVoiceError("Recording transcription failed. Please try again later.");
         } finally {
           setAudioTranscribing(false);
         }
@@ -446,7 +446,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
       mediaRecorderRef.current = recorder;
       recorder.start();
     } catch {
-      setVoiceError("无法启动录音，请检查浏览器麦克风权限。");
+      setVoiceError("Could not start recording. Please check microphone permission.");
     }
   }, []);
 
@@ -455,7 +455,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
       const recorder = mediaRecorderRef.current;
       if (recorder && recorder.state !== "inactive") recorder.stop();
     } catch {
-      setVoiceError("结束录音失败，请重试。");
+      setVoiceError("Stopping the recording failed. Please try again.");
     }
   }, []);
 
@@ -487,7 +487,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
     const cached = getKnowledgeMapping(mappingKey);
     if (cached?.knowledgePointId) return cached.knowledgePointId;
     try {
-      setLabelingState({ pending: true, message: "正在匹配知识点..." });
+      setLabelingState({ pending: true, message: "Matching knowledge point..." });
       const response = await fetch("/api/bkt/label", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -502,7 +502,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
       setKnowledgeMapping(mappingKey, {
         knowledgePointId,
         confidence: Number(json?.confidence || 0.35),
-        reason: json?.reason || "知识点已缓存。",
+        reason: json?.reason || "Knowledge point cached.",
       });
       return knowledgePointId;
     } catch {
@@ -526,7 +526,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         setLastInterval(interval);
         setStats((prevStats) => ({ ...prevStats, lastExplanation: interval.detail }));
         if (interval.semitones > 7) {
-          recordError("键盘音程判断", "当前音程跨度较大，建议先从二度、三度这类基础音程开始练习。");
+          recordError("Keyboard interval judgment", "The current interval is wide. Start with smaller intervals such as seconds and thirds.");
         }
       }
       return next;
@@ -546,7 +546,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
     setPracticeAnswers(nextAnswers);
     setPracticeResult({
       ok,
-      message: ok ? "回答正确。" : `回答不正确，正确答案是 ${currentPractice.answer}。`,
+      message: ok ? "Correct." : `Incorrect. The correct answer is ${currentPractice.answer}.`,
       explanation: currentPractice.explanation,
     });
     setStats((prev) => ({ ...prev, interactions: prev.interactions + 1, lastExplanation: currentPractice.explanation }));
@@ -579,11 +579,11 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
       appendErrorRecord(userId, {
         lessonId: lesson.id,
         knowledgePointId,
-        type: "课堂练习题",
+        type: "Classroom practice question",
         prompt: currentPractice.prompt,
         explanation: currentPractice.explanation,
       });
-      recordError("课堂练习题", currentPractice.explanation);
+      recordError("Classroom practice question", currentPractice.explanation);
     }
   }, [currentPractice, practiceAnswers, practiceIndex, recordError, resolveKnowledgePointForText, userId, lesson.id, lessonKnowledgePoints, onBktChange]);
 
@@ -602,7 +602,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
       lastExplanation: question.explanation,
     }));
     if (!correct) {
-      recordError("纠错题", question.explanation);
+      recordError("Correction question", question.explanation);
     }
   }, [recordError]);
 
@@ -685,13 +685,13 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
     const focusTopic = HOMEWORK_FOCUS[lesson.id] || lesson.t;
     const evalHelper = homeworkRequirement.helper;
     return [
-      "复习主题：" + focusTopic +
-        (criticalWeak.length > 0 ? " - 重点补弱：" + criticalWeak.map(p => p.title + "(" + Math.round(p.pL*100) + "%)").join(" / ")
-        : anyWeak.length > 0 ? " - 巩固：" + weakList
-        : "，平均 " + avgPct + "%，掌握良好") + "。",
-      "作业说明：" + evalHelper,
-      "练习要求：重点检查 " + (weakNames || "各知识点") + "，当前平均掌握度 " + avgPct + "%" + "。",
-      "学习追踪：学习 " + studyMinutes + " 分钟，共 " + stats.interactions + " 次交互，平均 " + avgPct + "%。请写下今天最难理解的 1 个知识点。",
+      "Review topic: " + focusTopic +
+        (criticalWeak.length > 0 ? " - priority weak points: " + criticalWeak.map(p => p.title + "(" + Math.round(p.pL*100) + "%)").join(" / ")
+        : anyWeak.length > 0 ? " - reinforce: " + weakList
+        : ", average mastery " + avgPct + "%, currently stable") + ".",
+      "Homework note: " + evalHelper,
+      "Practice requirement: focus on " + (weakNames || "all knowledge points") + "; current average mastery is " + avgPct + "%.",
+      "Learning trace: studied for " + studyMinutes + " minutes, with " + stats.interactions + " interactions and an average of " + avgPct + "%. Write down the one knowledge point that was hardest today.",
     ];
   })();
 
@@ -788,7 +788,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
 
   const openHomeworkSubmit = useCallback(() => {
     if (!homeworkDraft.trim()) {
-      setHomeworkFeedback("请先在本页完成作业内容，再提交。");
+      setHomeworkFeedback("Complete the homework content on this page before submitting.");
       return;
     }
     setShowHomeworkDialog(true);
@@ -796,8 +796,8 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
 
   const confirmHomeworkSubmit = useCallback(() => {
     const feedback = homeworkDraft.length > 80
-      ? "已提交。内容较完整，建议下一步重点检查术语准确性以及示例是否对应本课核心概念。"
-      : "已提交。当前答案偏简略，建议补充术语解释、例子或节奏/音程分析。";
+      ? "Submitted. The content is fairly complete. Next, check term accuracy and whether examples match the lesson's core concepts."
+      : "Submitted. The current answer is brief. Add term explanations, examples, or rhythm/interval analysis.";
     setHomeworkSubmitted(true);
     setHomeworkRunning(false);
     setHomeworkFeedback(feedback);
@@ -839,7 +839,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
 
   const openMixedHomeworkSubmit = useCallback(() => {
     if (!homeworkHasContent) {
-      setHomeworkFeedback("请先补充文字、图片、节奏型、五线谱或钢琴输入中的任一项，再提交作业。");
+      setHomeworkFeedback("Add at least one item before submitting: text, image, rhythm, staff notation, or piano input.");
       return;
     }
     setShowHomeworkDialog(true);
@@ -870,12 +870,12 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
       });
       const json = await response.json();
       const evaluation = json?.evaluation || null;
-      const feedback = String(json?.text || "系统已记录你的作业，等待教师复核。");
+      const feedback = String(json?.text || "The system recorded your homework and is waiting for teacher review.");
       setHomeworkSubmitted(true);
       setHomeworkRunning(false);
       setHomeworkFeedback(feedback);
       setHomeworkEvaluation(evaluation);
-      setStats((prev) => ({ ...prev, interactions: prev.interactions + 1, lastExplanation: "课后作业已提交并完成 AI 初评。" }));
+      setStats((prev) => ({ ...prev, interactions: prev.interactions + 1, lastExplanation: "Homework was submitted and the AI first review is complete." }));
       setShowHomeworkDialog(false);
       reportStudentAnalytics({
         lessonId: lesson.id,
@@ -903,7 +903,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         evaluationTags: evaluation?.tags || [],
         evaluationComment: evaluation?.overallComment || "",
         submissionTypes,
-        lastExplanation: "课后作业已提交并完成 AI 初评。",
+        lastExplanation: "Homework was submitted and the AI first review is complete.",
       });
 
       const scoreValues = Object.values(evaluation?.scores || {}).map((value) => Number(value || 0));
@@ -918,7 +918,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
       const matchedKnowledgePoint = lessonKnowledgePoints.find((item) => item.id === matchedKnowledgePointId);
       const shouldUpdateHomeworkBkt = matchedKnowledgePointId
         && homeworkObservation !== "neutral"
-        && !/综合复习/.test(matchedKnowledgePoint?.title || "");
+        && !/Integrated Review/.test(matchedKnowledgePoint?.title || "");
       if (shouldUpdateHomeworkBkt) {
         updateKnowledgePointEvidence(userId, matchedKnowledgePointId, homeworkObservation, {
           lessonId: lesson.id,
@@ -939,7 +939,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         submissionTypes,
       });
     } catch {
-      setHomeworkFeedback("作业提交失败，请检查网络后重试。");
+      setHomeworkFeedback("Homework submission failed. Check the network and try again.");
     } finally {
       setHomeworkReviewing(false);
     }
@@ -947,13 +947,13 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
 
   const openLessonHomeworkSubmit = useCallback(() => {
     if (!homeworkHasContent) {
-      setHomeworkFeedback("请先补充本课所需的作业内容，再提交。");
+      setHomeworkFeedback("Add the required homework content for this lesson before submitting.");
       return;
     }
     const requiredOk = homeworkRequirement.requiredAnyOf.some((type) => homeworkSubmissionState[type]);
     const rhythmNeedsFix = homeworkRequirement.channels.includes("rhythm") && homeworkSubmissionState.rhythm && !rhythmMeasuresComplete;
     if (!requiredOk) {
-      setHomeworkFeedback(`请至少完成以下一种提交方式：${requiredSubmissionLabels}。`);
+      setHomeworkFeedback(`Complete at least one of these submission types: ${requiredSubmissionLabels}.`);
       return;
     }
     if (rhythmNeedsFix) {
@@ -961,7 +961,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
       return;
     }
     if (homeworkRequirement.channels.includes("rhythm") && homeworkSubmissionState.rhythm && !rhythmMeasuresComplete) {
-      setHomeworkFeedback("节奏作业尚未完成，请先检查每个小节的拍数是否与拍号一致。")
+      setHomeworkFeedback("The rhythm homework is incomplete. Check whether each measure matches the meter.")
       return;
     }
     setShowHomeworkDialog(true);
@@ -970,15 +970,15 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
   return (
     <div style={{ marginTop: 10, marginBottom: 14 }}>
       {showTabs && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-        <button onClick={() => setActiveSection("content")} style={sectionButtonStyle("content")}>内容呈现</button>
-        <button onClick={() => setActiveSection("practice")} style={sectionButtonStyle("practice")}>课堂练习</button>
-        <button onClick={() => setActiveSection("homework")} style={sectionButtonStyle("homework")}>课后作业</button>
+        <button onClick={() => setActiveSection("content")} style={sectionButtonStyle("content")}>Content</button>
+        <button onClick={() => setActiveSection("practice")} style={sectionButtonStyle("practice")}>Classroom Practice</button>
+        <button onClick={() => setActiveSection("homework")} style={sectionButtonStyle("homework")}>Homework</button>
       </div>}
 
       {activeSection === "content" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(17,17,17,0.04)", border: "1px solid rgba(17,17,17,0.08)" }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 8 }}>内容呈现</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 8 }}>Content</div>
         <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
-          本页先用强化解释卡梳理本课最容易混淆的点，再查看完整 PPT。
+          Start with reinforcement cards for the most confusing points, then review the full lesson PPT.
         </div>
         <WeakPointExplanationCards items={weakEnhancements} titleMap={weakPointTitleMap} />
         {lesson.id === "L2" ? <TemperamentEnharmonicWidgetCn /> : null}
@@ -999,7 +999,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         {lesson.id === "L11" ? <SyncopationPatternWidgetCn /> : null}
         {pptLessonData && (
           <div style={{ marginBottom: 12, padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{`\u7b2c ${pptLessonData.lessonNumber} \u8bfe\u65f6`}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{`Lesson ${pptLessonData.lessonNumber}`}</div>
             <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
               {pptLessonData.chapter}
               <br />
@@ -1011,13 +1011,13 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
       </div>}
 
       {activeSection === "practice" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(17,17,17,0.04)", border: "1px solid rgba(17,17,17,0.08)" }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 8 }}>课堂练习</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 8 }}>Classroom Practice</div>
         <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
-          系统会结合你在内容呈现中的互动操作结果，提供 20 题连续课堂练习，并反馈当前掌握情况。
+          The system combines your content interactions with a 20-question practice set and reports the current mastery state.
         </div>
         {weakEnhancements.length ? (
           <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>课堂练习引导</div>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Practice Guidance</div>
             <div style={{ display: "grid", gap: 8 }}>
               {weakEnhancements.map((item) => (
                 <div key={`guide-${item.knowledgePointId}`} style={{ padding: "8px 10px", borderRadius: 10, background: "rgba(83,74,183,0.05)" }}>
@@ -1031,28 +1031,28 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
           </div>
         ) : null}
         <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>知识点掌握摘要</div>
+          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Knowledge Mastery Summary</div>
           <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-            已掌握较好：{lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "尚未形成稳定强项"}
+            Stronger points: {lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "No stable strength yet"}
             <br />
-            当前薄弱点：{lessonKnowledgeSummary.weak.map((item) => item.title).join(" / ") || "暂无"}
+            Current weak points: {lessonKnowledgeSummary.weak.map((item) => item.title).join(" / ") || "None"}
             <br />
-            下一步建议：{getRecommendationFromSummary(lessonKnowledgeSummary)}
+            Next recommendation: {getRecommendationFromSummary(lessonKnowledgeSummary)}
           </div>
         </div>
         <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>互动检测</div>
+          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Interactive Check</div>
           <div style={{ fontSize: 11, color: stats.errors > 0 ? "#b91c1c" : "var(--color-text-secondary)" }}>
-            {lastInterval ? `最近一次识别为 ${lastInterval.label}，${lastInterval.detail}` : "请先在内容呈现里完成一次钢琴或互动操作，系统才会生成检测结果。"}
+            {lastInterval ? `Most recent result: ${lastInterval.label}. ${lastInterval.detail}` : "Complete one piano or interactive action in Content first, then the system will generate a check result."}
           </div>
         </div>
         <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 12, fontWeight: 600 }}>课堂练习题</div>
+            <div style={{ fontSize: 12, fontWeight: 600 }}>Practice Question</div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>第 {practiceIndex + 1} / {practiceQuestions.length} 题</div>
+              <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>Question {practiceIndex + 1} / {practiceQuestions.length}</div>
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 2 }}>
-                {{"concept-recognition":"概念识别","knowledge-point-match":"知识点匹配","exclusion":"排除辨析","application":"应用题","analysis":"分析题","specific-fact":"事实记忆","contrast":"对比辨析"}[currentPractice?.questionType] ?? "综合题"}
+                {{"concept-recognition":"Concept Recognition","knowledge-point-match":"Knowledge-Point Match","exclusion":"Exclusion","application":"Application","analysis":"Analysis","specific-fact":"Specific Fact","contrast":"Contrast"}[currentPractice?.questionType] ?? "Integrated Question"}
               </div>
             </div>
           </div>
@@ -1070,50 +1070,50 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             {practiceResult.explanation}
           </div>}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-            <button onClick={nextPracticeQuestion} disabled={!practiceAnswers[practiceIndex] || practiceIndex >= practiceQuestions.length - 1} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#111111", color: "#ffffff", cursor: !practiceAnswers[practiceIndex] || practiceIndex >= practiceQuestions.length - 1 ? "default" : "pointer" }}>下一题</button>
-            <button onClick={restartPractice} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#f5f5f5", cursor: "pointer" }}>切换到新的 20 题</button>
+            <button onClick={nextPracticeQuestion} disabled={!practiceAnswers[practiceIndex] || practiceIndex >= practiceQuestions.length - 1} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#111111", color: "#ffffff", cursor: !practiceAnswers[practiceIndex] || practiceIndex >= practiceQuestions.length - 1 ? "default" : "pointer" }}>Next Question</button>
+            <button onClick={restartPractice} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#f5f5f5", cursor: "pointer" }}>Generate a New 20-Question Set</button>
           </div>
           <div style={{ marginTop: 10, fontSize: 11, color: "var(--color-text-secondary)" }}>
-            答对题数/总题数：{correctCount}/{practiceQuestions.length}
+            Correct / Total: {correctCount}/{practiceQuestions.length}
           </div>
         </div>
       </div>}
 
       {activeSection === "homework" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(17,17,17,0.04)", border: "1px solid rgba(17,17,17,0.08)" }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 8 }}>课后作业</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 8 }}>Homework</div>
         <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
-          系统会依据本课知识点生成作业建议，并记录学习时长、错误类型和交互数据，辅助教师后续复核。
+          The system generates homework guidance from this lesson's knowledge points and records study time, error types, and interaction data for teacher review.
         </div>
         <div style={{ marginBottom: 12, padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111", marginBottom: 6 }}>自适应建议</div>
-          已掌握较好：{lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "尚未形成稳定强项"}
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111", marginBottom: 6 }}>Adaptive Recommendation</div>
+          Stronger points: {lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "No stable strength yet"}
           <br />
-          当前薄弱点：{lessonKnowledgeSummary.weak.map((item) => item.title).join(" / ") || "暂无"}
+          Current weak points: {lessonKnowledgeSummary.weak.map((item) => item.title).join(" / ") || "None"}
           <br />
-          下一步建议：{getRecommendationFromSummary(lessonKnowledgeSummary)}
-          {labelingState.pending ? <><br />知识点匹配中：{labelingState.message}</> : null}
+          Next recommendation: {getRecommendationFromSummary(lessonKnowledgeSummary)}
+          {labelingState.pending ? <><br />Knowledge-point matching: {labelingState.message}</> : null}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
           <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 600 }}>课后作业计时</div>
+              <div style={{ fontSize: 12, fontWeight: 600 }}>Homework Timer</div>
               <div style={{ fontSize: 18, fontWeight: 700, color: "#111111" }}>{formattedHomeworkTime}</div>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-              <button onClick={() => setHomeworkRunning(true)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>继续计时</button>
-              <button onClick={() => setHomeworkRunning(false)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#ffffff", cursor: "pointer" }}>暂停</button>
-              <button onClick={() => { setHomeworkRunning(false); setHomeworkRemaining(30 * 60); }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#f5f5f5", cursor: "pointer" }}>重置为 30 分钟</button>
+              <button onClick={() => setHomeworkRunning(true)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>Resume Timer</button>
+              <button onClick={() => setHomeworkRunning(false)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#ffffff", cursor: "pointer" }}>Pause</button>
+              <button onClick={() => { setHomeworkRunning(false); setHomeworkRemaining(30 * 60); }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#f5f5f5", cursor: "pointer" }}>Reset to 30 Minutes</button>
             </div>
             <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-              进入本页后已自动开始倒计时。
+              The countdown starts automatically when this page opens.
               <br />
-              AI 指定任务：{lessonHomework}
+              AI assigned task: {lessonHomework}
               <br />
-              当前学习轨迹：约 {studyMinutes} 分钟，互动 {stats.interactions} 次。
+              Current learning trace: about {studyMinutes} minutes, {stats.interactions} interactions.
             </div>
           </div>
           <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
-            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>AI 生成作业</div>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>AI-Generated Homework</div>
             <div style={{ display: "grid", gap: 8 }}>
               {homeworkItems.map((item) => (
                 <div key={item} style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.7, padding: "8px 10px", borderRadius: 10, background: "#f8f8f8" }}>
@@ -1124,8 +1124,8 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
           </div>
         </div>
         <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-          <div style={{ marginBottom: 4 }}>{"\u672c\u8bfe\u63d0\u4ea4\u65b9\u5f0f\uff1a"}{homeworkChannelLabels}</div>
-          <div>{"\u4f5c\u4e1a\u8bf4\u660e\uff1a"}{homeworkRequirement.helper}</div>
+          <div style={{ marginBottom: 4 }}>Submission channels: {homeworkChannelLabels}</div>
+          <div>Homework note: {homeworkRequirement.helper}</div>
         </div>
         <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
           {homeworkRequirement.channels.includes("image") && <HomeworkImageUploader
@@ -1162,53 +1162,53 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             onApplyTranscript={applyTranscriptToDraft}
           />}
           <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
-            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>文字说明</div>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Written Explanation</div>
             <textarea
               value={homeworkDraft}
               onChange={(e) => setHomeworkDraft(e.target.value)}
-              placeholder="可在这里补充概念解释、作业思路、节奏分析、音高判断依据，或对拍照上传内容的说明。"
+              placeholder="Add concept explanations, homework reasoning, rhythm analysis, pitch-judgment evidence, or notes about uploaded photos."
               style={{ width: "100%", minHeight: 140, borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", padding: 12, fontSize: 12, lineHeight: 1.8, resize: "vertical", outline: "none" }}
             />
           </div>
           <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>提交概览</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>Submission Overview</div>
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
-                提交类型：{submissionTypes.length ? submissionTypes.join(" / ") : "尚未开始"}
+                Submission type: {submissionTypes.length ? submissionTypes.join(" / ") : "Not started"}
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 10 }}>
               <div className="subtle-card" style={{ padding: 10 }}>
-                <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>文字说明</div>
-                <div style={{ fontSize: 12, color: "#111111" }}>{homeworkDraft.trim() ? `${homeworkDraft.trim().slice(0, 60)}${homeworkDraft.trim().length > 60 ? "..." : ""}` : "未填写"}</div>
+                <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>Written Explanation</div>
+                <div style={{ fontSize: 12, color: "#111111" }}>{homeworkDraft.trim() ? `${homeworkDraft.trim().slice(0, 60)}${homeworkDraft.trim().length > 60 ? "..." : ""}` : "Not filled"}</div>
               </div>
               <div className="subtle-card" style={{ padding: 10 }}>
-                <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>节奏编辑</div>
+                <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>Rhythm Editor</div>
                 <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7 }}>{summarizeRhythmSubmission(homeworkRhythm)}</div>
               </div>
               <div className="subtle-card" style={{ padding: 10 }}>
-                <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>五线谱修正</div>
+                <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>Staff Correction</div>
                 <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7 }}>{summarizeStaffSubmission(homeworkStaff)}</div>
               </div>
               {homeworkRequirement.channels.includes("piano") ? (
                 <div className="subtle-card" style={{ padding: 10 }}>
-                  <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>钢琴输入</div>
+                  <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>Piano Input</div>
                   <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7 }}>{summarizePianoSubmission(homeworkPiano)}</div>
                 </div>
               ) : null}
               {homeworkRequirement.channels.includes("voice") ? (
                 <div className="subtle-card" style={{ padding: 10 }}>
-                  <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>语音转写</div>
-                  <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7 }}>{voiceTranscript.trim() || "未录入"}</div>
+                  <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>Voice Transcript</div>
+                  <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7 }}>{voiceTranscript.trim() || "Not entered"}</div>
                 </div>
               ) : null}
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
-                错误类型：{Object.keys(stats.errorTypes).length ? Object.entries(stats.errorTypes).map(([k, v]) => `${k} x${v}`).join("；") : "当前暂无错误记录"}
+                Error types: {Object.keys(stats.errorTypes).length ? Object.entries(stats.errorTypes).map(([k, v]) => `${k} x${v}`).join("; ") : "No error records yet"}
               </div>
               <button onClick={openLessonHomeworkSubmit} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>
-                提交作业
+                Submit Homework
               </button>
             </div>
             {homeworkFeedback && <div style={{ marginTop: 10, fontSize: 11, color: homeworkSubmitted ? "#166534" : "#b91c1c", whiteSpace: "pre-wrap", lineHeight: 1.8 }}>{homeworkFeedback}</div>}
@@ -1219,29 +1219,29 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         </div>
         {showHomeworkDialog && <div onClick={() => { if (!homeworkReviewing) setShowHomeworkDialog(false); }} style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.36)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
           <div onClick={(event) => event.stopPropagation()} style={{ width: "min(640px, 100%)", background: "#ffffff", borderRadius: 16, padding: 18, boxShadow: "0 24px 80px rgba(0,0,0,0.18)" }}>
-            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>确认提交课后作业</div>
+            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>Confirm Homework Submission</div>
             <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
-              当前剩余时间 {formattedHomeworkTime}，提交后将生成 AI 初评结果，并同步到教师后台。
+              Time remaining: {formattedHomeworkTime}. After submission, the AI first review will be generated and synced to the teacher dashboard.
             </div>
             <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
               <div className="subtle-card" style={{ padding: 10, fontSize: 12, color: "#111111" }}>
-                <strong>提交类型：</strong>{submissionTypes.join(" / ") || "未填写"}
+                <strong>Submission type: </strong>{submissionTypes.join(" / ") || "Not filled"}
               </div>
               <div className="subtle-card" style={{ padding: 10, fontSize: 12, color: "#111111", lineHeight: 1.8 }}>
-                <strong>文字说明：</strong>{homeworkDraft.trim() || "未填写"}
+                <strong>Written explanation: </strong>{homeworkDraft.trim() || "Not filled"}
               </div>
               <div className="subtle-card" style={{ padding: 10, fontSize: 12, color: "#111111", lineHeight: 1.8 }}>
-                <strong>图片数量：</strong>{homeworkImages.length} 张
+                <strong>Image count: </strong>{homeworkImages.length}
                 <br />
-                <strong>节奏摘要：</strong>{summarizeRhythmSubmission(homeworkRhythm)}
+                <strong>Rhythm summary: </strong>{summarizeRhythmSubmission(homeworkRhythm)}
                 <br />
-                <strong>五线谱摘要：</strong>{summarizeStaffSubmission(homeworkStaff)}
+                <strong>Staff summary: </strong>{summarizeStaffSubmission(homeworkStaff)}
               </div>
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button onClick={() => setShowHomeworkDialog(false)} disabled={homeworkReviewing} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: homeworkReviewing ? "default" : "pointer" }}>继续修改</button>
+              <button onClick={() => setShowHomeworkDialog(false)} disabled={homeworkReviewing} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: homeworkReviewing ? "default" : "pointer" }}>Keep Editing</button>
               <button onClick={confirmMixedHomeworkSubmit} disabled={homeworkReviewing} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: homeworkReviewing ? "default" : "pointer" }}>
-                {homeworkReviewing ? "AI 初评中..." : "确认提交"}
+                {homeworkReviewing ? "AI Reviewing..." : "Confirm Submit"}
               </button>
             </div>
           </div>
@@ -1280,9 +1280,9 @@ function InteractivePitchFrequencyWidget() {
 
   return (
     <div className="section-card" style={{ marginTop: 14 }}>
-      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>音高与频率关系互动钢琴</div>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Interactive Pitch and Frequency Piano</div>
       <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
-        点击下方音键，可听到对应音高，并观察频率柱状图与键盘位置同步变化。
+        Click the keys below to hear pitch and watch frequency bars change with keyboard position.
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 14 }}>
         <div>
@@ -1318,14 +1318,14 @@ function InteractivePitchFrequencyWidget() {
           </div>
         </div>
         <div className="subtle-card" style={{ padding: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>当前选中音</div>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Selected Note</div>
           <div style={{ fontSize: 24, fontWeight: 700, color: "#111111", marginBottom: 6 }}>{noteItems[activeIndex].label}</div>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-            {`频率：${noteItems[activeIndex].freq} Hz`}
+            {`Frequency: ${noteItems[activeIndex].freq} Hz`}
             <br />
-            规律：频率越高，听感中的音高越高。
+            Rule: higher frequency sounds like higher pitch.
             <br />
-            建议：依次点击 C3、C4、C5，感受八度上行时频率翻倍的关系。
+            Try C3, C4, and C5 in order to feel how frequency doubles across octaves.
           </div>
         </div>
       </div>
@@ -1413,8 +1413,8 @@ function PptContentEmbedFixed({ lessonId, pageHint = null }) {
     <div className="section-card" style={{ marginTop: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10, flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>课时 PPT</div>
-          <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{`第 ${lessonData.lessonNumber} 课时 · ${lessonData.lessonTitle}`}</div>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Lesson PPT</div>
+          <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{`Lesson ${lessonData.lessonNumber} - ${lessonData.lessonTitle}`}</div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <button
@@ -1422,7 +1422,7 @@ function PptContentEmbedFixed({ lessonId, pageHint = null }) {
             disabled={pageIndex === 0}
             style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: pageIndex === 0 ? "default" : "pointer" }}
           >
-            上一页
+            Previous
           </button>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{`${pageIndex + 1} / ${slideNumbers.length}`}</div>
           <button
@@ -1430,23 +1430,23 @@ function PptContentEmbedFixed({ lessonId, pageHint = null }) {
             disabled={pageIndex === slideNumbers.length - 1}
             style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: pageIndex === slideNumbers.length - 1 ? "default" : "pointer" }}
           >
-            下一页
+            Next
           </button>
         </div>
       </div>
       <div className="subtle-card" style={{ padding: 14 }}>
         <img
           src={imageSrc}
-          alt={`${lessonData.lessonTitle} - 幻灯片 ${currentSlideNo}`}
+          alt={`${lessonData.lessonTitle} - slide ${currentSlideNo}`}
           loading="lazy"
           onClick={() => setLightboxOpen(true)}
           style={{ width: "100%", display: "block", borderRadius: 12, border: "1px solid rgba(17,17,17,0.08)", background: "#f6f6f6", cursor: "zoom-in" }}
         />
       </div>
       <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>点击当前幻灯片可放大查看</div>
+        <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>Click the current slide to enlarge it.</div>
         <a href={sourcePpt} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "#185FA5", textDecoration: "none" }}>
-          打开原始 PPT
+          Open Original PPT
         </a>
       </div>
       {lightboxOpen ? (
@@ -1463,11 +1463,11 @@ function PptContentEmbedFixed({ lessonId, pageHint = null }) {
               onClick={() => setLightboxOpen(false)}
               style={{ position: "absolute", top: -8, right: -8, width: 36, height: 36, borderRadius: 999, border: "1px solid rgba(255,255,255,0.22)", background: "rgba(17,17,17,0.88)", color: "#ffffff", cursor: "pointer", fontSize: 16, zIndex: 2 }}
             >
-              ×
+              x
             </button>
             <img
               src={imageSrc}
-              alt={`${lessonData.lessonTitle} - 幻灯片 ${currentSlideNo} 放大查看`}
+              alt={`${lessonData.lessonTitle} - slide ${currentSlideNo} enlarged view`}
               style={{ maxWidth: "100%", maxHeight: "94vh", width: "auto", height: "auto", display: "block", borderRadius: 14, background: "#ffffff" }}
             />
           </div>
@@ -1483,8 +1483,8 @@ function LessonMediaHub({ lesson }) {
 
 function LessonSupportLinks({ onOpen }) {
   const items = [
-    { id: "tutor", label: "AI 导师", desc: "针对当前课时提问，并获取讲解与纠错建议" },
-    { id: "lab", label: "音乐创作实验室", desc: "进入音乐创作实验室做扩展探索" },
+    { id: "tutor", label: "AI Tutor", desc: "Ask about the current lesson and get explanations, correction, and review advice." },
+    { id: "lab", label: "Music Creation Lab", desc: "Open the music creation lab for extended exploration." },
   ];
 
   return (
@@ -1537,10 +1537,10 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
     <div className="section-card">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>知识导图</div>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Knowledge Map</div>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{chapterTitle}</div>
         </div>
-        <Tag color="#111111" bg="#F3F4F6">{`${nodes.length} 个预习主线`}</Tag>
+        <Tag color="#111111" bg="#F3F4F6">{`${nodes.length} preview strands`}</Tag>
       </div>
 
       {isMobile ? (
@@ -1554,10 +1554,10 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
               marginBottom: 14,
             }}
           >
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.72)", marginBottom: 8 }}>中心主题</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.72)", marginBottom: 8 }}>Central Topic</div>
             <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.35, marginBottom: 10 }}>{lessonTitle}</div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.74)", lineHeight: 1.7 }}>
-              先看 4 个主节点建立整体框架，再进入课时内容查看完整 PPT。
+              Review the four main nodes first, then open the complete lesson PPT.
             </div>
           </div>
 
@@ -1596,7 +1596,7 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
                     {summarize(item.b)}
                   </div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: active ? "rgba(255,255,255,0.88)" : "#111111", marginTop: 8 }}>
-                    点击进入对应课时内容
+                    Open the related lesson content
                   </div>
                 </button>
               );
@@ -1604,7 +1604,7 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
           </div>
         </div>
       ) : (
-        <div style={{ borderRadius: 22, background: "linear-gradient(180deg, #fcfcfc 0%, #f5f5f5 100%)", border: "1px solid rgba(17,17,17,0.08)", overflowX: "auto" }}>
+        <div className="kmap-canvas">
           <div style={{ position: "relative", width: 980, minHeight: 470, margin: "0 auto", padding: "18px 0" }}>
             <svg
               width="980"
@@ -1615,30 +1615,38 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
             >
               <defs>
                 <linearGradient id="mind-line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="rgba(17,17,17,0.18)" />
-                  <stop offset="100%" stopColor="rgba(17,17,17,0.45)" />
+                  <stop offset="0%" stopColor="rgba(83,74,183,0.16)" />
+                  <stop offset="100%" stopColor="rgba(83,74,183,0.55)" />
                 </linearGradient>
               </defs>
               {layoutNodes.map((item) => {
-                const centerX = 490;
-                const centerY = 235;
-                const branchX = item.isLeft ? 380 : 600;
-                const branchY = item.anchorY;
+                const active = hoveredIndex === item.index;
+                const curve = `M 490 235 C ${item.isLeft ? 430 : 550} 235, ${item.isLeft ? 360 : 620} ${item.anchorY}, ${item.anchorX} ${item.anchorY}`;
                 return (
                   <g key={`line-${lessonTitle}-${item.index}`}>
                     <path
-                      d={`M ${centerX} ${centerY} C ${item.isLeft ? 450 : 530} ${centerY}, ${item.isLeft ? 420 : 560} ${branchY}, ${branchX} ${branchY}`}
-                      fill="none"
-                      stroke={hoveredIndex === item.index ? "#111111" : "url(#mind-line-gradient)"}
-                      strokeWidth={hoveredIndex === item.index ? "4" : "3"}
-                      strokeLinecap="round"
+                      className="kmap-link"
+                      d={curve}
+                      pathLength="1"
+                      stroke={active ? "#111111" : "url(#mind-line-gradient)"}
+                      strokeWidth={active ? 4 : 2.5}
+                      style={{ animationDelay: `${item.index * 0.12}s` }}
                     />
                     <path
-                      d={`M ${branchX} ${branchY} L ${item.anchorX} ${item.anchorY}`}
-                      fill="none"
-                      stroke={hoveredIndex === item.index ? "rgba(17,17,17,0.82)" : "rgba(17,17,17,0.22)"}
-                      strokeWidth={hoveredIndex === item.index ? "3.5" : "2.5"}
-                      strokeLinecap="round"
+                      className="kmap-link is-flow"
+                      d={curve}
+                      pathLength="1"
+                      stroke={active ? "rgba(255,255,255,0.92)" : "#534AB7"}
+                      strokeWidth={active ? 4.5 : 3}
+                      style={{ opacity: active ? 0.9 : 0.55 }}
+                    />
+                    <circle
+                      className="kmap-anchor-dot"
+                      cx={item.anchorX}
+                      cy={item.anchorY}
+                      r={active ? 5 : 4}
+                      fill={active ? "#111111" : "#534AB7"}
+                      style={{ animationDelay: `${item.index * 0.3}s` }}
                     />
                   </g>
                 );
@@ -1662,10 +1670,10 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
                 justifyContent: "center",
               }}
             >
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.72)", marginBottom: 8 }}>中心主题</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.72)", marginBottom: 8 }}>Central Topic</div>
               <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.35, marginBottom: 10 }}>{lessonTitle}</div>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.74)", lineHeight: 1.7 }}>
-                先看 4 个主节点建立框架，再进入课时内容和课堂练习。
+                Review the four main nodes first, then move to content and classroom practice.
               </div>
             </div>
 
@@ -1703,7 +1711,7 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
                   {summarize(item.b)}
                 </div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: hoveredIndex === item.index ? "rgba(255,255,255,0.88)" : "#111111", marginTop: 10 }}>
-                  点击进入对应课时内容
+                  Open the related lesson content
                 </div>
               </button>
             ))}
@@ -1725,16 +1733,16 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
   const ExComponent = EXERCISE_COMPONENTS[lesson.ex];
   const pptLessonData = getPptLessonData(lesson.id);
   const contentItems = (pptLessonData?.knowledgePoints || []).map((item, index) => ({
-    h: item.title || `知识点 ${index + 1}`,
+    h: item.title || `Knowledge Point ${index + 1}`,
     b: item.detail || "",
   }));
   const handleScore = (v) => setScore(lesson.id, v);
   const displayTabs = [
-    { id: "learn", label: "课前预习" },
-    { id: "content", label: "内容呈现" },
-    { id: "classroom", label: "课堂练习" },
-    { id: "homework", label: "课后作业" },
-    { id: "tutor", label: "AI 导师" },
+    { id: "learn", label: "Pre-Lesson" },
+    { id: "content", label: "Content" },
+    { id: "classroom", label: "Classroom Practice" },
+    { id: "homework", label: "Homework" },
+    { id: "tutor", label: "AI Tutor" },
   ];
   const lessonKnowledgeSummary = useMemo(() => summarizeLessonKnowledge(getStudentProfile().studentId, lesson.id), [lesson.id, bktVersion]);
 
@@ -1758,7 +1766,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <Tag color="#3C3489" bg="#EEEDFE">{`第${lesson.n}课`}</Tag>
+            <Tag color="#3C3489" bg="#EEEDFE">{`Lesson ${lesson.n}`}</Tag>
             <Stars value={ratings[lesson.id] || 0} onChange={(v) => setRating(lesson.id, v)} size={16} />
           </div>
           <h2 style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 0" }}>{lesson.t}</h2>
@@ -1768,9 +1776,9 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
           className="support-tile"
           style={{ width: "min(240px, 100%)", textAlign: "left", padding: 14, flexShrink: 0 }}
         >
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 6 }}>AI 导师</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 6 }}>AI Tutor</div>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
-            针对当前课时提问，获得概念讲解、作业答疑与错误纠正建议。
+            Ask about the current lesson to get concept explanations, homework help, and error correction.
           </div>
         </button>
       </div>
@@ -1800,25 +1808,25 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
           />
           {lesson.id === "L1" && (
             <div className="section-card">
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>互动预习</div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Interactive Preview</div>
               <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
-                先通过交互组件感知音高、频率和振幅，再进入“内容呈现”查看本课 PPT。
+                Use the interactive components to feel pitch, frequency, and amplitude, then open Content to review the lesson PPT.
               </div>
               <InteractivePitchFrequencyWidgetCn />
               <InteractiveVolumeAmplitudeWidgetCn />
             </div>
           )}
           <div className="section-card">
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>预习建议</div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Preview Plan</div>
             <div style={{ display: "grid", gap: 10 }}>
               <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-                先看导图中的 4 个主节点建立主线，再进入课时内容查看完整 PPT，最后做课堂练习检验理解。
+                Review the four main map nodes first, open the full lesson PPT, then use classroom practice to check understanding.
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
                 {[
-                  { no: "01", title: "看导图", desc: "先抓住本课主线", active: true },
-                  { no: "02", title: "进课时内容", desc: "查看完整 PPT", active: false },
-                  { no: "03", title: "做课堂练习", desc: "检验薄弱点", active: false },
+                  { no: "01", title: "Review Map", desc: "Identify the lesson structure", active: true },
+                  { no: "02", title: "Open Content", desc: "View the full PPT", active: false },
+                  { no: "03", title: "Practice", desc: "Check weak points", active: false },
                 ].map((step) => (
                   <div key={step.no} style={{ border: step.active ? "1px solid rgba(17,17,17,0.18)" : "1px solid rgba(17,17,17,0.08)", background: step.active ? "rgba(17,17,17,0.04)" : "#ffffff", borderRadius: 14, padding: 12 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-tertiary)", marginBottom: 6 }}>{step.no}</div>
@@ -1829,22 +1837,22 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 <button onClick={() => setTab("content")} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #111111", background: "#111111", color: "#ffffff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                  进入课时内容
+                  Open Lesson Content
                 </button>
                 <button onClick={() => setTab("classroom")} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#f6f6f6", color: "#111111", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                  直接去课堂练习
+                  Go to Practice
                 </button>
               </div>
             </div>
           </div>
           <div className="section-card">
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>知识点掌握摘要</div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Knowledge Mastery Summary</div>
             <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-              已掌握较好：{lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "尚未形成稳定强项"}
+              Stronger points: {lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "No stable strength yet"}
               <br />
-              当前薄弱点：{lessonKnowledgeSummary.weak.map((item) => item.title).join(" / ") || "暂无"}
+              Current weak points: {lessonKnowledgeSummary.weak.map((item) => item.title).join(" / ") || "None"}
               <br />
-              下一步建议：{getRecommendationFromSummary(lessonKnowledgeSummary)}
+              Next recommendation: {getRecommendationFromSummary(lessonKnowledgeSummary)}
             </div>
           </div>
         </div>
@@ -1860,18 +1868,18 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
         <div className="section-stack">
           {(scores[lesson.id] || 0) > 0 && (
             <div className="section-card" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>得分</span>
+              <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>Score</span>
               <div style={{ flex: 1 }}><PBar v={scores[lesson.id]} max={100} color="#534AB7" /></div>
               <span style={{ fontSize: 13, fontWeight: 600, color: "#534AB7" }}>{scores[lesson.id]}%</span>
             </div>
           )}
           <LessonLearningWorkspace lesson={lesson} section="practice" showTabs={false} onBktChange={() => setBktVersion((prev) => prev + 1)} />
           <div className="section-card">
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>练习说明</div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Practice Notes</div>
             <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-              先完成本节小测与互动练习，再继续下方练习模块。
+              Complete the lesson quiz and interactive practice before continuing with the exercise module below.
               <br />
-              系统会记录错误类型，供课后作业与教师后台汇总使用。
+              The system records error types for homework and teacher-dashboard summaries.
             </div>
           </div>
           <div className="section-card">
@@ -1888,45 +1896,45 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
               onClick={() => setHomeworkGuideOpen((prev) => !prev)}
               style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: homeworkGuideOpen ? "#111111" : "#ffffff", color: homeworkGuideOpen ? "#ffffff" : "#111111", cursor: "pointer" }}
             >
-              {homeworkGuideOpen ? "收起作业规范" : "查看作业规范"}
+              {homeworkGuideOpen ? "Hide Homework Guidelines" : "Show Homework Guidelines"}
             </button>
             <button
               type="button"
               onClick={() => setHomeworkContactOpen((prev) => !prev)}
               style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: homeworkContactOpen ? "#111111" : "#ffffff", color: homeworkContactOpen ? "#ffffff" : "#111111", cursor: "pointer" }}
             >
-              {homeworkContactOpen ? "收起联系说明" : "查看联系说明"}
+              {homeworkContactOpen ? "Hide Support Notes" : "Show Support Notes"}
             </button>
             <button
               onClick={() => setTab("lab")}
               className="support-tile"
               style={{ width: "min(320px, 100%)", textAlign: "left", padding: 12, marginLeft: "auto" }}
             >
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 6 }}>音乐创作实验室</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 6 }}>Music Creation Lab</div>
               <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
-                让我们一起来创造音乐吧
+                Create music with the interactive lab.
               </div>
             </button>
           </div>
 
           {homeworkGuideOpen ? (
             <div className="section-card">
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>作业规范</div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Homework Guidelines</div>
               <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-                建议按“概念解释、示例、错误反思”三部分完成。
+                Organize the work into three parts: concept explanation, examples, and error reflection.
                 <br />
-                提交前检查术语是否准确，示例是否对应本课核心概念。
+                Before submitting, check term accuracy and whether examples match the lesson's core concepts.
               </div>
             </div>
           ) : null}
 
           {homeworkContactOpen ? (
             <div className="section-card">
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>联系说明</div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Support Notes</div>
               <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-                如果课堂练习、作业上传或 AI 导师出现问题，先刷新页面并重新进入本课。
+                If classroom practice, homework upload, or the AI Tutor has an issue, refresh the page and re-enter the lesson first.
                 <br />
-                若问题仍然存在，请记录课时名称、操作步骤和报错现象，交由教师统一反馈处理。
+                If the issue remains, record the lesson name, steps, and error behavior for teacher follow-up.
               </div>
             </div>
           ) : null}
@@ -1936,7 +1944,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
       )}
 
       {tab === "tutor" && (
-        <Suspense fallback={<div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>AI 导师加载中...</div>}>
+        <Suspense fallback={<div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>Loading AI Tutor...</div>}>
           <LazyAITutorV2 lessonId={lesson.id} lessonTitle={lesson.t} />
         </Suspense>
       )}
@@ -1946,11 +1954,11 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
           <div className="section-card">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>{`音乐创作实验室 · ${lesson.labN}`}</div>
-                <div style={{ fontSize: 11, color: "var(--color-text-tertiary)" }}>互动音乐实验页面</div>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>{`Music Creation Lab - ${lesson.labN}`}</div>
+                <div style={{ fontSize: 11, color: "var(--color-text-tertiary)" }}>Interactive music lab page</div>
               </div>
               <button onClick={() => setLabOpen(!labOpen)} style={{ padding: "5px 12px", borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "var(--color-background-primary)", cursor: "pointer", fontSize: 11, fontWeight: 500 }}>
-                {labOpen ? "收起" : "打开"}
+                {labOpen ? "Collapse" : "Open"}
               </button>
             </div>
             {labOpen ? (
@@ -1959,16 +1967,16 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
               </div>
             ) : (
               <div style={{ padding: 16, textAlign: "center", border: "1px dashed var(--color-border-secondary)", borderRadius: 8 }}>
-                <div style={{ fontSize: 12, color: "var(--color-text-tertiary)" }}>点击“打开”加载实验，建议使用 Chrome 浏览器。</div>
+                <div style={{ fontSize: 12, color: "var(--color-text-tertiary)" }}>Click Open to load the lab. Chrome is recommended.</div>
               </div>
             )}
           </div>
-          <a href={lesson.lab} target="_blank" rel="noopener noreferrer" style={{ display: "block", textAlign: "center", fontSize: 11, color: "#185FA5", padding: 8, textDecoration: "none" }}>新窗口打开</a>
+          <a href={lesson.lab} target="_blank" rel="noopener noreferrer" style={{ display: "block", textAlign: "center", fontSize: 11, color: "#185FA5", padding: 8, textDecoration: "none" }}>Open in New Window</a>
         </div>
       )}
 
       <div className="section-card" style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>课程评价</span>
+        <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>Course Evaluation</span>
         <Stars value={ratings[lesson.id] || 0} onChange={(v) => setRating(lesson.id, v)} size={22} />
         <span style={{ fontSize: 12, color: "var(--color-text-tertiary)" }}>{ratings[lesson.id] ? `${ratings[lesson.id]}/5` : ""}</span>
       </div>
@@ -1979,8 +1987,8 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
 /* Assessment */
 function LessonSupportLinksV2({ onOpen }) {
   const items = [
-    { id: "tutor", label: "AI 导师", desc: "围绕当前课时提问，获得针对性的概念解释与答疑。" },
-    { id: "lab", label: "音乐创作实验室", desc: "进入扩展实验页面，继续做音高、节奏或谱面探索。" },
+    { id: "tutor", label: "AI Tutor", desc: "Ask about the current lesson and get targeted concept explanations." },
+    { id: "lab", label: "Music Creation Lab", desc: "Open the extended lab page for pitch, rhythm, and notation exploration." },
   ];
 
   return (

@@ -32,22 +32,22 @@ export function normalizeRhythmSubmission(rhythmSubmission) {
 }
 
 export function summarizePianoSubmission(pianoSubmission) {
-  if (!pianoSubmission?.notes?.length) return "未录入钢琴音高。";
+  if (!pianoSubmission?.notes?.length) return "No piano pitches entered.";
   return pianoSubmission.notes.map((item) => `${item.note}${item.octave}`).join(" - ");
 }
 
 export function summarizeRhythmSubmission(rhythmSubmission) {
   const normalizedSubmission = normalizeRhythmSubmission(rhythmSubmission);
-  if (!normalizedSubmission?.measures) return "未填写节奏。";
+  if (!normalizedSubmission?.measures) return "No rhythm entered.";
   return normalizedSubmission.measures
-    .map((measure, index) => `第 ${index + 1} 小节：${(measure || []).map((item) => `${decodeEscapedUnicodeText(item.label)}${item.tieToNext ? "~" : ""}`).join(" / ") || "空"}`)
-    .join("；");
+    .map((measure, index) => `Measure ${index + 1}: ${(measure || []).map((item) => `${decodeEscapedUnicodeText(item.label)}${item.tieToNext ? "~" : ""}`).join(" / ") || "empty"}`)
+    .join("; ");
 }
 
 export function summarizeStaffSubmission(staffSubmission) {
-  if (!staffSubmission?.notes?.length) return "未填写五线谱。";
+  if (!staffSubmission?.notes?.length) return "No staff notation entered.";
   return staffSubmission.notes
     .sort((a, b) => a.slot - b.slot)
-    .map((note) => `位置${note.slot + 1}:${note.pitch}${note.accidental === "sharp" ? "#" : note.accidental === "flat" ? "b" : ""}${note.noteValue ? `(${note.noteValue})` : ""}${note.tieToNext ? "~" : ""}`)
-    .join("；");
+    .map((note) => `Slot ${note.slot + 1}: ${note.pitch}${note.accidental === "sharp" ? "#" : note.accidental === "flat" ? "b" : ""}${note.noteValue ? `(${note.noteValue})` : ""}${note.tieToNext ? "~" : ""}`)
+    .join("; ");
 }

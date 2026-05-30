@@ -2,9 +2,11 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import { installOpenAITutorBridge } from "./openaiTutorBridge.js";
+import { installEnglishDemoShell } from "./englishDemoContent.js";
 import "./styles.css";
 
 installOpenAITutorBridge();
+installEnglishDemoShell();
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -20,8 +22,8 @@ class ErrorBoundary extends React.Component {
     if (this.state.error) {
       return (
         <div className="app-error">
-          <h1>页面加载失败</h1>
-          <p>前端脚本运行时出错，请刷新页面或改用 Chrome / Edge 浏览器。</p>
+          <h1>Page failed to load</h1>
+          <p>The frontend script encountered an error. Refresh the page or use Chrome / Edge.</p>
           <pre>{this.state.error.message}</pre>
         </div>
       );

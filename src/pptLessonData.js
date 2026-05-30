@@ -1,19 +1,25 @@
+import {
+  ENGLISH_DEMO_ENABLED,
+  ENGLISH_LESSON_RUNTIME_META,
+  ENGLISH_PPT_LESSON_DATA,
+} from "./englishDemoContent.js";
+
 const LESSON_RUNTIME_META = {
-  L1: { lab: "https://musiclab.chromeexperiments.com/Sound-Waves/", labN: "声波实验", ex: "pitch" },
-  L2: { lab: "https://musiclab.chromeexperiments.com/Harmonics/", labN: "泛音实验", ex: "interval" },
-  L3: { lab: "https://musiclab.chromeexperiments.com/Piano-Roll/", labN: "钢琴卷帘", ex: "notation" },
-  L4: { lab: "https://musiclab.chromeexperiments.com/Song-Maker/", labN: "歌曲创作器", ex: "notation" },
-  L5: { lab: "https://musiclab.chromeexperiments.com/Melody-Maker/", labN: "旋律创作器", ex: "interval" },
-  L6: { lab: "https://musiclab.chromeexperiments.com/Arpeggios/", labN: "琶音实验", ex: "chord" },
-  L7: { lab: "https://musiclab.chromeexperiments.com/Strings/", labN: "弦乐实验", ex: "interval" },
-  L8: { lab: "https://musiclab.chromeexperiments.com/Shared-Piano/", labN: "共享钢琴", ex: "terms" },
-  L9: { lab: "https://musiclab.chromeexperiments.com/Rhythm/", labN: "节奏实验", ex: "rhythm" },
-  L10: { lab: "https://musiclab.chromeexperiments.com/Song-Maker/", labN: "歌曲创作器", ex: "rhythm" },
-  L11: { lab: "https://musiclab.chromeexperiments.com/Rhythm/", labN: "节奏实验", ex: "rhythm" },
-  L12: { lab: "https://musiclab.chromeexperiments.com/Song-Maker/", labN: "歌曲创作器", ex: "chord" },
+  L1: { lab: "https://musiclab.chromeexperiments.com/Sound-Waves/", labN: ENGLISH_LESSON_RUNTIME_META.L1.labN, ex: "pitch" },
+  L2: { lab: "https://musiclab.chromeexperiments.com/Harmonics/", labN: ENGLISH_LESSON_RUNTIME_META.L2.labN, ex: "interval" },
+  L3: { lab: "https://musiclab.chromeexperiments.com/Piano-Roll/", labN: ENGLISH_LESSON_RUNTIME_META.L3.labN, ex: "notation" },
+  L4: { lab: "https://musiclab.chromeexperiments.com/Song-Maker/", labN: ENGLISH_LESSON_RUNTIME_META.L4.labN, ex: "notation" },
+  L5: { lab: "https://musiclab.chromeexperiments.com/Melody-Maker/", labN: ENGLISH_LESSON_RUNTIME_META.L5.labN, ex: "interval" },
+  L6: { lab: "https://musiclab.chromeexperiments.com/Arpeggios/", labN: ENGLISH_LESSON_RUNTIME_META.L6.labN, ex: "chord" },
+  L7: { lab: "https://musiclab.chromeexperiments.com/Strings/", labN: ENGLISH_LESSON_RUNTIME_META.L7.labN, ex: "interval" },
+  L8: { lab: "https://musiclab.chromeexperiments.com/Shared-Piano/", labN: ENGLISH_LESSON_RUNTIME_META.L8.labN, ex: "terms" },
+  L9: { lab: "https://musiclab.chromeexperiments.com/Rhythm/", labN: ENGLISH_LESSON_RUNTIME_META.L9.labN, ex: "rhythm" },
+  L10: { lab: "https://musiclab.chromeexperiments.com/Song-Maker/", labN: ENGLISH_LESSON_RUNTIME_META.L10.labN, ex: "rhythm" },
+  L11: { lab: "https://musiclab.chromeexperiments.com/Rhythm/", labN: ENGLISH_LESSON_RUNTIME_META.L11.labN, ex: "rhythm" },
+  L12: { lab: "https://musiclab.chromeexperiments.com/Song-Maker/", labN: ENGLISH_LESSON_RUNTIME_META.L12.labN, ex: "chord" },
 };
 
-export const PPT_LESSON_DATA = {
+const CHINESE_PPT_LESSON_DATA = {
   L1: {
     lessonId: "L1",
     lessonNumber: 1,
@@ -460,10 +466,12 @@ export const PPT_LESSON_DATA = {
   },
 };
 
+export const PPT_LESSON_DATA = ENGLISH_DEMO_ENABLED ? ENGLISH_PPT_LESSON_DATA : CHINESE_PPT_LESSON_DATA;
+
 export const PPT_CHAPTERS = [
   {
     id: "ch1",
-    t: "第一章：乐音体系",
+    t: ENGLISH_DEMO_ENABLED ? "Chapter 1: Musical Sound System" : "第一章：乐音体系",
     c: "#534AB7",
     bg: "#EEEDFE",
     ls: ["L1", "L2"].map((id) => {
@@ -473,7 +481,7 @@ export const PPT_CHAPTERS = [
   },
   {
     id: "ch2",
-    t: "第二章：记谱法",
+    t: ENGLISH_DEMO_ENABLED ? "Chapter 2: Notation" : "第二章：记谱法",
     c: "#0F6E56",
     bg: "#E1F5EE",
     ls: ["L3", "L4"].map((id) => {
@@ -483,7 +491,7 @@ export const PPT_CHAPTERS = [
   },
   {
     id: "ch3",
-    t: "第三章：装饰音与演奏符号",
+    t: ENGLISH_DEMO_ENABLED ? "Chapter 3: Ornaments and Performance Symbols" : "第三章：装饰音与演奏符号",
     c: "#993556",
     bg: "#FBEAF0",
     ls: ["L5", "L6"].map((id) => {
@@ -493,7 +501,7 @@ export const PPT_CHAPTERS = [
   },
   {
     id: "ch4",
-    t: "第四章：略写记号与音乐术语",
+    t: ENGLISH_DEMO_ENABLED ? "Chapter 4: Abbreviations and Musical Terms" : "第四章：略写记号与音乐术语",
     c: "#854F0B",
     bg: "#FAEEDA",
     ls: ["L7", "L8"].map((id) => {
@@ -503,7 +511,7 @@ export const PPT_CHAPTERS = [
   },
   {
     id: "ch5",
-    t: "第五章：节奏与节拍",
+    t: ENGLISH_DEMO_ENABLED ? "Chapter 5: Rhythm and Meter" : "第五章：节奏与节拍",
     c: "#993C1D",
     bg: "#FAECE7",
     ls: ["L9", "L10", "L11", "L12"].map((id) => {

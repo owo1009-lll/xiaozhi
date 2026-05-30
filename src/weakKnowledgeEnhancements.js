@@ -1,4 +1,6 @@
-export const WEAK_KNOWLEDGE_ENHANCEMENTS = {
+import { ENGLISH_DEMO_ENABLED, ENGLISH_WEAK_KNOWLEDGE_ENHANCEMENTS } from "./englishDemoContent.js";
+
+const CHINESE_WEAK_KNOWLEDGE_ENHANCEMENTS = {
   L1_K1_pitchProperties: {
     explanation:
       "先把四种性质拆开记：音高看频率、音值看持续时间、音量看振幅、音色看发声体与泛音。做题时不要把“响不响”和“高不高”混在一起。",
@@ -844,6 +846,10 @@ export const WEAK_KNOWLEDGE_ENHANCEMENTS = {
     ],
   },
 };
+
+export const WEAK_KNOWLEDGE_ENHANCEMENTS = ENGLISH_DEMO_ENABLED
+  ? ENGLISH_WEAK_KNOWLEDGE_ENHANCEMENTS
+  : CHINESE_WEAK_KNOWLEDGE_ENHANCEMENTS;
 
 export function getWeakEnhancementsForLesson(knowledgePointIds = []) {
   return knowledgePointIds

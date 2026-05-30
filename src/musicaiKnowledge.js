@@ -1,3 +1,5 @@
+import { ENGLISH_DEMO_ENABLED, ENGLISH_KNOWLEDGE_POINTS } from "./englishDemoContent.js";
+
 export const BKT_PARAMS = {
   pL0: 0.2,
   pT: 0.1,
@@ -6,7 +8,7 @@ export const BKT_PARAMS = {
   masteryThreshold: 0.8,
 };
 
-export const KNOWLEDGE_POINTS = [
+const CHINESE_KNOWLEDGE_POINTS = [
     {
         "id":  "L1_K1_pitchProperties",
         "lessonId":  "L1",
@@ -1084,6 +1086,8 @@ export const KNOWLEDGE_POINTS = [
                         ]
     }
 ];
+
+export const KNOWLEDGE_POINTS = ENGLISH_DEMO_ENABLED ? ENGLISH_KNOWLEDGE_POINTS : CHINESE_KNOWLEDGE_POINTS;
 
 export const KNOWLEDGE_POINTS_BY_ID = Object.fromEntries(KNOWLEDGE_POINTS.map((item) => [item.id, item]));
 export const KNOWLEDGE_POINTS_BY_LESSON = KNOWLEDGE_POINTS.reduce((acc, item) => {

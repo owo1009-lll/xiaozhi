@@ -29,19 +29,19 @@ function PitchExercise({ onScore }) {
     const newT = total + 1;
     setCorrect(newC);
     setTotal(newT);
-    setFb({ ok, msg: ok ? `正确，答案是 ${NT[target]}` : `错误，正确答案是 ${NT[target]}` });
+    setFb({ ok, msg: ok ? `Correct. The answer is ${NT[target]}.` : `Incorrect. The correct answer is ${NT[target]}.` });
     onScore?.(Math.min(100, Math.round((newC / newT) * 100)));
   };
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-        <Tag>音高识别</Tag>
+        <Tag>Pitch Identification</Tag>
         <Tag color="#085041" bg="#E1F5EE">{correct}/{total}</Tag>
       </div>
       {target !== null && (
         <div style={{ textAlign: "center", padding: 14, background: "var(--color-background-secondary)", borderRadius: 8, marginBottom: 10 }}>
-          <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>找到这个音</div>
+          <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>Find this note</div>
           <div style={{ fontSize: 28, fontWeight: 700, color: "#534AB7" }}>{NT[target]}</div>
         </div>
       )}
@@ -91,24 +91,24 @@ function IntervalExercise({ onScore }) {
     const newT = total + 1;
     setCorrect(newC);
     setTotal(newT);
-    setFb({ ok, msg: ok ? `正确，${q.iv.n}` : `错误，正确答案是 ${q.iv.n}` });
+    setFb({ ok, msg: ok ? `Correct: ${q.iv.n}.` : `Incorrect. The correct answer is ${q.iv.n}.` });
     onScore?.(Math.min(100, Math.round((newC / newT) * 100)));
   };
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-        <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>根音：<strong>{q && q.root}</strong></span>
+        <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>Root: <strong>{q && q.root}</strong></span>
         <Tag color="#085041" bg="#E1F5EE">{correct}/{total}</Tag>
       </div>
       <div style={{ textAlign: "center", marginBottom: 10 }}>
-        <button onClick={hear} style={{ padding: "8px 20px", borderRadius: 14, background: "#534AB7", color: "#fff", border: "none", fontSize: 13, cursor: "pointer" }}>播放音程</button>
+        <button onClick={hear} style={{ padding: "8px 20px", borderRadius: 14, background: "#534AB7", color: "#fff", border: "none", fontSize: 13, cursor: "pointer" }}>Play Interval</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(92px, 1fr))", gap: 6 }}>
         {INTERVALS.map((iv) => (
           <button key={iv.n} onClick={() => answer(iv.n)} disabled={!!fb} style={{ padding: "7px 4px", borderRadius: 6, border: "1px solid var(--color-border-tertiary)", background: "#fff", cursor: fb ? "default" : "pointer", fontSize: 12, fontWeight: 500, opacity: fb ? 0.6 : 1 }}>
             {iv.n}
-            <div style={{ fontSize: 10, color: "var(--color-text-tertiary)" }}>{iv.s} 半音</div>
+            <div style={{ fontSize: 10, color: "var(--color-text-tertiary)" }}>{iv.s} semitones</div>
           </button>
         ))}
       </div>
@@ -146,18 +146,18 @@ function ChordExercise({ onScore }) {
     const newT = total + 1;
     setCorrect(newC);
     setTotal(newT);
-    setFb({ ok, msg: ok ? `正确，${q.ch.n}` : `错误，正确答案是 ${q.ch.n}` });
+    setFb({ ok, msg: ok ? `Correct: ${q.ch.n}.` : `Incorrect. The correct answer is ${q.ch.n}.` });
     onScore?.(Math.min(100, Math.round((newC / newT) * 100)));
   };
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-        <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>根音：<strong>{q && q.root}</strong></span>
+        <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>Root: <strong>{q && q.root}</strong></span>
         <Tag color="#0C447C" bg="#E6F1FB">{correct}/{total}</Tag>
       </div>
       <div style={{ textAlign: "center", marginBottom: 10 }}>
-        <button onClick={playChord} style={{ padding: "8px 20px", borderRadius: 14, background: "#185FA5", color: "#fff", border: "none", fontSize: 13, cursor: "pointer" }}>播放和弦</button>
+        <button onClick={playChord} style={{ padding: "8px 20px", borderRadius: 14, background: "#185FA5", color: "#fff", border: "none", fontSize: 13, cursor: "pointer" }}>Play Chord</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 6 }}>
         {CHORDS.map((ch) => (
@@ -199,14 +199,14 @@ function NotationExercise({ onScore }) {
     const newT = total + 1;
     setCorrect(newC);
     setTotal(newT);
-    setFb({ ok, msg: ok ? `正确，${note}` : `错误，正确答案是 ${note}` });
+    setFb({ ok, msg: ok ? `Correct: ${note}.` : `Incorrect. The correct answer is ${note}.` });
     onScore?.(Math.min(100, Math.round((newC / newT) * 100)));
   };
 
   return (
     <div>
       <div style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center" }}>
-        {["高音谱号", "低音谱号"].map((label, i) => (
+        {["Treble Clef", "Bass Clef"].map((label, i) => (
           <button key={i} onClick={() => setClef(i)} style={{ flex: 1, padding: 6, borderRadius: 6, fontSize: 12, cursor: "pointer", background: i === clef ? "#FAEEDA" : "transparent", border: `1px solid ${i === clef ? "#EF9F27" : "var(--color-border-tertiary)"}` }}>{label}</button>
         ))}
         <Tag color="#633806" bg="#FAEEDA">{correct}/{total}</Tag>
@@ -255,7 +255,7 @@ function TermsExercise({ onScore }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-        <Tag color="#3C3489" bg="#EEEDFE">术语卡片</Tag>
+        <Tag color="#3C3489" bg="#EEEDFE">Term Cards</Tag>
         <Tag color="#085041" bg="#E1F5EE">{idx + 1}/{TERMS.length}</Tag>
       </div>
       <div onClick={() => setShow(true)} style={{ background: "var(--color-background-secondary)", borderRadius: 8, padding: 28, textAlign: "center", cursor: "pointer", marginBottom: 8, minHeight: 80 }}>
@@ -266,13 +266,13 @@ function TermsExercise({ onScore }) {
             <div style={{ fontSize: 13, color: "var(--color-text-secondary)", marginTop: 4 }}>{term.m}</div>
           </div>
         ) : (
-          <div style={{ fontSize: 12, color: "var(--color-text-tertiary)", marginTop: 8 }}>点击翻转查看答案</div>
+          <div style={{ fontSize: 12, color: "var(--color-text-tertiary)", marginTop: 8 }}>Tap to reveal the answer</div>
         )}
       </div>
       {show ? (
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => next(false)} style={{ flex: 1, padding: 9, borderRadius: 6, border: "1px solid #F09595", background: "#FCEBEB", color: "#791F1F", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>不熟悉</button>
-          <button onClick={() => next(true)} style={{ flex: 1, padding: 9, borderRadius: 6, border: "1px solid #5DCAA5", background: "#E1F5EE", color: "#085041", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>已掌握</button>
+          <button onClick={() => next(false)} style={{ flex: 1, padding: 9, borderRadius: 6, border: "1px solid #F09595", background: "#FCEBEB", color: "#791F1F", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Still Unsure</button>
+          <button onClick={() => next(true)} style={{ flex: 1, padding: 9, borderRadius: 6, border: "1px solid #5DCAA5", background: "#E1F5EE", color: "#085041", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Mastered</button>
         </div>
       ) : null}
     </div>
@@ -317,7 +317,7 @@ function RhythmExercise({ onScore }) {
     const newT = total + 1;
     setCorrect(newC);
     setTotal(newT);
-    setFb({ ok, msg: ok ? "节奏正确" : "节奏不匹配，请再听一遍" });
+    setFb({ ok, msg: ok ? "Rhythm correct." : "The rhythm does not match. Listen again." });
     onScore?.(Math.min(100, Math.round((newC / newT) * 100)));
   };
 
@@ -331,22 +331,22 @@ function RhythmExercise({ onScore }) {
       </div>
       <div style={{ textAlign: "center", marginBottom: 10 }}>
         <button onClick={doPlay} disabled={playing} style={{ padding: "7px 20px", borderRadius: 14, background: "#993C1D", color: "#fff", border: "none", fontSize: 13, cursor: playing ? "default" : "pointer", opacity: playing ? 0.7 : 1 }}>
-          {playing ? "播放中..." : "听一遍"}
+          {playing ? "Playing..." : "Listen Once"}
         </button>
       </div>
-      <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 4 }}>参考：</div>
+      <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 4 }}>Reference:</div>
       <div style={{ display: "flex", gap: 3, marginBottom: 10 }}>
         {pat.p.map((v, i) => <div key={i} style={{ flex: 1, height: 28, borderRadius: 4, background: beat === i ? "#D85A30" : v ? "#F0997B" : "var(--color-background-tertiary)", transition: "all 0.1s" }} />)}
       </div>
-      <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 4 }}>你的点击：</div>
+      <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 4 }}>Your taps:</div>
       <div style={{ display: "flex", gap: 3, marginBottom: 10 }}>
         {Array.from({ length: 8 }, (_, i) => (
           <div key={i} onClick={() => { if (!playing) setTaps((prev) => { const next = [...prev]; next[i] = next[i] ? 0 : 1; return next; }); }} style={{ flex: 1, height: 28, borderRadius: 4, cursor: "pointer", background: taps[i] ? "#534AB7" : "var(--color-background-tertiary)", transition: "all 0.15s" }} />
         ))}
       </div>
       <div style={{ display: "flex", gap: 5 }}>
-        <button onClick={check} disabled={playing} style={{ flex: 1, padding: 7, borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "#fff", cursor: "pointer", fontSize: 12 }}>检查</button>
-        <button onClick={() => { setPi((prev) => (prev + 1) % RHYTHMS.length); setTaps([]); setFb(null); }} style={{ flex: 1, padding: 7, borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "#fff", cursor: "pointer", fontSize: 12 }}>下一个</button>
+        <button onClick={check} disabled={playing} style={{ flex: 1, padding: 7, borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "#fff", cursor: "pointer", fontSize: 12 }}>Check</button>
+        <button onClick={() => { setPi((prev) => (prev + 1) % RHYTHMS.length); setTaps([]); setFb(null); }} style={{ flex: 1, padding: 7, borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "#fff", cursor: "pointer", fontSize: 12 }}>Next</button>
       </div>
       {fb ? <FeedbackBar ok={fb.ok} msg={fb.msg} /> : null}
     </div>
@@ -364,32 +364,32 @@ const EXERCISE_COMPONENTS = {
 
 /* Data */
 const INTERVALS = [
-  { n: "\u5c0f\u4e8c\u5ea6", s: 1 }, { n: "\u5927\u4e8c\u5ea6", s: 2 }, { n: "\u5c0f\u4e09\u5ea6", s: 3 }, { n: "\u5927\u4e09\u5ea6", s: 4 },
-  { n: "\u7eaf\u56db\u5ea6", s: 5 }, { n: "\u4e09\u5168\u97f3", s: 6 }, { n: "\u7eaf\u4e94\u5ea6", s: 7 }, { n: "\u5c0f\u516d\u5ea6", s: 8 },
-  { n: "\u5927\u516d\u5ea6", s: 9 }, { n: "\u5c0f\u4e03\u5ea6", s: 10 }, { n: "\u5927\u4e03\u5ea6", s: 11 }, { n: "\u7eaf\u516b\u5ea6", s: 12 },
+  { n: "Minor 2nd", s: 1 }, { n: "Major 2nd", s: 2 }, { n: "Minor 3rd", s: 3 }, { n: "Major 3rd", s: 4 },
+  { n: "Perfect 4th", s: 5 }, { n: "Tritone", s: 6 }, { n: "Perfect 5th", s: 7 }, { n: "Minor 6th", s: 8 },
+  { n: "Major 6th", s: 9 }, { n: "Minor 7th", s: 10 }, { n: "Major 7th", s: 11 }, { n: "Perfect Octave", s: 12 },
 ];
 const CHORDS = [
-  { n: "\u5927\u4e09\u548c\u5f26", iv: [0,4,7] }, { n: "\u5c0f\u4e09\u548c\u5f26", iv: [0,3,7] }, { n: "\u51cf\u4e09\u548c\u5f26", iv: [0,3,6] },
-  { n: "\u589e\u4e09\u548c\u5f26", iv: [0,4,8] }, { n: "\u5c5e\u4e03\u548c\u5f26", iv: [0,4,7,10] }, { n: "\u5c0f\u4e03\u548c\u5f26", iv: [0,3,7,10] },
+  { n: "Major Triad", iv: [0,4,7] }, { n: "Minor Triad", iv: [0,3,7] }, { n: "Diminished Triad", iv: [0,3,6] },
+  { n: "Augmented Triad", iv: [0,4,8] }, { n: "Dominant Seventh", iv: [0,4,7,10] }, { n: "Minor Seventh", iv: [0,3,7,10] },
 ];
 const TERMS = [
-  { t: "Adagio", c: "\u67d4\u677f", m: "\u7f13\u6162\u5730\uff08\u7ea6 66-76 BPM\uff09" },
-  { t: "Allegro", c: "\u5feb\u677f", m: "\u5feb\u901f\u6d3b\u6cfc\u5730\uff08\u7ea6 120-156 BPM\uff09" },
-  { t: "Forte (f)", c: "\u5f3a", m: "\u5927\u58f0\u6f14\u594f" },
-  { t: "Piano (p)", c: "\u5f31", m: "\u8f7b\u67d4\u6f14\u594f" },
-  { t: "Crescendo", c: "\u6e10\u5f3a", m: "\u9010\u6e10\u589e\u5927\u97f3\u91cf" },
-  { t: "Legato", c: "\u8fde\u594f", m: "\u97f3\u7b26\u4e4b\u95f4\u5e73\u6ed1\u8fde\u63a5" },
-  { t: "Staccato", c: "\u65ad\u594f", m: "\u97f3\u7b26\u77ed\u4fc3\u5206\u5f00" },
-  { t: "D.C.", c: "\u4ece\u5934\u53cd\u590d", m: "Da Capo\uff0c\u4ece\u4e50\u66f2\u5f00\u5934\u91cd\u65b0\u6f14\u594f" },
-  { t: "Coda", c: "\u5c3e\u58f0", m: "\u8df3\u81f3\u7ed3\u5c3e\u6bb5\u843d" },
-  { t: "Ritardando", c: "\u6e10\u6162", m: "\u9010\u6e10\u653e\u6162\u901f\u5ea6" },
+  { t: "Adagio", c: "Slow tempo", m: "Slowly, about 66-76 BPM" },
+  { t: "Allegro", c: "Fast tempo", m: "Fast and lively, about 120-156 BPM" },
+  { t: "Forte (f)", c: "Loud", m: "Play loudly" },
+  { t: "Piano (p)", c: "Soft", m: "Play softly" },
+  { t: "Crescendo", c: "Gradually louder", m: "Increase volume over time" },
+  { t: "Legato", c: "Connected", m: "Connect notes smoothly" },
+  { t: "Staccato", c: "Detached", m: "Separate notes shortly" },
+  { t: "D.C.", c: "Repeat from the beginning", m: "Da Capo means return to the start" },
+  { t: "Coda", c: "Ending section", m: "Jump to the closing passage" },
+  { t: "Ritardando", c: "Gradually slower", m: "Slow down over time" },
 ];
 const RHYTHMS = [
-  { n: "\u56db\u5206\u97f3\u7b26", p: [1,0,1,0,1,0,1,0] },
-  { n: "\u516b\u5206\u97f3\u7b26", p: [1,1,1,1,1,1,1,1] },
-  { n: "\u9644\u70b9\u56db\u5206", p: [1,0,0,1,0,0,1,0] },
-  { n: "\u5207\u5206\u8282\u594f", p: [1,0,1,1,0,1,1,0] },
-  { n: "\u7efc\u5408\u8282\u594f", p: [1,1,0,1,0,1,1,0] },
+  { n: "Quarter-note pulse", p: [1,0,1,0,1,0,1,0] },
+  { n: "Eighth-note pulse", p: [1,1,1,1,1,1,1,1] },
+  { n: "Dotted-quarter pattern", p: [1,0,0,1,0,0,1,0] },
+  { n: "Syncopated rhythm", p: [1,0,1,1,0,1,1,0] },
+  { n: "Mixed rhythm", p: [1,1,0,1,0,1,1,0] },
 ];
 
 export { EXERCISE_COMPONENTS };
