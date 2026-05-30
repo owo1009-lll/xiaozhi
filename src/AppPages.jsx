@@ -109,15 +109,15 @@ function MusicCreatorV2() {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 6 }}>
         <div style={{ display: "flex", gap: 6 }}>
-          <button onClick={playSeq} style={{ padding: "6px 14px", borderRadius: 8, background: isPlaying ? "#b91c1c" : "#111111", color: "#ffffff", border: "none", cursor: "pointer" }}>
+          <button onClick={playSeq} style={{ padding: "6px 14px", borderRadius: 8, background: isPlaying ? "#c0392b" : "var(--gradient-accent)", color: isPlaying ? "#ffffff" : "#1a1206", border: "none", fontWeight: 600, cursor: "pointer" }}>
             {isPlaying ? "Stop" : "Play"}
           </button>
-          <button onClick={() => setGrid(Array.from({ length: ROWS }, () => Array(COLS).fill(false)))} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>Clear</button>
+          <button onClick={() => setGrid(Array.from({ length: ROWS }, () => Array(COLS).fill(false)))} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)", cursor: "pointer" }}>Clear</button>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <label style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>BPM: {bpm}</label>
           <input type="range" min="60" max="200" step="5" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} style={{ width: 80 }} />
-          <select value={timbre} onChange={(e) => setTimbre(e.target.value)} style={{ fontSize: 11, padding: "4px 6px", borderRadius: 6, border: "1px solid rgba(17,17,17,0.12)" }}>
+          <select value={timbre} onChange={(e) => setTimbre(e.target.value)} style={{ fontSize: 11, padding: "4px 6px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.14)" }}>
             <option value="piano">Piano</option>
             <option value="sine">Sine</option>
             <option value="triangle">Triangle</option>
@@ -139,8 +139,8 @@ function MusicCreatorV2() {
                     height: 22,
                     borderRadius: 3,
                     cursor: "pointer",
-                    background: grid[r][c] ? (col === c ? "#555555" : "#111111") : col === c ? "rgba(17,17,17,0.12)" : c % 4 === 0 ? "#f3f3f3" : "#ffffff",
-                    border: `1px solid ${grid[r][c] ? "#111111" : "rgba(17,17,17,0.08)"}`,
+                    background: grid[r][c] ? (col === c ? "#fff6df" : "#d4b15e") : col === c ? "rgba(212,177,94,0.18)" : c % 4 === 0 ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.03)",
+                    border: `1px solid ${grid[r][c] ? "#b8902f" : "rgba(255,255,255,0.06)"}`,
                   }}
                 />
               ))}
@@ -223,9 +223,9 @@ function ModernHomePage({ setPage, scores }) {
               <div style={{ minWidth: 160 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "var(--color-text-secondary)" }}>
                   <span>Progress</span>
-                  <strong style={{ color: "#111" }}>{ca}%</strong>
+                  <strong style={{ color: "#f0d68a" }}>{ca}%</strong>
                 </div>
-                <PBar v={ca} max={100} color="#171717" />
+                <PBar v={ca} max={100} color="var(--gradient-accent)" />
               </div>
             </div>
 
@@ -236,7 +236,7 @@ function ModernHomePage({ setPage, scores }) {
                     <span className="lesson-no">{`Lesson ${String(l.n).padStart(2, "0")}`}</span>
                     <span className="lesson-status">{(scores[l.id] || 0) > 0 ? `Completed ${scores[l.id]}%` : "Not started"}</span>
                   </div>
-                  <div style={{ fontSize: 17, fontWeight: 700, color: "#111", marginBottom: 8, lineHeight: 1.45 }}>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: "#f4efe3", marginBottom: 8, lineHeight: 1.45 }}>
                     {l.t}
                   </div>
                 </button>

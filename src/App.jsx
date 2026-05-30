@@ -39,7 +39,7 @@ export default function App() {
     <div className="page-shell" style={{ fontFamily: "var(--font-sans, -apple-system, sans-serif)" }}>
       <div style={{ width: sideOpen ? 280 : 0, overflow: "hidden", transition: "width 0.25s", flexShrink: 0 }}>
         <div className="sidebar-shell">
-          <div onClick={() => { setPage("home"); setSideOpen(false); }} style={{ padding: "10px 12px", borderRadius: 14, cursor: "pointer", fontSize: 13, fontWeight: 700, marginBottom: 8, color: page === "home" ? "#111111" : "var(--color-text-primary)", background: page === "home" ? "rgba(17,17,17,0.08)" : "transparent" }}>
+          <div onClick={() => { setPage("home"); setSideOpen(false); }} style={{ padding: "10px 12px", borderRadius: 14, cursor: "pointer", fontSize: 13, fontWeight: 700, marginBottom: 8, color: page === "home" ? "#f0d68a" : "var(--color-text-primary)", background: page === "home" ? "rgba(212,177,94,0.14)" : "transparent" }}>
             Home
           </div>
           {CHAPTERS.map((ch) => (
@@ -49,7 +49,7 @@ export default function App() {
                 <div
                   key={l.id}
                   onClick={() => { setPage(l.id); setSideOpen(false); }}
-                  style={{ padding: "9px 12px", borderRadius: 14, cursor: "pointer", fontSize: 12, display: "flex", justifyContent: "space-between", background: page === l.id ? "rgba(17,17,17,0.08)" : "transparent", color: page === l.id ? "var(--color-text-primary)" : "var(--color-text-secondary)", marginBottom: 2 }}
+                  style={{ padding: "9px 12px", borderRadius: 14, cursor: "pointer", fontSize: 12, display: "flex", justifyContent: "space-between", background: page === l.id ? "rgba(212,177,94,0.14)" : "transparent", color: page === l.id ? "#f0d68a" : "var(--color-text-secondary)", marginBottom: 2 }}
                 >
                   <span>{`Lesson ${l.n} ${l.t.length > 18 ? `${l.t.slice(0, 18)}...` : l.t}`}</span>
                   {(scores[l.id] || 0) > 0 && <span style={{ fontSize: 9, color: ch.c, fontWeight: 600 }}>{scores[l.id]}%</span>}
@@ -57,10 +57,10 @@ export default function App() {
               ))}
             </div>
           ))}
-          <div onClick={() => { setPage("assessment"); setSideOpen(false); }} style={{ padding: "10px 12px", borderRadius: 14, cursor: "pointer", fontSize: 12, fontWeight: 600, marginTop: 8, color: page === "assessment" ? "#111111" : "var(--color-text-secondary)", background: page === "assessment" ? "rgba(17,17,17,0.08)" : "transparent" }}>
+          <div onClick={() => { setPage("assessment"); setSideOpen(false); }} style={{ padding: "10px 12px", borderRadius: 14, cursor: "pointer", fontSize: 12, fontWeight: 600, marginTop: 8, color: page === "assessment" ? "#f0d68a" : "var(--color-text-secondary)", background: page === "assessment" ? "rgba(212,177,94,0.14)" : "transparent" }}>
             Assessment
           </div>
-          <div onClick={() => { setPage("teacher"); setSideOpen(false); }} style={{ padding: "10px 12px", borderRadius: 14, cursor: "pointer", fontSize: 12, fontWeight: 600, marginTop: 6, color: page === "teacher" ? "#111111" : "var(--color-text-secondary)", background: page === "teacher" ? "rgba(17,17,17,0.08)" : "transparent" }}>
+          <div onClick={() => { setPage("teacher"); setSideOpen(false); }} style={{ padding: "10px 12px", borderRadius: 14, cursor: "pointer", fontSize: 12, fontWeight: 600, marginTop: 6, color: page === "teacher" ? "#f0d68a" : "var(--color-text-secondary)", background: page === "teacher" ? "rgba(212,177,94,0.14)" : "transparent" }}>
             Teacher Dashboard
           </div>
         </div>
@@ -70,12 +70,12 @@ export default function App() {
         <header className="topbar-shell">
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button onClick={() => setSideOpen(!sideOpen)} style={{ padding: "6px 10px", borderRadius: 12, border: "1px solid var(--color-border-tertiary)", background: "transparent", cursor: "pointer", fontSize: 14 }}>Menu</button>
-            <div style={{ width: 30, height: 30, borderRadius: 10, background: "linear-gradient(135deg,#111,#434343)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 700 }}>M</div>
+            <div style={{ width: 30, height: 30, borderRadius: 10, background: "linear-gradient(135deg,#f0d68a,#b8902f)", display: "flex", alignItems: "center", justifyContent: "center", color: "#1a1206", fontSize: 12, fontWeight: 800, boxShadow: "0 4px 12px rgba(212,177,94,0.35)" }}>M</div>
             <span style={{ fontSize: 15, fontWeight: 700 }}>MusicAI</span>
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {currentLesson && <Tag color="#3C3489" bg="#EEEDFE">{`Lesson ${currentLesson.n}`}</Tag>}
-            {page === "teacher" && <Tag color="#111111" bg="#F3F4F6">Teacher Dashboard</Tag>}
+            {currentLesson && <Tag color="#f0d68a" bg="rgba(212,177,94,0.14)">{`Lesson ${currentLesson.n}`}</Tag>}
+            {page === "teacher" && <Tag color="#f0d68a" bg="rgba(212,177,94,0.14)">Teacher Dashboard</Tag>}
             <button onClick={() => setPage("assessment")} style={{ padding: "6px 10px", borderRadius: 12, border: "1px solid var(--color-border-tertiary)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--color-text-secondary)" }}>Assessment</button>
             <button onClick={() => setPage("teacher")} style={{ padding: "6px 10px", borderRadius: 12, border: "1px solid var(--color-border-tertiary)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--color-text-secondary)" }}>Teacher</button>
             <button onClick={() => setPage("home")} style={{ padding: "6px 10px", borderRadius: 12, border: "1px solid var(--color-border-tertiary)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--color-text-secondary)" }}>Home</button>
@@ -93,7 +93,7 @@ export default function App() {
           {currentLesson && <LessonView lesson={currentLesson} ratings={ratings} setRating={handleSetRating} scores={scores} setScore={handleSetScore} />}
         </main>
 
-        <footer style={{ textAlign: "center", padding: "16px 14px", borderTop: "0.5px solid var(--color-border-tertiary)", fontSize: 0, color: "var(--color-text-tertiary)", background: "rgba(255,255,255,0.56)" }}>
+        <footer style={{ textAlign: "center", padding: "16px 14px", borderTop: "0.5px solid var(--color-border-tertiary)", fontSize: 0, color: "var(--color-text-tertiary)", background: "rgba(14,12,20,0.5)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, flexWrap: "wrap", marginTop: 0 }}>
             <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>Contributor: Guan Xingzhi</span>
             <img src="/images/ucsi-logo-user.jpg" alt="UCSI University" style={{ height: 42, width: "auto", objectFit: "contain", display: "block" }} />

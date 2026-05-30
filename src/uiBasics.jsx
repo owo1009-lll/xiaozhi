@@ -1,4 +1,4 @@
-export function Tag({ children, color = "#111111", bg = "#F5F5F5" }) {
+export function Tag({ children, color = "#f0d68a", bg = "rgba(212,177,94,0.12)" }) {
   return (
     <span
       style={{
@@ -10,7 +10,7 @@ export function Tag({ children, color = "#111111", bg = "#F5F5F5" }) {
         fontWeight: 600,
         color,
         background: bg,
-        border: "1px solid rgba(17,17,17,0.08)",
+        border: "1px solid rgba(255,255,255,0.1)",
       }}
     >
       {children}
@@ -18,7 +18,7 @@ export function Tag({ children, color = "#111111", bg = "#F5F5F5" }) {
   );
 }
 
-export function PBar({ v = 0, max = 100, color = "#111111" }) {
+export function PBar({ v = 0, max = 100, color = "var(--gradient-accent)" }) {
   const safeMax = Math.max(1, Number(max) || 100);
   const percent = Math.max(0, Math.min(100, ((Number(v) || 0) / safeMax) * 100));
   return (
@@ -27,7 +27,7 @@ export function PBar({ v = 0, max = 100, color = "#111111" }) {
         width: "100%",
         height: 8,
         borderRadius: 999,
-        background: "rgba(17,17,17,0.08)",
+        background: "rgba(255,255,255,0.1)",
         overflow: "hidden",
       }}
     >
@@ -37,6 +37,7 @@ export function PBar({ v = 0, max = 100, color = "#111111" }) {
           height: "100%",
           borderRadius: 999,
           background: color,
+          boxShadow: "0 0 12px rgba(212,177,94,0.4)",
           transition: "width 0.25s ease",
         }}
       />
@@ -62,7 +63,7 @@ export function Stars({ value = 0, onChange, size = 16 }) {
               cursor: onChange ? "pointer" : "default",
               fontSize: size,
               lineHeight: 1,
-              color: active ? "#f59e0b" : "rgba(17,17,17,0.18)",
+              color: active ? "#e6c878" : "rgba(255,255,255,0.22)",
             }}
             aria-label={`Rating ${star} star`}
           >
@@ -84,12 +85,12 @@ export function FeedbackBar({ ok, msg, onNext }) {
         alignItems: "center",
         justifyContent: "space-between",
         gap: 12,
-        background: ok ? "#EAF8F1" : "#FDECEC",
-        border: `1px solid ${ok ? "#9AD9BC" : "#F1B5B5"}`,
+        background: ok ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
+        border: `1px solid ${ok ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}`,
         marginTop: 10,
       }}
     >
-      <span style={{ fontSize: 12, color: ok ? "#0F6E56" : "#B42318", fontWeight: 600 }}>
+      <span style={{ fontSize: 12, color: ok ? "#7ee2a8" : "#f6a6a6", fontWeight: 600 }}>
         {ok ? "Correct: " : "Needs revision: "}
         {msg}
       </span>
@@ -97,7 +98,7 @@ export function FeedbackBar({ ok, msg, onNext }) {
         <button
           type="button"
           onClick={onNext}
-          style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#fff", cursor: "pointer", fontSize: 12 }}
+          style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)", cursor: "pointer", fontSize: 12 }}
         >
           Next Question
         </button>
@@ -134,7 +135,7 @@ export function LessonCharts({ lessonId }) {
           {bars.map((value, index) => (
             <div key={`${lessonId}-bar-${index}`} style={{ flex: 1, textAlign: "center" }}>
               <div style={{ height: 96, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                <div style={{ width: "100%", maxWidth: 34, height: `${value}%`, borderRadius: 10, background: "#111111" }} />
+                <div style={{ width: "100%", maxWidth: 34, height: `${value}%`, borderRadius: 10, background: "linear-gradient(180deg,#f0d68a,#b8902f)", boxShadow: "0 0 14px rgba(212,177,94,0.3)" }} />
               </div>
               <div style={{ fontSize: 10, color: "var(--color-text-tertiary)", marginTop: 6 }}>{`Point ${index + 1}`}</div>
             </div>
@@ -156,7 +157,7 @@ export function WeakPointExplanationCards({ items = [], titleMap = {} }) {
   return (
     <div style={{ display: "grid", gap: 12, marginBottom: 12 }}>
       {items.map((item) => (
-        <div key={item.knowledgePointId} style={{ padding: 14, borderRadius: 14, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+        <div key={item.knowledgePointId} style={{ padding: 14, borderRadius: 14, background: "linear-gradient(180deg, rgba(34,31,42,0.78), rgba(24,22,30,0.64))", border: "1px solid rgba(212,177,94,0.14)" }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
             {titleMap[item.knowledgePointId] || item.knowledgePointId}
           </div>
@@ -164,13 +165,13 @@ export function WeakPointExplanationCards({ items = [], titleMap = {} }) {
             {item.explanation}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
-            <div style={{ padding: 10, borderRadius: 12, background: "rgba(17,17,17,0.03)" }}>
+            <div style={{ padding: 10, borderRadius: 12, background: "rgba(255,255,255,0.04)" }}>
               <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>Common Pitfalls</div>
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, whiteSpace: "pre-line" }}>
                 {item.misunderstandings.map((line) => `• ${line}`).join("\n")}
               </div>
             </div>
-            <div style={{ padding: 10, borderRadius: 12, background: "rgba(83,74,183,0.06)" }}>
+            <div style={{ padding: 10, borderRadius: 12, background: "rgba(212,177,94,0.08)" }}>
               <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>Practice Handles</div>
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, whiteSpace: "pre-line" }}>
                 {item.practiceGuide.map((line) => `• ${line}`).join("\n")}

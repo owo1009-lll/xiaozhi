@@ -148,8 +148,8 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
   }, [imageDataUrl, imageName, input, lessonId, lessonTitle, loading, msgs, studentProfile.studentId, tutorSystem]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: 460, border: "1px solid rgba(17,17,17,0.08)", borderRadius: 12, overflow: "hidden", background: "#ffffff" }}>
-      <div style={{ padding: "10px 14px", borderBottom: "1px solid rgba(17,17,17,0.08)", background: "#f8f8f8" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: 460, border: "1px solid rgba(212,177,94,0.14)", borderRadius: 12, overflow: "hidden", background: "rgba(38,34,46,0.85)" }}>
+      <div style={{ padding: "10px 14px", borderBottom: "1px solid rgba(212,177,94,0.14)", background: "rgba(255,255,255,0.05)" }}>
         <div style={{ fontSize: 14, fontWeight: 700 }}>AI Music Theory Tutor</div>
         <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
           {lessonTitle} - text-only questions usually take 2 to 5 seconds; images require compression, recognition, and lesson matching, so they take longer.
@@ -167,7 +167,7 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
       <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
         {msgs.map((msg, index) => (
           <div key={`${msg.role}-${index}`} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
-            <div style={{ maxWidth: "82%", padding: "10px 12px", borderRadius: 12, background: msg.role === "user" ? "#111111" : "#f5f5f5", color: msg.role === "user" ? "#ffffff" : "#111111", fontSize: 12, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>
+            <div style={{ maxWidth: "82%", padding: "10px 12px", borderRadius: 12, background: msg.role === "user" ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)", color: msg.role === "user" ? "#1a1206" : "var(--color-text-primary)", border: msg.role === "user" ? "none" : "1px solid rgba(255,255,255,0.08)", fontSize: 12, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>
               {msg.imageDataUrl ? <img src={msg.imageDataUrl} alt={msg.imageName || "Uploaded image"} style={{ display: "block", maxWidth: 220, borderRadius: 10, marginBottom: 8 }} /> : null}
               {msg.text}
             </div>
@@ -175,14 +175,14 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
         ))}
         {loading ? <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{loadingStage || "Thinking..."}</div> : null}
       </div>
-      <div style={{ padding: 10, borderTop: "1px solid rgba(17,17,17,0.08)", background: "#fafafa" }}>
+      <div style={{ padding: 10, borderTop: "1px solid rgba(212,177,94,0.14)", background: "rgba(255,255,255,0.04)" }}>
         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePickImage} />
         <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handlePickImage} />
         {imageDataUrl ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: 8, borderRadius: 10, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: 8, borderRadius: 10, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
             <img src={imageDataUrl} alt={imageName || "Preview"} style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8 }} />
             <div style={{ flex: 1, minWidth: 0, fontSize: 11, color: "var(--color-text-secondary)" }}>{imageName || "Image selected"}</div>
-            <button onClick={() => { setImageDataUrl(""); setImageName(""); }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.08)", background: "#f5f5f5", cursor: "pointer" }}>Remove</button>
+            <button onClick={() => { setImageDataUrl(""); setImageName(""); }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(212,177,94,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>Remove</button>
           </div>
         ) : null}
         <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 8, lineHeight: 1.6 }}>
@@ -199,11 +199,11 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
               }
             }}
             placeholder="Enter your question, or upload a photo and ask..."
-            style={{ flex: 1, padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", fontSize: 12, outline: "none" }}
+            style={{ flex: 1, padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", fontSize: 12, outline: "none" }}
           />
-          <button onClick={() => cameraInputRef.current?.click()} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>Camera</button>
-          <button onClick={() => fileInputRef.current?.click()} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>Gallery</button>
-          <button onClick={send} disabled={loading || (!input.trim() && !imageDataUrl)} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: loading || (!input.trim() && !imageDataUrl) ? "default" : "pointer" }}>Send</button>
+          <button onClick={() => cameraInputRef.current?.click()} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: "pointer" }}>Camera</button>
+          <button onClick={() => fileInputRef.current?.click()} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: "pointer" }}>Gallery</button>
+          <button onClick={send} disabled={loading || (!input.trim() && !imageDataUrl)} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: loading || (!input.trim() && !imageDataUrl) ? "default" : "pointer" }}>Send</button>
         </div>
       </div>
     </div>

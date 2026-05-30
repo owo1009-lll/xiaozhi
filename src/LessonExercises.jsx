@@ -47,7 +47,7 @@ function PitchExercise({ onScore }) {
       )}
       <div style={{ position: "relative", height: 120, margin: "0 auto", width: WK.length * 36, userSelect: "none" }}>
         {WK.map((ni, i) => (
-          <div key={ni} onClick={() => handleKey(ni)} style={{ position: "absolute", left: i * 36, top: 0, width: 34, height: 112, background: active === ni ? "#E1F5EE" : "#fff", border: "1px solid var(--color-border-secondary)", borderRadius: "0 0 5px 5px", cursor: "pointer", display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 5, fontSize: 10, color: "var(--color-text-tertiary)", zIndex: 1 }}>{NT[ni]}</div>
+          <div key={ni} onClick={() => handleKey(ni)} style={{ position: "absolute", left: i * 36, top: 0, width: 34, height: 112, background: active === ni ? "#E1F5EE" : "#f4f1ea", border: "1px solid rgba(0,0,0,0.25)", borderRadius: "0 0 5px 5px", cursor: "pointer", display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 5, fontSize: 10, color: "#4a4651", zIndex: 1 }}>{NT[ni]}</div>
         ))}
         {BK.map((ni) => {
           const wPos = WK.filter((w) => w < ni).length;
@@ -106,7 +106,7 @@ function IntervalExercise({ onScore }) {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(92px, 1fr))", gap: 6 }}>
         {INTERVALS.map((iv) => (
-          <button key={iv.n} onClick={() => answer(iv.n)} disabled={!!fb} style={{ padding: "7px 4px", borderRadius: 6, border: "1px solid var(--color-border-tertiary)", background: "#fff", cursor: fb ? "default" : "pointer", fontSize: 12, fontWeight: 500, opacity: fb ? 0.6 : 1 }}>
+          <button key={iv.n} onClick={() => answer(iv.n)} disabled={!!fb} style={{ padding: "7px 4px", borderRadius: 6, border: "1px solid var(--color-border-tertiary)", background: "rgba(255,255,255,0.06)", cursor: fb ? "default" : "pointer", fontSize: 12, fontWeight: 500, opacity: fb ? 0.6 : 1 }}>
             {iv.n}
             <div style={{ fontSize: 10, color: "var(--color-text-tertiary)" }}>{iv.s} semitones</div>
           </button>
@@ -161,7 +161,7 @@ function ChordExercise({ onScore }) {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 6 }}>
         {CHORDS.map((ch) => (
-          <button key={ch.n} onClick={() => answer(ch.n)} disabled={!!fb} style={{ padding: 8, borderRadius: 6, border: "1px solid var(--color-border-tertiary)", background: "#fff", cursor: fb ? "default" : "pointer", fontSize: 12, fontWeight: 500, opacity: fb ? 0.6 : 1 }}>
+          <button key={ch.n} onClick={() => answer(ch.n)} disabled={!!fb} style={{ padding: 8, borderRadius: 6, border: "1px solid var(--color-border-tertiary)", background: "rgba(255,255,255,0.06)", cursor: fb ? "default" : "pointer", fontSize: 12, fontWeight: 500, opacity: fb ? 0.6 : 1 }}>
             {ch.n}
           </button>
         ))}
@@ -225,7 +225,7 @@ function NotationExercise({ onScore }) {
       </div>
       <div style={{ display: "flex", gap: 4 }}>
         {["C", "D", "E", "F", "G", "A", "B"].map((letter) => (
-          <button key={letter} onClick={() => answer(letter)} disabled={!!fb} style={{ flex: 1, padding: "9px 0", borderRadius: 6, fontSize: 15, fontWeight: 600, border: "1px solid var(--color-border-tertiary)", background: "#fff", cursor: fb ? "default" : "pointer", opacity: fb ? 0.6 : 1 }}>
+          <button key={letter} onClick={() => answer(letter)} disabled={!!fb} style={{ flex: 1, padding: "9px 0", borderRadius: 6, fontSize: 15, fontWeight: 600, border: "1px solid var(--color-border-tertiary)", background: "rgba(255,255,255,0.06)", cursor: fb ? "default" : "pointer", opacity: fb ? 0.6 : 1 }}>
             {letter}
           </button>
         ))}
@@ -345,8 +345,8 @@ function RhythmExercise({ onScore }) {
         ))}
       </div>
       <div style={{ display: "flex", gap: 5 }}>
-        <button onClick={check} disabled={playing} style={{ flex: 1, padding: 7, borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "#fff", cursor: "pointer", fontSize: 12 }}>Check</button>
-        <button onClick={() => { setPi((prev) => (prev + 1) % RHYTHMS.length); setTaps([]); setFb(null); }} style={{ flex: 1, padding: 7, borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "#fff", cursor: "pointer", fontSize: 12 }}>Next</button>
+        <button onClick={check} disabled={playing} style={{ flex: 1, padding: 7, borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "rgba(255,255,255,0.06)", cursor: "pointer", fontSize: 12 }}>Check</button>
+        <button onClick={() => { setPi((prev) => (prev + 1) % RHYTHMS.length); setTaps([]); setFb(null); }} style={{ flex: 1, padding: 7, borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "rgba(255,255,255,0.06)", cursor: "pointer", fontSize: 12 }}>Next</button>
       </div>
       {fb ? <FeedbackBar ok={fb.ok} msg={fb.msg} /> : null}
     </div>

@@ -319,7 +319,7 @@ export default function TeacherDashboardPage() {
   const metricCard = (label, value) => (
     <div className="section-card" style={{ padding: 16 }}>
       <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 24, fontWeight: 700, color: "#111111" }}>{value}</div>
+      <div style={{ fontSize: 24, fontWeight: 700, color: "var(--color-text-primary)" }}>{value}</div>
     </div>
   );
 
@@ -407,10 +407,10 @@ export default function TeacherDashboardPage() {
           请使用教师账号登录后再查看 BKT 概览、学生报告和试点数据。
         </div>
         <form onSubmit={handleTeacherLogin} style={{ display: "grid", gap: 10 }}>
-          <input value={loginUsername} onChange={(event) => setLoginUsername(event.target.value)} placeholder="账号" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)" }} />
-          <input type="password" value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} placeholder="密码" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)" }} />
-          {loginError ? <div style={{ fontSize: 12, color: "#b91c1c" }}>{loginError}</div> : null}
-          <button type="submit" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>
+          <input value={loginUsername} onChange={(event) => setLoginUsername(event.target.value)} placeholder="账号" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)" }} />
+          <input type="password" value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} placeholder="密码" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)" }} />
+          {loginError ? <div style={{ fontSize: 12, color: "#f6a6a6" }}>{loginError}</div> : null}
+          <button type="submit" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: "pointer" }}>
             登录
           </button>
         </form>
@@ -424,7 +424,7 @@ export default function TeacherDashboardPage() {
 
   if (!data?.ok) {
     return (
-      <div style={{ fontSize: 13, color: "#b91c1c", lineHeight: 1.8 }}>
+      <div style={{ fontSize: 13, color: "#f6a6a6", lineHeight: 1.8 }}>
         教师后台数据加载失败。
         <br />
         {dashboardError || "请先确认本地服务已启动，然后刷新页面。"}
@@ -436,7 +436,7 @@ export default function TeacherDashboardPage() {
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>教师后台</h2>
-        <button onClick={handleTeacherLogout} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>退出登录</button>
+        <button onClick={handleTeacherLogout} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>退出登录</button>
       </div>
 
       <div className="section-card" style={{ marginBottom: 18 }}>
@@ -447,7 +447,7 @@ export default function TeacherDashboardPage() {
             ["概览接口是否成功", selfCheck.overview],
             ["BKT 接口是否成功", selfCheck.bkt],
           ].map(([label, item]) => {
-            const color = item.status === "success" ? "#166534" : item.status === "error" ? "#b91c1c" : "#555555";
+            const color = item.status === "success" ? "#7ee2a8" : item.status === "error" ? "#f6a6a6" : "var(--color-text-tertiary)";
             return (
               <div key={label} className="subtle-card" style={{ padding: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 6 }}>{label}</div>
@@ -458,7 +458,7 @@ export default function TeacherDashboardPage() {
           })}
           <div className="subtle-card" style={{ padding: 12 }}>
             <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 6 }}>知识点口径</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#111111" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-primary)" }}>
               BKT {bktData?.summary?.totalKnowledgePoints ?? BKT_TRACKED_KNOWLEDGE_POINT_COUNT} / 全部 {TOTAL_KNOWLEDGE_POINT_COUNT}
             </div>
             <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.6, marginTop: 6 }}>
@@ -473,7 +473,7 @@ export default function TeacherDashboardPage() {
           <button
             onClick={initializeTeacherSamples}
             disabled={seedingSamples}
-            style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: seedingSamples ? "default" : "pointer" }}
+            style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: seedingSamples ? "default" : "pointer" }}
           >
             {seedingSamples ? "初始化中..." : "一键初始化教师样本数据"}
           </button>
@@ -497,9 +497,9 @@ export default function TeacherDashboardPage() {
                 style={{
                   padding: "8px 12px",
                   borderRadius: 999,
-                  border: "1px solid rgba(17,17,17,0.12)",
-                  background: active ? "#111111" : "#ffffff",
-                  color: active ? "#ffffff" : "#111111",
+                  border: active ? "1px solid transparent" : "1px solid rgba(255,255,255,0.14)",
+                  background: active ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)",
+                  color: active ? "#1a1206" : "var(--color-text-primary)",
                   cursor: "pointer",
                   fontSize: 12,
                   fontWeight: 700,
@@ -521,12 +521,12 @@ export default function TeacherDashboardPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={previewTeacherSampleReport} disabled={teacherSampleReportLoading} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: teacherSampleReportLoading ? "default" : "pointer" }}>
+            <button onClick={previewTeacherSampleReport} disabled={teacherSampleReportLoading} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: teacherSampleReportLoading ? "default" : "pointer" }}>
               {teacherSampleReportLoading ? "加载中..." : "预览样本报告"}
             </button>
-            <button onClick={() => downloadTeacherSampleReport("json")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>导出 JSON</button>
-            <button onClick={() => downloadTeacherSampleReport("csv")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>导出 CSV</button>
-            <button onClick={() => downloadTeacherSampleReport("html")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>导出 HTML</button>
+            <button onClick={() => downloadTeacherSampleReport("json")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>导出 JSON</button>
+            <button onClick={() => downloadTeacherSampleReport("csv")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>导出 CSV</button>
+            <button onClick={() => downloadTeacherSampleReport("html")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: "pointer" }}>导出 HTML</button>
           </div>
         </div>
         {teacherSampleReportPreview ? (
@@ -584,7 +584,7 @@ export default function TeacherDashboardPage() {
             {(rq4Data.summaryMetrics || []).filter((item) => !["low_participation_count", "significant_pearsons", "strong_predictors", "overall_pass"].includes(item.metric)).map((item) => (
               <div key={`rq4-metric-${item.metric}`} className="subtle-card" style={{ padding: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 6 }}>{item.metric}</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#111111" }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "var(--color-text-primary)" }}>
                   {typeof item.mean === "number" ? Number(item.mean).toFixed(item.metric.includes("accuracy") || item.metric.includes("pL") ? 3 : 1) : item.mean}
                 </div>
                 <div style={{ fontSize: 11, color: item.pass ? "#166534" : "#b91c1c", marginTop: 6 }}>
@@ -600,7 +600,7 @@ export default function TeacherDashboardPage() {
               <div style={{ display: "grid", gap: 6 }}>
                 {(rq4Data.correlations || []).map((item) => (
                   <div key={`rq4-corr-${item.variableY}`} style={{ display: "grid", gridTemplateColumns: "1fr 70px 70px 90px", gap: 8, fontSize: 11, alignItems: "center" }}>
-                    <div style={{ color: "#111111", fontWeight: 600 }}>{item.variableY}</div>
+                    <div style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{item.variableY}</div>
                     <div>r={Number(item.r || 0).toFixed(3)}</div>
                     <div>p={Number(item.p || 0).toFixed(4)}</div>
                     <div style={{ color: item.pass ? "#166534" : "#b91c1c" }}>{item.pass ? "达标" : "未达标"}</div>
@@ -613,7 +613,7 @@ export default function TeacherDashboardPage() {
               <div style={{ display: "grid", gap: 6 }}>
                 {(rq4Data.logicChecks || []).map((item) => (
                   <div key={`rq4-logic-${item.check}`} style={{ display: "grid", gridTemplateColumns: "1fr 70px 70px 90px", gap: 8, fontSize: 11, alignItems: "center" }}>
-                    <div style={{ color: "#111111", fontWeight: 600 }}>{item.check}</div>
+                    <div style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{item.check}</div>
                     <div>r={Number(item.r || 0).toFixed(3)}</div>
                     <div>p={Number(item.p || 0).toFixed(4)}</div>
                     <div style={{ color: item.pass ? "#166534" : "#b91c1c" }}>{item.pass ? "通过" : "失败"}</div>
@@ -646,7 +646,7 @@ export default function TeacherDashboardPage() {
                   </thead>
                   <tbody>
                     {(rq4Data.regression?.coefficients || []).map((item) => (
-                      <tr key={`rq4-beta-${item.predictor}`} style={{ borderTop: "1px solid rgba(17,17,17,0.08)" }}>
+                      <tr key={`rq4-beta-${item.predictor}`} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                         <td style={{ padding: "6px 8px" }}>{item.predictor}</td>
                         <td style={{ padding: "6px 8px" }}>{Number(item.standardizedBeta || 0).toFixed(3)}</td>
                         <td style={{ padding: "6px 8px" }}>{Number(item.p || 0).toFixed(4)}</td>
@@ -665,7 +665,7 @@ export default function TeacherDashboardPage() {
                   value={rq4StudentQuery}
                   onChange={(event) => setRq4StudentQuery(event.target.value)}
                   placeholder="按学生 ID 搜索"
-                  style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", minWidth: 180 }}
+                  style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", minWidth: 180 }}
                 />
               </div>
               <div style={{ overflowX: "auto", maxHeight: 420 }}>
@@ -691,7 +691,7 @@ export default function TeacherDashboardPage() {
                   </thead>
                   <tbody>
                     {filteredRq4Students.map((item) => (
-                      <tr key={`rq4-student-${item.studentId}`} style={{ borderTop: "1px solid rgba(17,17,17,0.08)" }}>
+                      <tr key={`rq4-student-${item.studentId}`} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                         <td style={{ padding: "6px 8px" }}>{item.studentId}</td>
                         <td style={{ padding: "6px 8px" }}>{item.preMte ?? "-"}</td>
                         <td style={{ padding: "6px 8px" }}>{item.postMte ?? "-"}</td>
@@ -747,11 +747,11 @@ export default function TeacherDashboardPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <select value={selectedPilotTemplateId} onChange={(event) => setSelectedPilotTemplateId(event.target.value)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff" }}>
+            <select value={selectedPilotTemplateId} onChange={(event) => setSelectedPilotTemplateId(event.target.value)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)" }}>
               {REAL_STUDENT_PILOT_TEMPLATES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
             </select>
-            <button onClick={() => downloadPilotTemplate("json")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: "pointer" }}>导出 JSON 模板</button>
-            <button onClick={() => downloadPilotTemplate("csv")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>导出 CSV 记录表</button>
+            <button onClick={() => downloadPilotTemplate("json")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>导出 JSON 模板</button>
+            <button onClick={() => downloadPilotTemplate("csv")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: "pointer" }}>导出 CSV 记录表</button>
           </div>
         </div>
         {selectedPilotTemplate ? (
@@ -783,7 +783,7 @@ export default function TeacherDashboardPage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {selectedPilotTemplate.phases.map((item) => (
               <div key={item.phase} className="subtle-card" style={{ padding: "10px 12px" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#111111", marginBottom: 4 }}>{item.phase}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 4 }}>{item.phase}</div>
                 <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
                   任务：{item.tasks}
                   <br />
@@ -804,15 +804,15 @@ export default function TeacherDashboardPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <select value={selectedReportUserId} onChange={(event) => setSelectedReportUserId(event.target.value)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", minWidth: 220 }}>
+            <select value={selectedReportUserId} onChange={(event) => setSelectedReportUserId(event.target.value)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", minWidth: 220 }}>
               {(bktData?.students || []).map((item) => (
                 <option key={item.userId} value={item.userId}>{item.studentLabel}（{item.userId}）</option>
               ))}
             </select>
-            <button onClick={previewStudentReport} disabled={!selectedReportUserId || reportLoading} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: !selectedReportUserId || reportLoading ? "default" : "pointer" }}>
+            <button onClick={previewStudentReport} disabled={!selectedReportUserId || reportLoading} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: !selectedReportUserId || reportLoading ? "default" : "pointer" }}>
               {reportLoading ? "加载中..." : "预览报告"}
             </button>
-            <button onClick={generateStudentPdfReport} disabled={!selectedReportUserId || reportGenerating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: !selectedReportUserId || reportGenerating ? "default" : "pointer" }}>
+            <button onClick={generateStudentPdfReport} disabled={!selectedReportUserId || reportGenerating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: !selectedReportUserId || reportGenerating ? "default" : "pointer" }}>
               {reportGenerating ? "生成中..." : "生成 PDF"}
             </button>
           </div>
@@ -823,7 +823,7 @@ export default function TeacherDashboardPage() {
             <a href={reportPdfInfo.url} target="_blank" rel="noreferrer" style={{ marginLeft: 6 }}>{reportPdfInfo.fileName}</a>
           </div>
         ) : reportPdfInfo?.error ? (
-          <div style={{ marginTop: 12, fontSize: 11, color: "#b91c1c" }}>{reportPdfInfo.error}</div>
+          <div style={{ marginTop: 12, fontSize: 11, color: "#f6a6a6" }}>{reportPdfInfo.error}</div>
         ) : null}
         {reportPreview ? (
           <div className="lesson-layout" style={{ marginTop: 14 }}>
@@ -855,7 +855,7 @@ export default function TeacherDashboardPage() {
                   </thead>
                   <tbody>
                     {(reportPreview.knowledgeStates || []).map((item) => (
-                      <tr key={`preview-${item.id}`} style={{ borderTop: "1px solid rgba(17,17,17,0.08)" }}>
+                      <tr key={`preview-${item.id}`} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                         <td style={{ padding: "6px 8px" }}>{item.title}</td>
                         <td style={{ padding: "6px 8px" }}>{Number(item.pL || 0).toFixed(3)}</td>
                         <td style={{ padding: "6px 8px" }}>{item.mastered ? "是" : "否"}</td>
@@ -879,10 +879,10 @@ export default function TeacherDashboardPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={regenerateVirtualStudents} disabled={simulating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: simulating ? "default" : "pointer" }}>
+            <button onClick={regenerateVirtualStudents} disabled={simulating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: simulating ? "default" : "pointer" }}>
               {simulating ? "处理中..." : "生成虚拟学生"}
             </button>
-            <button onClick={clearVirtualStudents} disabled={simulating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", color: "#111111", cursor: simulating ? "default" : "pointer" }}>
+            <button onClick={clearVirtualStudents} disabled={simulating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)", cursor: simulating ? "default" : "pointer" }}>
               清空模拟数据
             </button>
           </div>
@@ -898,10 +898,10 @@ export default function TeacherDashboardPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={runBktValidation} disabled={testRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: testRunning ? "default" : "pointer" }}>
+            <button onClick={runBktValidation} disabled={testRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: testRunning ? "default" : "pointer" }}>
               {testRunning ? "验证中..." : "运行 2 小时验证"}
             </button>
-            <button onClick={resetBktValidation} disabled={testRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", color: "#111111", cursor: testRunning ? "default" : "pointer" }}>
+            <button onClick={resetBktValidation} disabled={testRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)", cursor: testRunning ? "default" : "pointer" }}>
               清空验证结果
             </button>
           </div>
@@ -916,7 +916,7 @@ export default function TeacherDashboardPage() {
               随机生成 150 名学生轨迹，统计他们最困惑的知识点、最好用的功能和最常遇到的 bug，用于教师视角的产品诊断。
             </div>
           </div>
-          <button onClick={runDeepSimulation} disabled={deepRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: deepRunning ? "default" : "pointer" }}>
+          <button onClick={runDeepSimulation} disabled={deepRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: deepRunning ? "default" : "pointer" }}>
             {deepRunning ? "测试中..." : "运行 150 人深度测试"}
           </button>
         </div>
@@ -928,7 +928,7 @@ export default function TeacherDashboardPage() {
           <div style={{ display: "grid", gap: 8 }}>
             {data.students.map((student) => (
               <div key={student.studentId} className="subtle-card" style={{ padding: "10px 12px" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#111111" }}>{student.studentLabel}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-primary)" }}>{student.studentLabel}</div>
                 <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
                   访问课时：{student.lessonsVisited}，平均得分：{student.averageScore}%
                   <br />
@@ -943,7 +943,7 @@ export default function TeacherDashboardPage() {
           <div style={{ display: "grid", gap: 8 }}>
             {data.lessons.map((lesson) => (
               <div key={lesson.lessonId} className="subtle-card" style={{ padding: "10px 12px" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#111111" }}>{lesson.lessonTitle || lesson.lessonId}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-primary)" }}>{lesson.lessonTitle || lesson.lessonId}</div>
                 <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
                   参与学生：{lesson.activeStudents}，平均得分：{lesson.averageScore}%，累计错误：{lesson.totalErrors}
                 </div>
@@ -980,7 +980,7 @@ export default function TeacherDashboardPage() {
                       {(currentStudentRecord.knowledgeStates || []).map((item) => {
                         const accuracy = Number(item.totalAttempts || 0) > 0 ? Math.round((Number(item.correctAttempts || 0) / Number(item.totalAttempts || 1)) * 100) : 0;
                         return (
-                          <tr key={`current-student-${item.id}`} style={{ borderTop: "1px solid rgba(17,17,17,0.08)" }}>
+                          <tr key={`current-student-${item.id}`} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                             <td style={{ padding: "6px 8px" }}>{item.title}</td>
                             <td style={{ padding: "6px 8px" }}>{Number(item.pL || 0).toFixed(3)}</td>
                             <td style={{ padding: "6px 8px" }}>{item.mastered ? "是" : "否"}</td>
@@ -1005,7 +1005,7 @@ export default function TeacherDashboardPage() {
             <div style={{ display: "grid", gap: 8 }}>
               {bktData.students?.slice(0, 12).map((student) => (
                 <div key={`${student.userId}-${student.lessonId}`} className="subtle-card" style={{ padding: "10px 12px" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#111111" }}>{student.studentLabel}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-primary)" }}>{student.studentLabel}</div>
                   <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
                     课时：{student.lessonId}，平均掌握度：{student.averageMastery}
                     <br />
@@ -1022,7 +1022,7 @@ export default function TeacherDashboardPage() {
             <div style={{ display: "grid", gap: 8 }}>
               {bktData.weakKnowledgePoints?.slice(0, 12).map((item) => (
                 <div key={item.id} className="subtle-card" style={{ padding: "10px 12px" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#111111" }}>{item.title}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-primary)" }}>{item.title}</div>
                   <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
                     所属课时：{item.lessonId}，平均掌握度：{item.averageMastery}
                     <br />
@@ -1065,7 +1065,7 @@ export default function TeacherDashboardPage() {
               <div style={{ display: "grid", gap: 6 }}>
                 {(bktData.latestTestRun.questionBankRisks || []).filter((item) => item.risks?.length).slice(0, 8).map((item) => (
                   <div key={item.knowledgePointId} style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
-                    <strong style={{ color: "#111111" }}>{item.title}</strong>：{item.risks.join(" / ")}
+                    <strong style={{ color: "var(--color-text-primary)" }}>{item.title}</strong>：{item.risks.join(" / ")}
                   </div>
                 ))}
               </div>
@@ -1077,7 +1077,7 @@ export default function TeacherDashboardPage() {
               <div key={scenario.scenarioId} className="subtle-card" style={{ padding: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#111111" }}>{scenario.label}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-primary)" }}>{scenario.label}</div>
                     <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
                       正确率：{Math.round(Number(scenario.accuracyTarget || 0) * 100)}%，平均 P(L)：{scenario.averagePL}，mastered：{scenario.masteredCount}，难度升级：{scenario.difficultyUpgradeCount}
                     </div>
@@ -1098,11 +1098,11 @@ export default function TeacherDashboardPage() {
                 <div style={{ display: "grid", gap: 6, marginBottom: 12 }}>
                   {(scenario.knowledgeStates || []).map((item) => (
                     <div key={item.id} style={{ display: "grid", gridTemplateColumns: "220px 1fr 70px 70px", gap: 8, alignItems: "center", fontSize: 11 }}>
-                      <div style={{ color: "#111111", fontWeight: 600 }}>{item.title}</div>
-                      <div style={{ height: 10, borderRadius: 999, background: "rgba(17,17,17,0.08)", overflow: "hidden" }}>
-                        <div style={{ width: `${Math.round(Number(item.pL || 0) * 100)}%`, height: "100%", background: Number(item.pL || 0) >= 0.8 ? "#111111" : Number(item.pL || 0) >= 0.45 ? "#555555" : "#bdbdbd" }} />
+                      <div style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{item.title}</div>
+                      <div style={{ height: 10, borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+                        <div style={{ width: `${Math.round(Number(item.pL || 0) * 100)}%`, height: "100%", background: Number(item.pL || 0) >= 0.8 ? "#f0d68a" : Number(item.pL || 0) >= 0.45 ? "#b8902f" : "rgba(255,255,255,0.3)" }} />
                       </div>
-                      <div style={{ color: "#111111" }}>{item.pL}</div>
+                      <div style={{ color: "var(--color-text-primary)" }}>{item.pL}</div>
                       <div style={{ color: item.mastered ? "#166534" : "var(--color-text-secondary)" }}>{item.mastered ? "mastered" : item.difficulty}</div>
                     </div>
                   ))}
@@ -1122,7 +1122,7 @@ export default function TeacherDashboardPage() {
                     </thead>
                     <tbody>
                       {(scenario.knowledgeStates || []).map((item) => (
-                        <tr key={`${scenario.scenarioId}-${item.id}`} style={{ borderTop: "1px solid rgba(17,17,17,0.08)" }}>
+                        <tr key={`${scenario.scenarioId}-${item.id}`} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                           <td style={{ padding: "6px 8px" }}>{item.title}</td>
                           <td style={{ padding: "6px 8px" }}>{item.pL}</td>
                           <td style={{ padding: "6px 8px" }}>{item.mastered ? "是" : "否"}</td>
@@ -1149,7 +1149,7 @@ export default function TeacherDashboardPage() {
                 运行时间：{bktData.latestDeepRun.runAt}，样本数：{bktData.latestDeepRun.studentCount}
               </div>
             </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#111111" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-primary)" }}>
               平均 P(L)：{bktData.latestDeepRun.summary?.averagePL ?? "-"} · 平均 mastered：{bktData.latestDeepRun.summary?.averageMastered ?? "-"}
             </div>
           </div>
@@ -1163,7 +1163,7 @@ export default function TeacherDashboardPage() {
             ].map(([label, value]) => (
               <div key={label} className="subtle-card" style={{ padding: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 6 }}>{label}</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#111111" }}>{value}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "var(--color-text-primary)" }}>{value}</div>
               </div>
             ))}
           </div>
@@ -1174,7 +1174,7 @@ export default function TeacherDashboardPage() {
               <div style={{ display: "grid", gap: 6 }}>
                 {(bktData.latestDeepRun.summary?.topConfusions || []).map((item) => (
                   <div key={item.title} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11 }}>
-                    <span style={{ color: "#111111", fontWeight: 600 }}>{item.title}</span>
+                    <span style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{item.title}</span>
                     <span style={{ color: "var(--color-text-secondary)" }}>{item.count} 人</span>
                   </div>
                 ))}
@@ -1185,7 +1185,7 @@ export default function TeacherDashboardPage() {
               <div style={{ display: "grid", gap: 6 }}>
                 {(bktData.latestDeepRun.summary?.topPreferredTools || []).map((item) => (
                   <div key={item.tool} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11 }}>
-                    <span style={{ color: "#111111", fontWeight: 600 }}>{item.tool}</span>
+                    <span style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{item.tool}</span>
                     <span style={{ color: "var(--color-text-secondary)" }}>{item.count} 人</span>
                   </div>
                 ))}
@@ -1199,7 +1199,7 @@ export default function TeacherDashboardPage() {
               <div style={{ display: "grid", gap: 6 }}>
                 {(bktData.latestDeepRun.summary?.topReportedBugs || []).map((item) => (
                   <div key={item.bug} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11 }}>
-                    <span style={{ color: "#111111", lineHeight: 1.7 }}>{item.bug}</span>
+                    <span style={{ color: "var(--color-text-primary)", lineHeight: 1.7 }}>{item.bug}</span>
                     <span style={{ color: "var(--color-text-secondary)", whiteSpace: "nowrap" }}>{item.count} 人</span>
                   </div>
                 ))}
@@ -1222,11 +1222,11 @@ export default function TeacherDashboardPage() {
             <div style={{ display: "grid", gap: 6, marginBottom: 12 }}>
               {(bktData.latestDeepRun.summary?.knowledgePointAverages || []).map((item) => (
                 <div key={item.id} style={{ display: "grid", gridTemplateColumns: "220px 1fr 60px 70px", gap: 8, alignItems: "center", fontSize: 11 }}>
-                  <div style={{ color: "#111111", fontWeight: 600 }}>{item.title}</div>
-                  <div style={{ height: 10, borderRadius: 999, background: "rgba(17,17,17,0.08)", overflow: "hidden" }}>
-                    <div style={{ width: `${Math.round(Number(item.averagePL || 0) * 100)}%`, height: "100%", background: Number(item.averagePL || 0) >= 0.8 ? "#111111" : Number(item.averagePL || 0) >= 0.45 ? "#555555" : "#bdbdbd" }} />
+                  <div style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{item.title}</div>
+                  <div style={{ height: 10, borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+                    <div style={{ width: `${Math.round(Number(item.averagePL || 0) * 100)}%`, height: "100%", background: Number(item.averagePL || 0) >= 0.8 ? "#f0d68a" : Number(item.averagePL || 0) >= 0.45 ? "#b8902f" : "rgba(255,255,255,0.3)" }} />
                   </div>
-                  <div style={{ color: "#111111" }}>{item.averagePL}</div>
+                  <div style={{ color: "var(--color-text-primary)" }}>{item.averagePL}</div>
                   <div style={{ color: "var(--color-text-secondary)" }}>{Math.round(Number(item.masteredRate || 0) * 100)}%</div>
                 </div>
               ))}
@@ -1244,7 +1244,7 @@ export default function TeacherDashboardPage() {
                 </thead>
                 <tbody>
                   {(bktData.latestDeepRun.summary?.knowledgePointAverages || []).map((item) => (
-                    <tr key={`deep-kp-${item.id}`} style={{ borderTop: "1px solid rgba(17,17,17,0.08)" }}>
+                    <tr key={`deep-kp-${item.id}`} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                       <td style={{ padding: "6px 8px" }}>{item.title}</td>
                       <td style={{ padding: "6px 8px" }}>{item.lessonId}</td>
                       <td style={{ padding: "6px 8px" }}>{item.averagePL}</td>
@@ -1257,12 +1257,12 @@ export default function TeacherDashboardPage() {
             </div>
           </div>
 
-          <div className="section-card" style={{ padding: 12, background: "#fafafa", border: "1px solid rgba(17,17,17,0.08)" }}>
+          <div className="section-card" style={{ padding: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,177,94,0.14)" }}>
             <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>样本学生反馈摘录</div>
             <div style={{ display: "grid", gap: 8 }}>
               {(bktData.latestDeepRun.students || []).slice(0, 12).map((student) => (
                 <div key={student.userId} className="subtle-card" style={{ padding: "10px 12px" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#111111", marginBottom: 6 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 6 }}>
                     {student.studentLabel} · {student.profile} · P(L) {student.averagePL} · mastered {student.masteredCount}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
@@ -1288,7 +1288,7 @@ export default function TeacherDashboardPage() {
         <div style={{ display: "grid", gap: 8 }}>
           {data.records.map((record, index) => (
             <div key={`${record.studentId}-${record.lessonId}-${index}`} className="subtle-card" style={{ padding: "10px 12px" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#111111" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-primary)" }}>
                 {record.studentLabel} · {record.lessonTitle || record.lessonId} · {record.section || record.source}
               </div>
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
@@ -1303,32 +1303,32 @@ export default function TeacherDashboardPage() {
               {(record.homeworkLength || record.homeworkRhythmData || record.homeworkStaffData || record.homeworkPianoData || record.homeworkVoiceTranscript || record.evaluationScores || (Array.isArray(record.homeworkImages) && record.homeworkImages.length > 0)) && (
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                   {record.homeworkText ? (
-                    <div style={{ fontSize: 11, color: "#111111", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(212,177,94,0.14)" }}>
                       <strong>文字说明：</strong>{`${String(record.homeworkText).slice(0, 120)}${String(record.homeworkText).length > 120 ? "..." : ""}`}
                     </div>
                   ) : null}
                   {record.homeworkRhythmData ? (
-                    <div style={{ fontSize: 11, color: "#111111", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(212,177,94,0.14)" }}>
                       <strong>节奏摘要：</strong>{summarizeRhythmSubmission(record.homeworkRhythmData)}
                     </div>
                   ) : null}
                   {record.homeworkStaffData ? (
-                    <div style={{ fontSize: 11, color: "#111111", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(212,177,94,0.14)" }}>
                       <strong>五线谱摘要：</strong>{summarizeStaffSubmission(record.homeworkStaffData)}
                     </div>
                   ) : null}
                   {record.homeworkPianoData ? (
-                    <div style={{ fontSize: 11, color: "#111111", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(212,177,94,0.14)" }}>
                       <strong>钢琴输入：</strong>{summarizePianoSubmission(record.homeworkPianoData)}
                     </div>
                   ) : null}
                   {record.homeworkVoiceTranscript ? (
-                    <div style={{ fontSize: 11, color: "#111111", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(212,177,94,0.14)" }}>
                       <strong>语音转写：</strong>{`${String(record.homeworkVoiceTranscript).slice(0, 120)}${String(record.homeworkVoiceTranscript).length > 120 ? "..." : ""}`}
                     </div>
                   ) : null}
                   {record.evaluationScores ? (
-                    <div style={{ fontSize: 11, color: "#111111", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(212,177,94,0.14)" }}>
                       <strong>课程评价：</strong>{Object.entries(record.evaluationScores).map(([label, value]) => `${label} ${value}`).join(" / ")}
                       {Array.isArray(record.evaluationTags) && record.evaluationTags.length ? <><br /><strong>评价标签：</strong>{record.evaluationTags.join(" / ")}</> : null}
                       {record.evaluationComment ? <><br /><strong>评价评语：</strong>{record.evaluationComment}</> : null}
@@ -1341,7 +1341,7 @@ export default function TeacherDashboardPage() {
                           key={`${record.studentId}-${record.lessonId}-${imageIndex}`}
                           src={image.dataUrl}
                           alt={image.name || `作业图片${imageIndex + 1}`}
-                          style={{ width: "100%", height: 80, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(17,17,17,0.08)", background: "#ffffff" }}
+                          style={{ width: "100%", height: 80, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(212,177,94,0.14)", background: "rgba(255,255,255,0.06)" }}
                         />
                       ))}
                     </div>

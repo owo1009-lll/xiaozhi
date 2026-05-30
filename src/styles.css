@@ -1,15 +1,26 @@
 :root {
   --font-sans: Inter, "Microsoft YaHei", "PingFang SC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --color-background-primary: rgba(255, 255, 255, 0.92);
-  --color-background-secondary: rgba(244, 244, 244, 0.96);
-  --color-background-tertiary: rgba(229, 229, 229, 0.92);
-  --color-border-secondary: rgba(0, 0, 0, 0.12);
-  --color-border-tertiary: rgba(0, 0, 0, 0.08);
-  --color-text-primary: #101010;
-  --color-text-secondary: #4b4b4b;
-  --color-text-tertiary: #7a7a7a;
-  --shadow-soft: 0 30px 70px rgba(0, 0, 0, 0.12);
-  --shadow-card: 0 18px 42px rgba(0, 0, 0, 0.08);
+  /* dark / black-gold surfaces */
+  --color-background-primary: rgba(30, 28, 37, 0.74);
+  --color-background-secondary: rgba(22, 20, 28, 0.72);
+  --color-background-tertiary: rgba(46, 42, 56, 0.6);
+  --color-border-secondary: rgba(212, 177, 94, 0.22);
+  --color-border-tertiary: rgba(255, 255, 255, 0.08);
+  --color-text-primary: #f4efe3;
+  --color-text-secondary: rgba(244, 239, 227, 0.68);
+  --color-text-tertiary: rgba(244, 239, 227, 0.42);
+  /* gold accent system */
+  --color-accent: #d4b15e;
+  --color-accent-strong: #b8902f;
+  --color-accent-soft: rgba(212, 177, 94, 0.1);
+  --color-accent-glow: rgba(212, 177, 94, 0.3);
+  --gradient-ink: linear-gradient(160deg, #1a1820 0%, #2a2533 100%);
+  --gradient-accent: linear-gradient(135deg, #f0d68a 0%, #d4b15e 45%, #b8902f 100%);
+  /* layered shadows (dark) */
+  --shadow-soft: 0 36px 90px rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 18px 44px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-hover: 0 26px 60px rgba(212, 177, 94, 0.2);
+  --hairline: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 * {
@@ -25,12 +36,16 @@ body,
 
 body {
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.55), transparent 22%),
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.12), transparent 28%),
-    linear-gradient(180deg, #c9c9c9 0%, #dfdfdf 16%, #f3f3f3 44%, #dadada 100%);
+    radial-gradient(1100px 560px at 12% -8%, rgba(212, 177, 94, 0.12), transparent 58%),
+    radial-gradient(900px 520px at 102% 0%, rgba(120, 92, 36, 0.14), transparent 55%),
+    radial-gradient(700px 700px at 50% 120%, rgba(40, 36, 52, 0.6), transparent 60%),
+    linear-gradient(180deg, #0d0c11 0%, #131119 50%, #0e0d12 100%);
+  background-attachment: fixed;
   color: var(--color-text-primary);
   font-family: var(--font-sans);
   letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -38,6 +53,24 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+input,
+select,
+textarea {
+  color: var(--color-text-primary);
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* native dropdown menu renders on an opaque surface — keep options readable */
+option {
+  color: #1a1206;
+  background: #ffffff;
 }
 
 .app-error {
@@ -72,11 +105,12 @@ textarea {
   padding: 18px 14px;
   overflow-y: auto;
   max-height: calc(100vh - 36px);
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--color-border-secondary);
+  background: linear-gradient(180deg, rgba(32, 29, 40, 0.82), rgba(20, 18, 26, 0.66));
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+  border: 1px solid rgba(212, 177, 94, 0.16);
   border-radius: 24px;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-card), var(--hairline);
 }
 
 .main-shell {
@@ -84,11 +118,12 @@ textarea {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(18px);
-  border: 1px solid var(--color-border-secondary);
+  background: linear-gradient(180deg, rgba(30, 27, 37, 0.8), rgba(18, 16, 24, 0.64));
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid rgba(212, 177, 94, 0.16);
   border-radius: 24px;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-soft), var(--hairline);
   overflow: hidden;
 }
 
@@ -97,11 +132,12 @@ textarea {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--color-border-tertiary);
+  border-bottom: 1px solid rgba(212, 177, 94, 0.14);
   position: sticky;
   top: 0;
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(14px);
+  background: rgba(16, 14, 22, 0.72);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
   z-index: 10;
 }
 
@@ -129,8 +165,8 @@ textarea {
   gap: 8px;
   margin-bottom: 18px;
   padding: 6px;
-  background: rgba(18, 18, 18, 0.04);
-  border: 1px solid var(--color-border-tertiary);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
   overflow-x: auto;
 }
@@ -148,8 +184,9 @@ textarea {
 }
 
 .chip-tab.is-active {
-  background: #111111;
-  color: #ffffff;
+  background: var(--gradient-accent);
+  color: #1a1206;
+  box-shadow: 0 8px 20px rgba(212, 177, 94, 0.28);
 }
 
 .lesson-layout {
@@ -173,9 +210,9 @@ textarea {
 .section-card {
   padding: 18px;
   border-radius: 20px;
-  background: var(--color-background-primary);
-  border: 1px solid var(--color-border-tertiary);
-  box-shadow: var(--shadow-card);
+  background: linear-gradient(180deg, rgba(34, 31, 42, 0.78), rgba(24, 22, 30, 0.64));
+  border: 1px solid rgba(212, 177, 94, 0.14);
+  box-shadow: var(--shadow-card), var(--hairline);
 }
 
 .support-grid {
@@ -187,9 +224,16 @@ textarea {
   text-align: left;
   padding: 16px;
   border-radius: 18px;
-  border: 1px solid var(--color-border-tertiary);
-  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,241,241,0.96));
+  border: 1px solid rgba(212, 177, 94, 0.14);
+  background: linear-gradient(180deg, rgba(34, 31, 42, 0.78), rgba(22, 20, 28, 0.64));
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.support-tile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(212, 177, 94, 0.4);
+  box-shadow: var(--shadow-hover);
 }
 
 .metric-grid {
@@ -204,7 +248,9 @@ textarea {
   border-radius: 32px;
   padding: 32px;
   margin-bottom: 18px;
-  background: linear-gradient(135deg, rgba(12, 12, 12, 0.98), rgba(38, 38, 38, 0.96));
+  background:
+    radial-gradient(120% 140% at 88% -10%, rgba(83, 74, 183, 0.55), transparent 52%),
+    linear-gradient(150deg, #15131d 0%, #211c33 55%, #2c2647 100%);
   color: #fff;
   box-shadow: var(--shadow-soft);
 }
@@ -212,11 +258,23 @@ textarea {
 .home-hero::before {
   content: "";
   position: absolute;
-  inset: -20% auto auto 60%;
-  width: 240px;
-  height: 240px;
+  inset: -24% auto auto 58%;
+  width: 280px;
+  height: 280px;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 66%);
+  background: radial-gradient(circle, rgba(124, 112, 235, 0.45), transparent 64%);
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+.home-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto -10% -40% auto;
+  width: 320px;
+  height: 320px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(83, 74, 183, 0.30), transparent 68%);
   pointer-events: none;
 }
 
@@ -264,9 +322,9 @@ textarea {
   margin-bottom: 16px;
   padding: 24px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.76);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: var(--shadow-card);
+  background: linear-gradient(180deg, rgba(32, 29, 40, 0.74), rgba(20, 18, 26, 0.6));
+  border: 1px solid rgba(212, 177, 94, 0.14);
+  box-shadow: var(--shadow-card), var(--hairline);
 }
 
 .lesson-grid {
@@ -288,18 +346,18 @@ textarea {
   overflow: hidden;
   text-align: left;
   border-radius: 20px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(240, 240, 240, 0.96));
+  border: 1px solid rgba(212, 177, 94, 0.14);
+  background: linear-gradient(180deg, rgba(36, 32, 44, 0.82), rgba(22, 20, 28, 0.7));
   padding: 20px;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4), var(--hairline);
 }
 
 .lesson-card-modern:hover {
-  transform: translateY(-2px);
-  border-color: rgba(0, 0, 0, 0.16);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.10);
+  transform: translateY(-3px);
+  border-color: rgba(83, 74, 183, 0.4);
+  box-shadow: var(--shadow-hover);
 }
 
 .lesson-card-modern::after {
@@ -307,11 +365,12 @@ textarea {
   position: absolute;
   right: -28px;
   bottom: -28px;
-  width: 110px;
-  height: 110px;
+  width: 120px;
+  height: 120px;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(0, 0, 0, 0.08), transparent 68%);
+  background: radial-gradient(circle, rgba(83, 74, 183, 0.16), transparent 68%);
   pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 
 .lesson-card-top {
@@ -327,18 +386,18 @@ textarea {
   overflow: hidden;
   text-align: left;
   border-radius: 20px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(240, 240, 240, 0.96));
+  border: 1px solid rgba(212, 177, 94, 0.14);
+  background: linear-gradient(180deg, rgba(36, 32, 44, 0.82), rgba(22, 20, 28, 0.7));
   padding: 20px;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4), var(--hairline);
 }
 
 .lesson-tile:hover {
-  transform: translateY(-2px);
-  border-color: rgba(0, 0, 0, 0.16);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.10);
+  transform: translateY(-3px);
+  border-color: rgba(83, 74, 183, 0.4);
+  box-shadow: var(--shadow-hover);
 }
 
 .lesson-tile::after {
@@ -346,10 +405,10 @@ textarea {
   position: absolute;
   right: -28px;
   bottom: -28px;
-  width: 110px;
-  height: 110px;
+  width: 120px;
+  height: 120px;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(0, 0, 0, 0.08), transparent 68%);
+  background: radial-gradient(circle, rgba(83, 74, 183, 0.16), transparent 68%);
   pointer-events: none;
 }
 
@@ -364,13 +423,13 @@ textarea {
 .lesson-no {
   font-size: 12px;
   font-weight: 700;
-  color: #121212;
+  color: var(--color-accent);
   letter-spacing: 0.08em;
 }
 
 .lesson-status {
   font-size: 11px;
-  color: #5f5f5f;
+  color: var(--color-text-tertiary);
 }
 
 .lesson-cta {
@@ -380,7 +439,7 @@ textarea {
   margin-top: 14px;
   font-size: 12px;
   font-weight: 600;
-  color: #161616;
+  color: var(--color-accent);
 }
 
 .lesson-media-grid {
@@ -427,8 +486,8 @@ textarea {
 .media-metrics span {
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(17, 17, 17, 0.05);
-  border: 1px solid var(--color-border-tertiary);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 11px;
   color: var(--color-text-secondary);
 }
@@ -536,8 +595,8 @@ textarea {
 .video-script-card {
   padding: 18px;
   border-radius: 22px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 241, 241, 0.96));
-  border: 1px solid var(--color-border-tertiary);
+  background: linear-gradient(180deg, rgba(34, 31, 42, 0.82), rgba(22, 20, 28, 0.7));
+  border: 1px solid rgba(212, 177, 94, 0.14);
 }
 
 .video-script-head {
@@ -558,37 +617,47 @@ textarea {
 .media-button {
   padding: 8px 12px;
   border-radius: 12px;
-  border: 1px solid var(--color-border-secondary);
-  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--color-text-primary);
   cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.media-button:hover {
+  border-color: rgba(212, 177, 94, 0.45);
+  background: rgba(212, 177, 94, 0.08);
 }
 
 .media-button.is-primary {
-  background: #111111;
-  color: #ffffff;
+  background: var(--gradient-accent);
+  color: #1a1206;
+  border-color: transparent;
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(212, 177, 94, 0.28);
 }
 
 .video-progress {
   height: 8px;
   border-radius: 999px;
   overflow: hidden;
-  background: rgba(17, 17, 17, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   margin-bottom: 12px;
 }
 
 .video-progress-bar {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #111111, #555555);
+  background: var(--gradient-accent);
+  box-shadow: 0 0 12px rgba(212, 177, 94, 0.4);
   transition: width 0.25s ease;
 }
 
 .video-script-body {
   padding: 14px 15px;
   border-radius: 16px;
-  background: #ffffff;
-  border: 1px solid var(--color-border-tertiary);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 13px;
   color: var(--color-text-secondary);
   line-height: 1.85;
@@ -606,8 +675,8 @@ textarea {
   gap: 4px;
   padding: 12px 14px;
   border-radius: 16px;
-  border: 1px solid var(--color-border-tertiary);
-  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(212, 177, 94, 0.14);
+  background: rgba(255, 255, 255, 0.05);
   cursor: pointer;
 }
 
@@ -622,13 +691,13 @@ textarea {
 }
 
 .video-segment-item.is-active {
-  background: #111111;
-  border-color: #111111;
+  background: var(--gradient-accent);
+  border-color: #e6c878;
 }
 
 .video-segment-item.is-active span,
 .video-segment-item.is-active strong {
-  color: #ffffff;
+  color: #1a1206;
 }
 
 .ppt-shell {
@@ -640,10 +709,10 @@ textarea {
   padding: 22px;
   border-radius: 24px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 248, 248, 0.96));
-  border: 1px solid var(--color-border-tertiary);
+    linear-gradient(180deg, rgba(34, 31, 42, 0.82), rgba(22, 20, 28, 0.7));
+  border: 1px solid rgba(212, 177, 94, 0.14);
   min-height: 360px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  box-shadow: var(--shadow-card), var(--hairline);
 }
 
 .ppt-kicker {
@@ -704,8 +773,8 @@ textarea {
   gap: 6px;
   padding: 14px;
   border-radius: 16px;
-  border: 1px solid var(--color-border-tertiary);
-  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(212, 177, 94, 0.14);
+  background: rgba(255, 255, 255, 0.05);
   cursor: pointer;
 }
 
@@ -728,24 +797,24 @@ textarea {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: rgba(17, 17, 17, 0.08);
-  color: var(--color-text-primary);
+  background: rgba(212, 177, 94, 0.16);
+  color: var(--color-accent);
   font-weight: 700;
 }
 
 .ppt-thumb.is-active {
-  background: #111111;
-  border-color: #111111;
+  background: var(--gradient-accent);
+  border-color: #e6c878;
 }
 
 .ppt-thumb.is-active strong,
 .ppt-thumb.is-active span {
-  color: #ffffff;
+  color: #1a1206;
 }
 
 .ppt-thumb.is-active .ppt-thumb-no {
-  background: rgba(255, 255, 255, 0.14);
-  color: #ffffff;
+  background: rgba(26, 18, 6, 0.18);
+  color: #1a1206;
 }
 
 .lesson-video-grid {
@@ -757,8 +826,8 @@ textarea {
 .lesson-video-frame {
   padding: 14px;
   border-radius: 22px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,241,241,0.96));
-  border: 1px solid var(--color-border-tertiary);
+  background: linear-gradient(180deg, rgba(34, 31, 42, 0.82), rgba(22, 20, 28, 0.7));
+  border: 1px solid rgba(212, 177, 94, 0.14);
 }
 
 .lesson-video-player {
@@ -834,4 +903,252 @@ textarea {
 @keyframes musicBars {
   0%, 100% { transform: scaleY(0.5); opacity: 0.55; }
   50% { transform: scaleY(1); opacity: 1; }
+}
+
+/* Knowledge map — premium refine */
+.kmap-canvas {
+  position: relative;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(212, 177, 94, 0.12), transparent 50%),
+    linear-gradient(180deg, rgba(24, 22, 30, 0.9) 0%, rgba(16, 14, 22, 0.92) 100%);
+  border: 1px solid rgba(212, 177, 94, 0.16);
+  box-shadow: var(--hairline);
+  overflow-x: auto;
+}
+
+.kmap-link {
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: kmapDraw 0.9s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+.kmap-link.is-flow {
+  stroke-dasharray: 0.05 0.07;
+  stroke-dashoffset: 0;
+  animation: kmapFlow 2.6s linear infinite;
+}
+
+@keyframes kmapDraw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes kmapFlow {
+  to { stroke-dashoffset: -0.6; }
+}
+
+.kmap-anchor-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kmapPulse 2.2s ease-in-out infinite;
+}
+
+@keyframes kmapPulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.kmap-center {
+  position: relative;
+  animation: kmapFloat 6s ease-in-out infinite;
+}
+
+.kmap-center::before {
+  content: "";
+  position: absolute;
+  inset: -34px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(212, 177, 94, 0.32), transparent 68%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes kmapFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.kmap-node {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  backdrop-filter: blur(12px);
+  animation: kmapNodeIn 0.55s ease both;
+}
+
+.kmap-node:hover {
+  transform: translateY(-3px);
+}
+
+@keyframes kmapNodeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Content mind-map outline (collapsible, level switches) */
+.kmap-seg {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.kmap-seg button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.kmap-seg button.is-active {
+  background: var(--gradient-accent);
+  color: #1a1206;
+  box-shadow: 0 6px 16px rgba(212, 177, 94, 0.25);
+}
+
+.kmap-outline {
+  margin-top: 14px;
+  display: grid;
+  gap: 2px;
+}
+
+.kmap-branch {
+  position: relative;
+  padding-left: 20px;
+}
+
+.kmap-branch::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(212, 177, 94, 0.35), rgba(212, 177, 94, 0.08));
+}
+
+.kmap-branch:last-child::before {
+  bottom: auto;
+  height: 24px;
+}
+
+.kmap-branch-head {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  margin-bottom: 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(212, 177, 94, 0.14);
+  background: linear-gradient(180deg, rgba(38, 34, 46, 0.9), rgba(24, 22, 30, 0.8));
+  color: var(--color-text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+}
+
+.kmap-branch-head:hover {
+  border-color: rgba(212, 177, 94, 0.4);
+  transform: translateX(2px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.kmap-branch-head::before {
+  content: "";
+  position: absolute;
+  left: -13px;
+  top: 50%;
+  width: 13px;
+  height: 2px;
+  background: rgba(212, 177, 94, 0.35);
+}
+
+.kmap-chevron {
+  color: var(--color-accent);
+  font-size: 10px;
+  width: 12px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.kmap-chevron.is-open {
+  transform: rotate(90deg);
+}
+
+.kmap-badge {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f0d68a, #b8902f);
+  color: #1a1206;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(212, 177, 94, 0.3);
+}
+
+.kmap-branch-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.kmap-branch-body,
+.kmap-branch-peek {
+  margin: 0 0 10px 32px;
+  animation: kmapBodyIn 0.28s ease both;
+}
+
+.kmap-branch-body {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 2px solid rgba(212, 177, 94, 0.4);
+}
+
+.kmap-branch-body p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.85;
+  color: var(--color-text-secondary);
+}
+
+.kmap-branch-peek {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--color-text-tertiary);
+  padding: 0 4px;
+}
+
+.kmap-jump {
+  margin-top: 10px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(212, 177, 94, 0.3);
+  background: rgba(212, 177, 94, 0.08);
+  color: var(--color-accent);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.kmap-jump:hover {
+  background: rgba(212, 177, 94, 0.16);
+}
+
+@keyframes kmapBodyIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }

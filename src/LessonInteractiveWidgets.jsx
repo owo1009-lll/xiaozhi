@@ -24,9 +24,9 @@ function SectionWidget({ title, intro, rows = [], accent = "#111111" }) {
                 textAlign: "left",
                 padding: 12,
                 borderRadius: 12,
-                border: selected ? `1px solid ${accent}` : "1px solid rgba(17,17,17,0.08)",
-                background: selected ? accent : "#ffffff",
-                color: selected ? "#ffffff" : "#111111",
+                border: selected ? `1px solid ${accent}` : "1px solid rgba(212,177,94,0.14)",
+                background: selected ? accent : "rgba(38,34,46,0.85)",
+                color: selected ? "#ffffff" : "var(--color-text-primary)",
                 cursor: "pointer",
               }}
             >
@@ -86,8 +86,8 @@ function InteractivePitchFrequencyWidgetCn() {
                   flex: 1,
                   height: 140,
                   borderRadius: 14,
-                  border: selected ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
-                  background: "#ffffff",
+                  border: selected ? "1px solid #e6c878" : "1px solid rgba(212,177,94,0.14)",
+                  background: "rgba(38,34,46,0.85)",
                   cursor: "pointer",
                   padding: 10,
                   display: "flex",
@@ -97,7 +97,7 @@ function InteractivePitchFrequencyWidgetCn() {
                 }}
               >
                 <div style={{ width: "100%", height, borderRadius: 10, background: selected ? "#111111" : "#D1D5DB", transition: "height 0.2s ease" }} />
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#111111", marginTop: 10 }}>{item.label}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-primary)", marginTop: 10 }}>{item.label}</div>
                 <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 4 }}>{`${item.freq} Hz`}</div>
               </button>
             );
@@ -105,7 +105,7 @@ function InteractivePitchFrequencyWidgetCn() {
         </div>
         <div className="subtle-card" style={{ padding: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Selected Note</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "#111111", marginBottom: 6 }}>{active.label}</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 6 }}>{active.label}</div>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
             {`Frequency: ${active.freq} Hz`}
             <br />
@@ -152,8 +152,8 @@ function InteractiveVolumeAmplitudeWidgetCn() {
                 flex: 1,
                 height: 104,
                 borderRadius: 12,
-                border: selected ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
-                background: "#ffffff",
+                border: selected ? "1px solid #e6c878" : "1px solid rgba(212,177,94,0.14)",
+                background: "rgba(38,34,46,0.85)",
                 cursor: "pointer",
                 padding: 8,
                 display: "flex",
@@ -197,13 +197,13 @@ function StaffDrillWidget({ title, intro, targets, options, referenceText }) {
           <svg viewBox="0 0 420 230" style={{ width: "100%", display: "block" }}>
             {[0, 1, 2, 3, 4].map((line) => {
               const y = 58 + line * 22;
-              return <line key={line} x1="42" y1={y} x2="372" y2={y} stroke="#111111" strokeWidth="1.2" />;
+              return <line key={line} x1="42" y1={y} x2="372" y2={y} stroke="rgba(244,239,227,0.6)" strokeWidth="1.2" />;
             })}
-            <text x="52" y="205" fontSize="12" fill="#6b7280">{referenceText}</text>
+            <text x="52" y="205" fontSize="12" fill="rgba(244,239,227,0.5)">{referenceText}</text>
             {targets.map((target, index) => (
               <g key={target.id} onClick={() => pickTarget(index)} style={{ cursor: "pointer" }}>
-                <ellipse cx={target.x} cy={target.y} rx="12" ry="8" fill={index === activeIndex ? "#111111" : "#ffffff"} stroke="#111111" strokeWidth="1.4" transform={`rotate(-12 ${target.x} ${target.y})`} />
-                <text x={target.x - 12} y={target.y - 18} fontSize="12" fill="#111111">{target.label}</text>
+                <ellipse cx={target.x} cy={target.y} rx="12" ry="8" fill={index === activeIndex ? "#f0d68a" : "rgba(38,34,46,0.85)"} stroke="rgba(244,239,227,0.7)" strokeWidth="1.4" transform={`rotate(-12 ${target.x} ${target.y})`} />
+                <text x={target.x - 12} y={target.y - 18} fontSize="12" fill="#f4efe3">{target.label}</text>
               </g>
             ))}
           </svg>
@@ -219,9 +219,9 @@ function StaffDrillWidget({ title, intro, targets, options, referenceText }) {
                 style={{
                   padding: "8px 10px",
                   borderRadius: 10,
-                  border: selectedAnswer === option ? "1px solid #111111" : "1px solid rgba(17,17,17,0.1)",
-                  background: selectedAnswer === option ? "#111111" : "#ffffff",
-                  color: selectedAnswer === option ? "#ffffff" : "#111111",
+                  border: selectedAnswer === option ? "1px solid #e6c878" : "1px solid rgba(255,255,255,0.12)",
+                  background: selectedAnswer === option ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)",
+                  color: selectedAnswer === option ? "#1a1206" : "var(--color-text-primary)",
                   cursor: "pointer",
                   textAlign: "left",
                 }}

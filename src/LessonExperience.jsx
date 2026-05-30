@@ -24,6 +24,8 @@ import {
 } from "./homeworkSummary";
 import {
   HOMEWORK_CHANNEL_LABELS,
+  RHYTHM_SYMBOLS,
+  STAFF_ROWS,
   createDefaultPianoSubmission,
   createDefaultRhythmSubmission,
   createDefaultStaffSubmission,
@@ -266,7 +268,7 @@ function getIntervalInfo(a, b) {
   const raw = Math.abs(a - b) % 12;
   const diff = raw > 6 ? 12 - raw : raw;
   if (diff === 1) return { label: "Half step", semitones: diff, color: "#1f2937", detail: "These two notes are adjacent half steps." };
-  if (diff === 2) return { label: "Whole step", semitones: diff, color: "#111111", detail: "These two notes form a standard whole step." };
+  if (diff === 2) return { label: "Whole step", semitones: diff, color: "var(--color-text-primary)", detail: "These two notes form a standard whole step." };
   return { label: "Other", semitones: diff, color: "#6b7280", detail: "These two notes are neither a whole step nor a half step.", isError: true };
 }
 
@@ -284,6 +286,10 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [activeSection, setActiveSection] = useState("content");
+  const [pptPageHint, setPptPageHint] = useState(null);
+  const [activeHomeworkEditor, setActiveHomeworkEditor] = useState(null);
+  const [recognizing, setRecognizing] = useState(false);
+  const [recognizeNote, setRecognizeNote] = useState("");
   const [selectedNotes, setSelectedNotes] = useState([]);
   const [activeNote, setActiveNote] = useState(null);
   const [lastInterval, setLastInterval] = useState(null);
@@ -342,6 +348,80 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
   const studyMinutes = Math.max(1, Math.ceil((Date.now() - stats.startedAt) / 60000));
   const evaluationDimensions = getEvaluationDimensions(homeworkRequirement);
   const homeworkChannelLabels = homeworkRequirement.channels.map((channel) => HOMEWORK_CHANNEL_LABELS[channel] || channel).join(" / ");
+  const homeworkTools = [
+    ...(homeworkRequirement.channels.includes("image") ? [{ id: "image", icon: "📷", label: "Photo" }] : []),
+    ...(homeworkRequirement.channels.includes("rhythm") ? [{ id: "rhythm", icon: "🥁", label: "Rhythm" }] : []),
+    ...(homeworkRequirement.channels.includes("staff") ? [{ id: "staff", icon: "🎼", label: "Staff" }] : []),
+    ...(homeworkRequirement.channels.includes("piano") ? [{ id: "piano", icon: "🎹", label: "Piano" }] : []),
+    ...(homeworkRequirement.channels.includes("voice") ? [{ id: "voice", icon: "🎤", label: "Voice" }] : []),
+    { id: "text", icon: "✍️", label: "Written" },
+  ];
+  const recognizeTargets = [
+    ...(homeworkRequirement.channels.includes("rhythm") ? [{ mode: "rhythm", label: "Rhythm" }] : []),
+    ...(homeworkRequirement.channels.includes("piano") ? [{ mode: "piano", label: "Piano" }] : []),
+    ...(homeworkRequirement.channels.includes("staff") ? [{ mode: "staff", label: "Staff" }] : []),
+  ];
+  const recognizeHomework = async (mode) => {
+    const latestImage = homeworkImages[homeworkImages.length - 1]?.dataUrl;
+    if (!latestImage) {
+      setRecognizeNote("Take or upload a photo first.");
+      return;
+    }
+    const validNotes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const pitchToRow = (pitch) => {
+      const matched = STAFF_ROWS.find((item) => item.label === String(pitch || "").toUpperCase());
+      return matched ? matched.row : 5;
+    };
+    setRecognizing(true);
+    setRecognizeNote("Recognizing the photo…");
+    try {
+      const response = await fetch("/api/homework/recognize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageDataUrl: latestImage, mode }),
+      });
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error || "Recognition failed.");
+      const notes = Array.isArray(json.notes) ? json.notes : [];
+      if (!notes.length) {
+        setRecognizeNote("No notation detected — try a clearer, closer photo.");
+        return;
+      }
+      if (mode === "piano") {
+        const mapped = notes.map((item) => ({
+          note: validNotes.includes(String(item.note).toUpperCase()) ? String(item.note).toUpperCase() : "C",
+          octave: [3, 4, 5].includes(Number(item.octave)) ? Number(item.octave) : 4,
+        })).slice(0, 48);
+        setHomeworkPiano((prev) => ({ ...prev, notes: mapped }));
+      } else if (mode === "rhythm") {
+        const entries = notes.map((item) => {
+          const value = String(item.value || "quarter");
+          const symbol = (item.rest && RHYTHM_SYMBOLS.find((s) => s.id === `${value}-rest`))
+            || RHYTHM_SYMBOLS.find((s) => s.id === value)
+            || RHYTHM_SYMBOLS[2];
+          const row = item.pitch ? pitchToRow(item.pitch) : undefined;
+          return { ...symbol, ...(row != null ? { row } : {}), tieToNext: false };
+        }).slice(0, 32);
+        setHomeworkRhythm((prev) => normalizeRhythmSubmission({ ...prev, measures: [entries, prev?.measures?.[1] || []], activeMeasure: 0 }));
+      } else if (mode === "staff") {
+        const mapped = notes.map((item, index) => ({
+          slot: index,
+          row: pitchToRow(item.pitch),
+          pitch: String(item.pitch || ""),
+          accidental: ["natural", "sharp", "flat"].includes(item.accidental) ? item.accidental : "natural",
+          noteValue: ["whole", "half", "quarter"].includes(item.value) ? item.value : "quarter",
+          tieToNext: false,
+        })).slice(0, 8);
+        setHomeworkStaff((prev) => ({ ...prev, notes: mapped }));
+      }
+      setActiveHomeworkEditor(mode);
+      setRecognizeNote("Filled in — please review and fix any mistakes.");
+    } catch (error) {
+      setRecognizeNote(String(error?.message || "Recognition failed."));
+    } finally {
+      setRecognizing(false);
+    }
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -711,9 +791,9 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
   const sectionButtonStyle = (id) => ({
     padding: "9px 14px",
     borderRadius: 12,
-    border: "1px solid rgba(17,17,17,0.12)",
-    background: activeSection === id ? "#111111" : "#ffffff",
-    color: activeSection === id ? "#ffffff" : "#111111",
+    border: "1px solid rgba(255,255,255,0.14)",
+    background: activeSection === id ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)",
+    color: activeSection === id ? "#1a1206" : "var(--color-text-primary)",
     cursor: "pointer",
     fontSize: 12,
     fontWeight: 600,
@@ -975,48 +1055,73 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         <button onClick={() => setActiveSection("homework")} style={sectionButtonStyle("homework")}>Homework</button>
       </div>}
 
-      {activeSection === "content" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(17,17,17,0.04)", border: "1px solid rgba(17,17,17,0.08)" }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 8 }}>Content</div>
-        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
-          Start with reinforcement cards for the most confusing points, then review the full lesson PPT.
-        </div>
-        <WeakPointExplanationCards items={weakEnhancements} titleMap={weakPointTitleMap} />
-        {lesson.id === "L2" ? <TemperamentEnharmonicWidgetCn /> : null}
-        {lesson.id === "L3" ? <TrebleClefDrillWidgetCn /> : null}
-        {lesson.id === "L3" ? <BassClefDrillWidgetCn /> : null}
-        {lesson.id === "L4" ? <DotsAndTiesGuideWidgetCn /> : null}
-        {lesson.id === "L4" ? <NoteValueHierarchyWidgetCn /> : null}
-        {lesson.id === "L5" ? <TrillVsMordentWidgetCn /> : null}
-        {lesson.id === "L5" ? <OrnamentComparisonWidgetCn /> : null}
-        {lesson.id === "L6" ? <DynamicsScaleWidgetCn /> : null}
-        {lesson.id === "L6" ? <ArticulationContrastWidgetCn /> : null}
-        {lesson.id === "L7" ? <RepeatPathGuideWidgetCn /> : null}
-        {lesson.id === "L7" ? <DcDsCodaGuideWidgetCn /> : null}
-        {lesson.id === "L8" ? <ExpressionVsTempoCardCn /> : null}
-        {lesson.id === "L9" ? <MeterAccentGuideWidgetCn /> : null}
-        {lesson.id === "L10" ? <CrossBarTieGuideWidgetCn /> : null}
-        {lesson.id === "L11" ? <SyncopationTypeGuideWidgetCn /> : null}
-        {lesson.id === "L11" ? <SyncopationPatternWidgetCn /> : null}
-        {pptLessonData && (
-          <div style={{ marginBottom: 12, padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{`Lesson ${pptLessonData.lessonNumber}`}</div>
-            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-              {pptLessonData.chapter}
-              <br />
-              {pptLessonData.lessonTitle}
-            </div>
+      {activeSection === "content" && (() => {
+        const summarizeLine = (text) => {
+          const clean = String(text || "").replace(/\s+/g, " ").trim();
+          return clean.length > 40 ? `${clean.slice(0, 40)}…` : clean;
+        };
+        const interactiveNode = (
+          <div style={{ display: "grid", gap: 12 }}>
+            {lesson.id === "L2" ? <TemperamentEnharmonicWidgetCn /> : null}
+            {lesson.id === "L3" ? <TrebleClefDrillWidgetCn /> : null}
+            {lesson.id === "L3" ? <BassClefDrillWidgetCn /> : null}
+            {lesson.id === "L4" ? <DotsAndTiesGuideWidgetCn /> : null}
+            {lesson.id === "L4" ? <NoteValueHierarchyWidgetCn /> : null}
+            {lesson.id === "L5" ? <TrillVsMordentWidgetCn /> : null}
+            {lesson.id === "L5" ? <OrnamentComparisonWidgetCn /> : null}
+            {lesson.id === "L6" ? <DynamicsScaleWidgetCn /> : null}
+            {lesson.id === "L6" ? <ArticulationContrastWidgetCn /> : null}
+            {lesson.id === "L7" ? <RepeatPathGuideWidgetCn /> : null}
+            {lesson.id === "L7" ? <DcDsCodaGuideWidgetCn /> : null}
+            {lesson.id === "L8" ? <ExpressionVsTempoCardCn /> : null}
+            {lesson.id === "L9" ? <MeterAccentGuideWidgetCn /> : null}
+            {lesson.id === "L10" ? <CrossBarTieGuideWidgetCn /> : null}
+            {lesson.id === "L11" ? <SyncopationTypeGuideWidgetCn /> : null}
+            {lesson.id === "L11" ? <SyncopationPatternWidgetCn /> : null}
           </div>
-        )}
-        {pptLessonData && <PptContentEmbedFixed lessonId={lesson.id} pageHint={contentPageHint} />}
-      </div>}
+        );
+        const hasInteractive = ["L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11"].includes(lesson.id);
+        const branches = [
+          ...lessonContentItems.map((item, index) => ({
+            key: `kp-${index}`,
+            badge: index + 1,
+            title: item.h,
+            peek: summarizeLine(item.b),
+            body: (
+              <>
+                <p style={{ margin: 0, fontSize: 12, lineHeight: 1.85, color: "var(--color-text-secondary)" }}>{item.b || "—"}</p>
+                <button type="button" className="kmap-jump" onClick={() => setPptPageHint(index)}>Open in lesson PPT →</button>
+              </>
+            ),
+          })),
+          ...(weakEnhancements.length ? [{
+            key: "reinforcement",
+            badge: "★",
+            title: "Key Point Reinforcement",
+            body: <WeakPointExplanationCards items={weakEnhancements} titleMap={weakPointTitleMap} />,
+          }] : []),
+          ...(hasInteractive ? [{
+            key: "interactive",
+            badge: "♪",
+            title: "Interactive Demo",
+            body: interactiveNode,
+          }] : []),
+        ];
+        return (
+          <div className="section-stack">
+            <ContentOutline branches={branches} subtitle={`${branches.length} sections · Collapse / Summary / Detail`} />
+            {pptLessonData && <PptContentEmbedFixed lessonId={lesson.id} pageHint={pptPageHint ?? contentPageHint} />}
+          </div>
+        );
+      })()}
 
-      {activeSection === "practice" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(17,17,17,0.04)", border: "1px solid rgba(17,17,17,0.08)" }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 8 }}>Classroom Practice</div>
+      {activeSection === "practice" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,177,94,0.14)" }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 8 }}>Classroom Practice</div>
         <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
           The system combines your content interactions with a 20-question practice set and reports the current mastery state.
         </div>
         {weakEnhancements.length ? (
-          <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
+          <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)", marginBottom: 10 }}>
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Practice Guidance</div>
             <div style={{ display: "grid", gap: 8 }}>
               {weakEnhancements.map((item) => (
@@ -1030,7 +1135,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             </div>
           </div>
         ) : null}
-        <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
+        <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)", marginBottom: 10 }}>
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Knowledge Mastery Summary</div>
           <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
             Stronger points: {lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "No stable strength yet"}
@@ -1040,13 +1145,13 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             Next recommendation: {getRecommendationFromSummary(lessonKnowledgeSummary)}
           </div>
         </div>
-        <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
+        <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)", marginBottom: 10 }}>
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Interactive Check</div>
           <div style={{ fontSize: 11, color: stats.errors > 0 ? "#b91c1c" : "var(--color-text-secondary)" }}>
             {lastInterval ? `Most recent result: ${lastInterval.label}. ${lastInterval.detail}` : "Complete one piano or interactive action in Content first, then the system will generate a check result."}
           </div>
         </div>
-        <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", marginBottom: 10 }}>
+        <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)", marginBottom: 10 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
             <div style={{ fontSize: 12, fontWeight: 600 }}>Practice Question</div>
             <div style={{ textAlign: "right" }}>
@@ -1056,10 +1161,10 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
               </div>
             </div>
           </div>
-          <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7, marginBottom: 8 }}>{currentPractice?.prompt}</div>
+          <div style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.7, marginBottom: 8 }}>{currentPractice?.prompt}</div>
           <div style={{ display: "grid", gap: 6 }}>
             {currentPractice?.options.map((option) => (
-              <button key={option} onClick={() => answerPractice(option)} disabled={Boolean(practiceAnswers[practiceIndex])} style={{ textAlign: "left", padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.1)", background: practiceAnswers[practiceIndex] && option === currentPractice.answer ? "#111111" : "#ffffff", color: practiceAnswers[practiceIndex] && option === currentPractice.answer ? "#ffffff" : "#111111", cursor: practiceAnswers[practiceIndex] ? "default" : "pointer" }}>
+              <button key={option} onClick={() => answerPractice(option)} disabled={Boolean(practiceAnswers[practiceIndex])} style={{ textAlign: "left", padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)", background: practiceAnswers[practiceIndex] && option === currentPractice.answer ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)", color: practiceAnswers[practiceIndex] && option === currentPractice.answer ? "#1a1206" : "var(--color-text-primary)", cursor: practiceAnswers[practiceIndex] ? "default" : "pointer" }}>
                 {option}
               </button>
             ))}
@@ -1070,8 +1175,8 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             {practiceResult.explanation}
           </div>}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-            <button onClick={nextPracticeQuestion} disabled={!practiceAnswers[practiceIndex] || practiceIndex >= practiceQuestions.length - 1} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#111111", color: "#ffffff", cursor: !practiceAnswers[practiceIndex] || practiceIndex >= practiceQuestions.length - 1 ? "default" : "pointer" }}>Next Question</button>
-            <button onClick={restartPractice} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#f5f5f5", cursor: "pointer" }}>Generate a New 20-Question Set</button>
+            <button onClick={nextPracticeQuestion} disabled={!practiceAnswers[practiceIndex] || practiceIndex >= practiceQuestions.length - 1} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "var(--gradient-accent)", color: "#1a1206", cursor: !practiceAnswers[practiceIndex] || practiceIndex >= practiceQuestions.length - 1 ? "default" : "pointer" }}>Next Question</button>
+            <button onClick={restartPractice} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>Generate a New 20-Question Set</button>
           </div>
           <div style={{ marginTop: 10, fontSize: 11, color: "var(--color-text-secondary)" }}>
             Correct / Total: {correctCount}/{practiceQuestions.length}
@@ -1079,13 +1184,13 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         </div>
       </div>}
 
-      {activeSection === "homework" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(17,17,17,0.04)", border: "1px solid rgba(17,17,17,0.08)" }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 8 }}>Homework</div>
+      {activeSection === "homework" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,177,94,0.14)" }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 8 }}>Homework</div>
         <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
           The system generates homework guidance from this lesson's knowledge points and records study time, error types, and interaction data for teacher review.
         </div>
-        <div style={{ marginBottom: 12, padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111", marginBottom: 6 }}>Adaptive Recommendation</div>
+        <div style={{ marginBottom: 12, padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-primary)", marginBottom: 6 }}>Adaptive Recommendation</div>
           Stronger points: {lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "No stable strength yet"}
           <br />
           Current weak points: {lessonKnowledgeSummary.weak.map((item) => item.title).join(" / ") || "None"}
@@ -1094,15 +1199,15 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
           {labelingState.pending ? <><br />Knowledge-point matching: {labelingState.message}</> : null}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
-          <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+          <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 600 }}>Homework Timer</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: "#111111" }}>{formattedHomeworkTime}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "var(--color-text-primary)" }}>{formattedHomeworkTime}</div>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-              <button onClick={() => setHomeworkRunning(true)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>Resume Timer</button>
-              <button onClick={() => setHomeworkRunning(false)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#ffffff", cursor: "pointer" }}>Pause</button>
-              <button onClick={() => { setHomeworkRunning(false); setHomeworkRemaining(30 * 60); }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.1)", background: "#f5f5f5", cursor: "pointer" }}>Reset to 30 Minutes</button>
+              <button onClick={() => setHomeworkRunning(true)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "var(--gradient-accent)", color: "#1a1206", cursor: "pointer" }}>Resume Timer</button>
+              <button onClick={() => setHomeworkRunning(false)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(38,34,46,0.85)", cursor: "pointer" }}>Pause</button>
+              <button onClick={() => { setHomeworkRunning(false); setHomeworkRemaining(30 * 60); }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>Reset to 30 Minutes</button>
             </div>
             <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
               The countdown starts automatically when this page opens.
@@ -1112,43 +1217,75 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
               Current learning trace: about {studyMinutes} minutes, {stats.interactions} interactions.
             </div>
           </div>
-          <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+          <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>AI-Generated Homework</div>
             <div style={{ display: "grid", gap: 8 }}>
               {homeworkItems.map((item) => (
-                <div key={item} style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.7, padding: "8px 10px", borderRadius: 10, background: "#f8f8f8" }}>
+                <div key={item} style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.7, padding: "8px 10px", borderRadius: 10, background: "rgba(255,255,255,0.05)" }}>
                   {item}
                 </div>
               ))}
             </div>
           </div>
         </div>
-        <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+        <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
           <div style={{ marginBottom: 4 }}>Submission channels: {homeworkChannelLabels}</div>
           <div>Homework note: {homeworkRequirement.helper}</div>
         </div>
         <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-          {homeworkRequirement.channels.includes("image") && <HomeworkImageUploader
-            images={homeworkImages}
-            onAddFiles={handleHomeworkAddFiles}
-            onRemoveImage={removeHomeworkImage}
-            fileInputRef={homeworkFileInputRef}
-            cameraInputRef={homeworkCameraInputRef}
-          />}
-          {homeworkRequirement.channels.includes("rhythm") && <RhythmHomeworkEditorV2
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {homeworkTools.map((tool) => {
+              const active = activeHomeworkEditor === tool.id;
+              const filled = homeworkSubmissionState?.[tool.id];
+              return (
+                <button key={tool.id} type="button" onClick={() => setActiveHomeworkEditor(active ? null : tool.id)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: 12, border: active ? "1px solid transparent" : "1px solid rgba(255,255,255,0.14)", background: active ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)", color: active ? "#1a1206" : "var(--color-text-primary)", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+                  <span style={{ fontSize: 15 }}>{tool.icon}</span>{tool.label}
+                  {filled ? <span style={{ width: 6, height: 6, borderRadius: 999, background: active ? "#1a1206" : "#f0d68a" }} /> : null}
+                </button>
+              );
+            })}
+          </div>
+          {activeHomeworkEditor === "image" && (
+            <>
+              <HomeworkImageUploader
+                images={homeworkImages}
+                onAddFiles={handleHomeworkAddFiles}
+                onRemoveImage={removeHomeworkImage}
+                fileInputRef={homeworkFileInputRef}
+                cameraInputRef={homeworkCameraInputRef}
+              />
+              {recognizeTargets.length > 0 && (
+                <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>📷 → Auto-fill from photo</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {recognizeTargets.map((target) => (
+                      <button key={target.mode} type="button" disabled={recognizing} onClick={() => recognizeHomework(target.mode)} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(212,177,94,0.3)", background: "rgba(212,177,94,0.08)", color: "#f0d68a", fontWeight: 600, fontSize: 12, cursor: recognizing ? "default" : "pointer" }}>
+                        Recognize → {target.label}
+                      </button>
+                    ))}
+                  </div>
+                  {recognizeNote ? <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 8 }}>{recognizeNote}</div> : null}
+                  <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 6, lineHeight: 1.7 }}>
+                    AI recognition is best-effort; always open the editor afterwards to review and correct.
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          {activeHomeworkEditor === "rhythm" && <RhythmHomeworkEditorV2
             rhythmSubmission={homeworkRhythm}
             onChange={(updater) => setHomeworkRhythm((prev) => normalizeRhythmSubmission(typeof updater === "function" ? updater(prev) : updater))}
             onPlay={playRhythmMeasure}
           />}
-          {homeworkRequirement.channels.includes("staff") && <StaffHomeworkEditorV2
+          {activeHomeworkEditor === "staff" && <StaffHomeworkEditorV2
             staffSubmission={homeworkStaff}
             onChange={(updater) => setHomeworkStaff((prev) => (typeof updater === "function" ? updater(prev) : updater))}
           />}
-          {homeworkRequirement.channels.includes("piano") && <HomeworkPianoEditor
+          {activeHomeworkEditor === "piano" && <HomeworkPianoEditor
             pianoSubmission={homeworkPiano}
             onChange={(updater) => setHomeworkPiano((prev) => (typeof updater === "function" ? updater(prev) : updater))}
           />}
-          {homeworkRequirement.channels.includes("voice") && <HomeworkVoiceInput
+          {activeHomeworkEditor === "voice" && <HomeworkVoiceInput
             transcript={voiceTranscript}
             audioSubmission={audioSubmission}
             voiceSupported={voiceSupported}
@@ -1161,18 +1298,18 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             onStopRecording={stopAudioRecording}
             onApplyTranscript={applyTranscriptToDraft}
           />}
-          <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+          {activeHomeworkEditor === "text" && <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Written Explanation</div>
             <textarea
               value={homeworkDraft}
               onChange={(e) => setHomeworkDraft(e.target.value)}
               placeholder="Add concept explanations, homework reasoning, rhythm analysis, pitch-judgment evidence, or notes about uploaded photos."
-              style={{ width: "100%", minHeight: 140, borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", padding: 12, fontSize: 12, lineHeight: 1.8, resize: "vertical", outline: "none" }}
+              style={{ width: "100%", minHeight: 140, borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", padding: 12, fontSize: 12, lineHeight: 1.8, resize: "vertical", outline: "none" }}
             />
-          </div>
-          <div style={{ padding: 12, borderRadius: 12, background: "#ffffff", border: "1px solid rgba(17,17,17,0.08)" }}>
+          </div>}
+          <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#111111" }}>Submission Overview</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-primary)" }}>Submission Overview</div>
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
                 Submission type: {submissionTypes.length ? submissionTypes.join(" / ") : "Not started"}
               </div>
@@ -1180,26 +1317,26 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 10 }}>
               <div className="subtle-card" style={{ padding: 10 }}>
                 <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>Written Explanation</div>
-                <div style={{ fontSize: 12, color: "#111111" }}>{homeworkDraft.trim() ? `${homeworkDraft.trim().slice(0, 60)}${homeworkDraft.trim().length > 60 ? "..." : ""}` : "Not filled"}</div>
+                <div style={{ fontSize: 12, color: "var(--color-text-primary)" }}>{homeworkDraft.trim() ? `${homeworkDraft.trim().slice(0, 60)}${homeworkDraft.trim().length > 60 ? "..." : ""}` : "Not filled"}</div>
               </div>
               <div className="subtle-card" style={{ padding: 10 }}>
                 <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>Rhythm Editor</div>
-                <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7 }}>{summarizeRhythmSubmission(homeworkRhythm)}</div>
+                <div style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.7 }}>{summarizeRhythmSubmission(homeworkRhythm)}</div>
               </div>
               <div className="subtle-card" style={{ padding: 10 }}>
                 <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>Staff Correction</div>
-                <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7 }}>{summarizeStaffSubmission(homeworkStaff)}</div>
+                <div style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.7 }}>{summarizeStaffSubmission(homeworkStaff)}</div>
               </div>
               {homeworkRequirement.channels.includes("piano") ? (
                 <div className="subtle-card" style={{ padding: 10 }}>
                   <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>Piano Input</div>
-                  <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7 }}>{summarizePianoSubmission(homeworkPiano)}</div>
+                  <div style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.7 }}>{summarizePianoSubmission(homeworkPiano)}</div>
                 </div>
               ) : null}
               {homeworkRequirement.channels.includes("voice") ? (
                 <div className="subtle-card" style={{ padding: 10 }}>
                   <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 6 }}>Voice Transcript</div>
-                  <div style={{ fontSize: 12, color: "#111111", lineHeight: 1.7 }}>{voiceTranscript.trim() || "Not entered"}</div>
+                  <div style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.7 }}>{voiceTranscript.trim() || "Not entered"}</div>
                 </div>
               ) : null}
             </div>
@@ -1207,7 +1344,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
                 Error types: {Object.keys(stats.errorTypes).length ? Object.entries(stats.errorTypes).map(([k, v]) => `${k} x${v}`).join("; ") : "No error records yet"}
               </div>
-              <button onClick={openLessonHomeworkSubmit} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: "pointer" }}>
+              <button onClick={openLessonHomeworkSubmit} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: "pointer" }}>
                 Submit Homework
               </button>
             </div>
@@ -1218,19 +1355,19 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
           </div>
         </div>
         {showHomeworkDialog && <div onClick={() => { if (!homeworkReviewing) setShowHomeworkDialog(false); }} style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.36)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-          <div onClick={(event) => event.stopPropagation()} style={{ width: "min(640px, 100%)", background: "#ffffff", borderRadius: 16, padding: 18, boxShadow: "0 24px 80px rgba(0,0,0,0.18)" }}>
+          <div onClick={(event) => event.stopPropagation()} style={{ width: "min(640px, 100%)", background: "rgba(38,34,46,0.85)", borderRadius: 16, padding: 18, boxShadow: "0 24px 80px rgba(0,0,0,0.18)" }}>
             <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>Confirm Homework Submission</div>
             <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
               Time remaining: {formattedHomeworkTime}. After submission, the AI first review will be generated and synced to the teacher dashboard.
             </div>
             <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
-              <div className="subtle-card" style={{ padding: 10, fontSize: 12, color: "#111111" }}>
+              <div className="subtle-card" style={{ padding: 10, fontSize: 12, color: "var(--color-text-primary)" }}>
                 <strong>Submission type: </strong>{submissionTypes.join(" / ") || "Not filled"}
               </div>
-              <div className="subtle-card" style={{ padding: 10, fontSize: 12, color: "#111111", lineHeight: 1.8 }}>
+              <div className="subtle-card" style={{ padding: 10, fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.8 }}>
                 <strong>Written explanation: </strong>{homeworkDraft.trim() || "Not filled"}
               </div>
-              <div className="subtle-card" style={{ padding: 10, fontSize: 12, color: "#111111", lineHeight: 1.8 }}>
+              <div className="subtle-card" style={{ padding: 10, fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.8 }}>
                 <strong>Image count: </strong>{homeworkImages.length}
                 <br />
                 <strong>Rhythm summary: </strong>{summarizeRhythmSubmission(homeworkRhythm)}
@@ -1239,8 +1376,8 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
               </div>
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button onClick={() => setShowHomeworkDialog(false)} disabled={homeworkReviewing} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: homeworkReviewing ? "default" : "pointer" }}>Keep Editing</button>
-              <button onClick={confirmMixedHomeworkSubmit} disabled={homeworkReviewing} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: homeworkReviewing ? "default" : "pointer" }}>
+              <button onClick={() => setShowHomeworkDialog(false)} disabled={homeworkReviewing} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: homeworkReviewing ? "default" : "pointer" }}>Keep Editing</button>
+              <button onClick={confirmMixedHomeworkSubmit} disabled={homeworkReviewing} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: homeworkReviewing ? "default" : "pointer" }}>
                 {homeworkReviewing ? "AI Reviewing..." : "Confirm Submit"}
               </button>
             </div>
@@ -1298,19 +1435,19 @@ function InteractivePitchFrequencyWidget() {
                     flex: 1,
                     height: 140,
                     borderRadius: 14,
-                    border: active ? "1px solid #111111" : "1px solid rgba(17,17,17,0.08)",
-                    background: "#ffffff",
+                    border: active ? "1px solid #e6c878" : "1px solid rgba(212,177,94,0.14)",
+                    background: active ? "linear-gradient(180deg, rgba(60,52,30,0.6), rgba(38,34,46,0.85))" : "rgba(38,34,46,0.85)",
                     cursor: "pointer",
                     padding: 10,
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "flex-end",
                     alignItems: "center",
-                    boxShadow: active ? "inset 0 -16px 28px rgba(17,17,17,0.08)" : "none",
+                    boxShadow: active ? "inset 0 -16px 28px rgba(212,177,94,0.18)" : "none",
                   }}
                 >
                   <div style={{ width: "100%", height, borderRadius: 10, background: active ? "#111111" : "#D1D5DB", transition: "height 0.2s ease" }} />
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#111111", marginTop: 10 }}>{item.label}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-primary)", marginTop: 10 }}>{item.label}</div>
                   <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 4 }}>{`${item.freq} Hz`}</div>
                 </button>
               );
@@ -1319,7 +1456,7 @@ function InteractivePitchFrequencyWidget() {
         </div>
         <div className="subtle-card" style={{ padding: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Selected Note</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "#111111", marginBottom: 6 }}>{noteItems[activeIndex].label}</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 6 }}>{noteItems[activeIndex].label}</div>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
             {`Frequency: ${noteItems[activeIndex].freq} Hz`}
             <br />
@@ -1420,7 +1557,7 @@ function PptContentEmbedFixed({ lessonId, pageHint = null }) {
           <button
             onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))}
             disabled={pageIndex === 0}
-            style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.12)", background: "#ffffff", cursor: pageIndex === 0 ? "default" : "pointer" }}
+            style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: pageIndex === 0 ? "default" : "pointer" }}
           >
             Previous
           </button>
@@ -1428,7 +1565,7 @@ function PptContentEmbedFixed({ lessonId, pageHint = null }) {
           <button
             onClick={() => setPageIndex((prev) => Math.min(slideNumbers.length - 1, prev + 1))}
             disabled={pageIndex === slideNumbers.length - 1}
-            style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(17,17,17,0.12)", background: "#111111", color: "#ffffff", cursor: pageIndex === slideNumbers.length - 1 ? "default" : "pointer" }}
+            style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: pageIndex === slideNumbers.length - 1 ? "default" : "pointer" }}
           >
             Next
           </button>
@@ -1440,7 +1577,7 @@ function PptContentEmbedFixed({ lessonId, pageHint = null }) {
           alt={`${lessonData.lessonTitle} - slide ${currentSlideNo}`}
           loading="lazy"
           onClick={() => setLightboxOpen(true)}
-          style={{ width: "100%", display: "block", borderRadius: 12, border: "1px solid rgba(17,17,17,0.08)", background: "#f6f6f6", cursor: "zoom-in" }}
+          style={{ width: "100%", display: "block", borderRadius: 12, border: "1px solid rgba(212,177,94,0.14)", background: "rgba(255,255,255,0.06)", cursor: "zoom-in" }}
         />
       </div>
       <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -1468,7 +1605,7 @@ function PptContentEmbedFixed({ lessonId, pageHint = null }) {
             <img
               src={imageSrc}
               alt={`${lessonData.lessonTitle} - slide ${currentSlideNo} enlarged view`}
-              style={{ maxWidth: "100%", maxHeight: "94vh", width: "auto", height: "auto", display: "block", borderRadius: 14, background: "#ffffff" }}
+              style={{ maxWidth: "100%", maxHeight: "94vh", width: "auto", height: "auto", display: "block", borderRadius: 14, background: "rgba(38,34,46,0.85)" }}
             />
           </div>
         </div>
@@ -1495,10 +1632,66 @@ function LessonSupportLinks({ onOpen }) {
           onClick={() => onOpen(item.id)}
           className="support-tile"
         >
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 6 }}>{item.label}</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 6 }}>{item.label}</div>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>{item.desc}</div>
         </button>
       ))}
+    </div>
+  );
+}
+
+function ContentOutline({ branches = [], title = "Lesson Content", subtitle }) {
+  const [mode, setMode] = useState("level1");
+  const [open, setOpen] = useState(() => new Set());
+
+  const applyMode = (nextMode) => {
+    setMode(nextMode);
+    setOpen(nextMode === "level2" ? new Set(branches.map((branch) => branch.key)) : new Set());
+  };
+  const toggleBranch = (key) => setOpen((prev) => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
+
+  if (!branches.length) return null;
+
+  const segments = [
+    { id: "collapse", label: "Collapse" },
+    { id: "level1", label: "Summary" },
+    { id: "level2", label: "Detail" },
+  ];
+
+  return (
+    <div className="section-card">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 4 }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700 }}>{title}</div>
+          <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginTop: 2 }}>{subtitle || `${branches.length} sections · tap a branch to expand`}</div>
+        </div>
+        <div className="kmap-seg">
+          {segments.map((seg) => (
+            <button key={seg.id} type="button" className={mode === seg.id ? "is-active" : ""} onClick={() => applyMode(seg.id)}>{seg.label}</button>
+          ))}
+        </div>
+      </div>
+      <div className="kmap-outline">
+        {branches.map((branch) => {
+          const full = open.has(branch.key) || mode === "level2";
+          const peek = !full && mode === "level1" && branch.peek;
+          return (
+            <div className="kmap-branch" key={branch.key}>
+              <button type="button" className="kmap-branch-head" onClick={() => toggleBranch(branch.key)}>
+                <span className={`kmap-chevron${full ? " is-open" : ""}`}>▶</span>
+                <span className="kmap-badge">{branch.badge}</span>
+                <span className="kmap-branch-title">{branch.title}</span>
+              </button>
+              {full && <div className="kmap-branch-body">{branch.body}</div>}
+              {peek && <div className="kmap-branch-peek">{branch.peek}</div>}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -1517,19 +1710,25 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const leftCount = Math.ceil(nodes.length / 2);
   const layoutNodes = nodes.map((item, index) => {
-    const isLeft = index < Math.ceil(nodes.length / 2);
-    const leftPositions = [70, 180, 290];
-    const rightPositions = [95, 220, 345];
-    const laneIndex = isLeft ? index : index - Math.ceil(nodes.length / 2);
+    const isLeft = index < leftCount;
+    const laneIndex = isLeft ? index : index - leftCount;
+    const laneTotal = isLeft ? leftCount : nodes.length - leftCount;
+    // evenly distribute each lane across the canvas height so cards never crowd
+    const top = 24;
+    const slot = 200; // vertical pitch between cards (card height ~140 + breathing room)
+    const offset = isLeft ? 0 : 110; // stagger the right lane against the left
+    const y = top + offset + laneIndex * slot;
     return {
       ...item,
       index,
       isLeft,
+      laneTotal,
       x: isLeft ? 70 : 690,
-      y: (isLeft ? leftPositions : rightPositions)[laneIndex] || (90 + laneIndex * 120),
+      y,
       anchorX: isLeft ? 290 : 690,
-      anchorY: ((isLeft ? leftPositions : rightPositions)[laneIndex] || (90 + laneIndex * 120)) + 44,
+      anchorY: y + 44,
     };
   });
 
@@ -1540,21 +1739,22 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Knowledge Map</div>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{chapterTitle}</div>
         </div>
-        <Tag color="#111111" bg="#F3F4F6">{`${nodes.length} preview strands`}</Tag>
+        <Tag>{`${nodes.length} preview strands`}</Tag>
       </div>
 
       {isMobile ? (
-        <div style={{ borderRadius: 22, background: "linear-gradient(180deg, #fcfcfc 0%, #f5f5f5 100%)", border: "1px solid rgba(17,17,17,0.08)", padding: 14 }}>
+        <div className="kmap-canvas" style={{ padding: 14 }}>
           <div
             style={{
               padding: 16,
               borderRadius: 18,
-              background: "linear-gradient(180deg, rgba(17,17,17,0.98), rgba(36,36,36,0.95))",
+              background: "linear-gradient(160deg, rgba(20,20,28,0.99), rgba(46,42,68,0.96))",
               color: "#ffffff",
               marginBottom: 14,
+              boxShadow: "0 18px 40px rgba(212,177,94,0.22), inset 0 1px 0 rgba(255,255,255,0.1)",
             }}
           >
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.72)", marginBottom: 8 }}>Central Topic</div>
+            <div style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(240,214,138,0.8)", marginBottom: 8 }}>Central Topic</div>
             <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.35, marginBottom: 10 }}>{lessonTitle}</div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.74)", lineHeight: 1.7 }}>
               Review the four main nodes first, then open the complete lesson PPT.
@@ -1562,7 +1762,7 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
           </div>
 
           <div style={{ position: "relative", paddingLeft: 24, display: "grid", gap: 12 }}>
-            <div style={{ position: "absolute", left: 11, top: 6, bottom: 6, width: 2, background: "rgba(17,17,17,0.12)" }} />
+            <div style={{ position: "absolute", left: 11, top: 6, bottom: 6, width: 2, background: "linear-gradient(180deg, rgba(212,177,94,0.5), rgba(212,177,94,0.12))" }} />
             {nodes.map((item, index) => {
               const active = hoveredIndex === index;
               return (
@@ -1578,25 +1778,27 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
                     position: "relative",
                     padding: 14,
                     borderRadius: 16,
-                    background: active ? "#111111" : "rgba(255,255,255,0.96)",
-                    border: active ? "1px solid #111111" : "1px solid rgba(17,17,17,0.1)",
-                    boxShadow: active ? "0 12px 28px rgba(17,17,17,0.14)" : "0 8px 20px rgba(17,17,17,0.06)",
+                    background: active
+                      ? "linear-gradient(180deg, #f0d68a, #d4b15e)"
+                      : "linear-gradient(180deg, rgba(38,34,46,0.92), rgba(24,22,30,0.82))",
+                    border: active ? "1px solid #e6c878" : "1px solid rgba(212,177,94,0.16)",
+                    boxShadow: active ? "0 14px 30px rgba(212,177,94,0.3)" : "0 10px 24px rgba(0,0,0,0.4)",
                     textAlign: "left",
                     cursor: "pointer",
                   }}
                 >
-                  <div style={{ position: "absolute", left: -21, top: 18, width: 12, height: 12, borderRadius: 999, background: active ? "#111111" : "#ffffff", border: "2px solid #111111" }} />
+                  <div style={{ position: "absolute", left: -21, top: 18, width: 12, height: 12, borderRadius: 999, background: active ? "#f0d68a" : "#1a1206", border: "2px solid #d4b15e" }} />
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: 999, background: active ? "#ffffff" : "#111111", color: active ? "#111111" : "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: 999, background: active ? "#1a1206" : "linear-gradient(135deg,#f0d68a,#b8902f)", color: active ? "#f0d68a" : "#1a1206", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
                       {index + 1}
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: active ? "#ffffff" : "#111111", lineHeight: 1.4 }}>{item.h}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: active ? "#1a1206" : "#f4efe3", lineHeight: 1.4 }}>{item.h}</div>
                   </div>
-                  <div style={{ fontSize: 12, color: active ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                  <div style={{ fontSize: 12, color: active ? "rgba(26,18,6,0.78)" : "var(--color-text-secondary)", lineHeight: 1.8 }}>
                     {summarize(item.b)}
                   </div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: active ? "rgba(255,255,255,0.88)" : "#111111", marginTop: 8 }}>
-                    Open the related lesson content
+                  <div style={{ fontSize: 11, fontWeight: 600, color: active ? "rgba(26,18,6,0.9)" : "#d4b15e", marginTop: 8 }}>
+                    Open the related lesson content →
                   </div>
                 </button>
               );
@@ -1605,18 +1807,18 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
         </div>
       ) : (
         <div className="kmap-canvas">
-          <div style={{ position: "relative", width: 980, minHeight: 470, margin: "0 auto", padding: "18px 0" }}>
+          <div style={{ position: "relative", width: 980, minHeight: 520, margin: "0 auto", padding: "18px 0" }}>
             <svg
               width="980"
-              height="470"
-              viewBox="0 0 980 470"
+              height="520"
+              viewBox="0 0 980 520"
               style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
               aria-hidden="true"
             >
               <defs>
                 <linearGradient id="mind-line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="rgba(83,74,183,0.16)" />
-                  <stop offset="100%" stopColor="rgba(83,74,183,0.55)" />
+                  <stop offset="0%" stopColor="rgba(212,177,94,0.18)" />
+                  <stop offset="100%" stopColor="rgba(212,177,94,0.6)" />
                 </linearGradient>
               </defs>
               {layoutNodes.map((item) => {
@@ -1628,7 +1830,7 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
                       className="kmap-link"
                       d={curve}
                       pathLength="1"
-                      stroke={active ? "#111111" : "url(#mind-line-gradient)"}
+                      stroke={active ? "#f0d68a" : "url(#mind-line-gradient)"}
                       strokeWidth={active ? 4 : 2.5}
                       style={{ animationDelay: `${item.index * 0.12}s` }}
                     />
@@ -1636,16 +1838,16 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
                       className="kmap-link is-flow"
                       d={curve}
                       pathLength="1"
-                      stroke={active ? "rgba(255,255,255,0.92)" : "#534AB7"}
+                      stroke={active ? "#fff6df" : "#d4b15e"}
                       strokeWidth={active ? 4.5 : 3}
-                      style={{ opacity: active ? 0.9 : 0.55 }}
+                      style={{ opacity: active ? 0.95 : 0.6 }}
                     />
                     <circle
                       className="kmap-anchor-dot"
                       cx={item.anchorX}
                       cy={item.anchorY}
                       r={active ? 5 : 4}
-                      fill={active ? "#111111" : "#534AB7"}
+                      fill={active ? "#f0d68a" : "#d4b15e"}
                       style={{ animationDelay: `${item.index * 0.3}s` }}
                     />
                   </g>
@@ -1654,6 +1856,7 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
             </svg>
 
             <div
+              className="kmap-center"
               style={{
                 position: "absolute",
                 left: 380,
@@ -1662,59 +1865,70 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
                 minHeight: 150,
                 padding: 18,
                 borderRadius: 24,
-                background: "linear-gradient(180deg, rgba(17,17,17,0.98), rgba(36,36,36,0.95))",
+                background: "linear-gradient(160deg, rgba(20,20,28,0.99), rgba(46,42,68,0.96))",
                 color: "#ffffff",
-                boxShadow: "0 18px 40px rgba(17,17,17,0.18)",
+                boxShadow: "0 22px 48px rgba(60,52,137,0.28), inset 0 1px 0 rgba(255,255,255,0.10)",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "center",
               }}
             >
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.72)", marginBottom: 8 }}>Central Topic</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <span className="motion-bars" style={{ height: 12 }}><span /><span /><span /></span>
+                <span style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.6)" }}>Central Topic</span>
+              </div>
               <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.35, marginBottom: 10 }}>{lessonTitle}</div>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.74)", lineHeight: 1.7 }}>
                 Review the four main nodes first, then move to content and classroom practice.
               </div>
             </div>
 
-            {layoutNodes.map((item) => (
-              <button
-                key={`${lessonTitle}-map-${item.index}`}
-                type="button"
-                onMouseEnter={() => setHoveredIndex(item.index)}
-                onMouseLeave={() => setHoveredIndex(null)}
-                onFocus={() => setHoveredIndex(item.index)}
-                onBlur={() => setHoveredIndex(null)}
-                onClick={() => onNodeSelect?.(item.index)}
-                style={{
-                  position: "absolute",
-                  left: item.x,
-                  top: item.y,
-                  width: 220,
-                  padding: 14,
-                  borderRadius: 18,
-                  background: hoveredIndex === item.index ? "#111111" : "rgba(255,255,255,0.96)",
-                  border: hoveredIndex === item.index ? "1px solid #111111" : "1px solid rgba(17,17,17,0.1)",
-                  boxShadow: hoveredIndex === item.index ? "0 16px 32px rgba(17,17,17,0.14)" : "0 8px 24px rgba(17,17,17,0.06)",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  transition: "all 0.18s ease",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 999, background: hoveredIndex === item.index ? "#ffffff" : "#111111", color: hoveredIndex === item.index ? "#111111" : "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
-                    {item.index + 1}
+            {layoutNodes.map((item) => {
+              const active = hoveredIndex === item.index;
+              return (
+                <button
+                  key={`${lessonTitle}-map-${item.index}`}
+                  type="button"
+                  className="kmap-node"
+                  onMouseEnter={() => setHoveredIndex(item.index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  onFocus={() => setHoveredIndex(item.index)}
+                  onBlur={() => setHoveredIndex(null)}
+                  onClick={() => onNodeSelect?.(item.index)}
+                  style={{
+                    position: "absolute",
+                    left: item.x,
+                    top: item.y,
+                    width: 220,
+                    padding: 16,
+                    borderRadius: 18,
+                    background: active
+                      ? "linear-gradient(180deg, #f0d68a, #d4b15e)"
+                      : "linear-gradient(180deg, rgba(38,34,46,0.92), rgba(24,22,30,0.82))",
+                    border: active ? "1px solid #e6c878" : "1px solid rgba(212,177,94,0.16)",
+                    boxShadow: active
+                      ? "0 18px 40px rgba(212,177,94,0.3), inset 0 1px 0 rgba(255,255,255,0.25)"
+                      : "0 10px 28px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    animationDelay: `${0.15 + item.index * 0.12}s`,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 999, background: active ? "#1a1206" : "linear-gradient(135deg,#f0d68a,#b8902f)", color: active ? "#f0d68a" : "#1a1206", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, boxShadow: active ? "none" : "0 4px 10px rgba(212,177,94,0.35)", flexShrink: 0 }}>
+                      {item.index + 1}
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: active ? "#1a1206" : "#f4efe3", lineHeight: 1.4 }}>{item.h}</div>
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: hoveredIndex === item.index ? "#ffffff" : "#111111", lineHeight: 1.4 }}>{item.h}</div>
-                </div>
-                <div style={{ fontSize: 12, color: hoveredIndex === item.index ? "rgba(255,255,255,0.82)" : "var(--color-text-secondary)", lineHeight: 1.8 }}>
-                  {summarize(item.b)}
-                </div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: hoveredIndex === item.index ? "rgba(255,255,255,0.88)" : "#111111", marginTop: 10 }}>
-                  Open the related lesson content
-                </div>
-              </button>
-            ))}
+                  <div style={{ fontSize: 12, color: active ? "rgba(26,18,6,0.78)" : "var(--color-text-secondary)", lineHeight: 1.8 }}>
+                    {summarize(item.b)}
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: active ? "rgba(26,18,6,0.9)" : "#d4b15e", marginTop: 10 }}>
+                    Open the related lesson content →
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -1776,7 +1990,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
           className="support-tile"
           style={{ width: "min(240px, 100%)", textAlign: "left", padding: 14, flexShrink: 0 }}
         >
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 6 }}>AI Tutor</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 6 }}>AI Tutor</div>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
             Ask about the current lesson to get concept explanations, homework help, and error correction.
           </div>
@@ -1828,7 +2042,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
                   { no: "02", title: "Open Content", desc: "View the full PPT", active: false },
                   { no: "03", title: "Practice", desc: "Check weak points", active: false },
                 ].map((step) => (
-                  <div key={step.no} style={{ border: step.active ? "1px solid rgba(17,17,17,0.18)" : "1px solid rgba(17,17,17,0.08)", background: step.active ? "rgba(17,17,17,0.04)" : "#ffffff", borderRadius: 14, padding: 12 }}>
+                  <div key={step.no} style={{ border: step.active ? "1px solid rgba(212,177,94,0.4)" : "1px solid rgba(212,177,94,0.14)", background: step.active ? "rgba(212,177,94,0.08)" : "rgba(255,255,255,0.04)", borderRadius: 14, padding: 12 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-tertiary)", marginBottom: 6 }}>{step.no}</div>
                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{step.title}</div>
                     <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.6 }}>{step.desc}</div>
@@ -1836,10 +2050,10 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
                 ))}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                <button onClick={() => setTab("content")} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #111111", background: "#111111", color: "#ffffff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                <button onClick={() => setTab("content")} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #111111", background: "var(--gradient-accent)", color: "#1a1206", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                   Open Lesson Content
                 </button>
-                <button onClick={() => setTab("classroom")} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: "#f6f6f6", color: "#111111", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                <button onClick={() => setTab("classroom")} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                   Go to Practice
                 </button>
               </div>
@@ -1894,14 +2108,14 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
             <button
               type="button"
               onClick={() => setHomeworkGuideOpen((prev) => !prev)}
-              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: homeworkGuideOpen ? "#111111" : "#ffffff", color: homeworkGuideOpen ? "#ffffff" : "#111111", cursor: "pointer" }}
+              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: homeworkGuideOpen ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)", color: homeworkGuideOpen ? "#1a1206" : "var(--color-text-primary)", cursor: "pointer" }}
             >
               {homeworkGuideOpen ? "Hide Homework Guidelines" : "Show Homework Guidelines"}
             </button>
             <button
               type="button"
               onClick={() => setHomeworkContactOpen((prev) => !prev)}
-              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(17,17,17,0.12)", background: homeworkContactOpen ? "#111111" : "#ffffff", color: homeworkContactOpen ? "#ffffff" : "#111111", cursor: "pointer" }}
+              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: homeworkContactOpen ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)", color: homeworkContactOpen ? "#1a1206" : "var(--color-text-primary)", cursor: "pointer" }}
             >
               {homeworkContactOpen ? "Hide Support Notes" : "Show Support Notes"}
             </button>
@@ -1910,7 +2124,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
               className="support-tile"
               style={{ width: "min(320px, 100%)", textAlign: "left", padding: 12, marginLeft: "auto" }}
             >
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 6 }}>Music Creation Lab</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 6 }}>Music Creation Lab</div>
               <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
                 Create music with the interactive lab.
               </div>
@@ -1999,7 +2213,7 @@ function LessonSupportLinksV2({ onOpen }) {
           onClick={() => onOpen(item.id)}
           className="support-tile"
         >
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#111111", marginBottom: 6 }}>{item.label}</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 6 }}>{item.label}</div>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>{item.desc}</div>
         </button>
       ))}

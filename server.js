@@ -3375,6 +3375,66 @@ app.post("/api/reports/student-pdf", async (req, res) => {
   }
 });
 
+function parseRecognitionJson(text) {
+  const raw = safeString(text).trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(raw.slice(start, end + 1));
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
+const HOMEWORK_RECOGNIZE_TARGETS = {
+  rhythm: 'Transcribe the RHYTHM line by line, left to right. Output JSON {"notes":[{"value":"whole|half|quarter|eighth|sixteenth|dotted-half|dotted-quarter|dotted-eighth","rest":false,"pitch":"C4"}]}. Set rest:true for rests. "pitch" is the staff position (C4..B5) and is optional — omit it if the pitch is unclear.',
+  piano: 'Transcribe the PITCH SEQUENCE left to right. Output JSON {"notes":[{"note":"C","octave":4}]} where "note" is one of C,C#,D,D#,E,F,F#,G,G#,A,A#,B and "octave" is 3, 4, or 5.',
+  staff: 'Transcribe the STAFF notes left to right. Output JSON {"notes":[{"pitch":"C4","value":"whole|half|quarter","accidental":"natural|sharp|flat"}]}.',
+};
+
+app.post("/api/homework/recognize", async (req, res) => {
+  const imageDataUrl = safeString(req.body?.imageDataUrl);
+  const mode = ["rhythm", "piano", "staff"].includes(req.body?.mode) ? req.body.mode : "rhythm";
+  if (!imageDataUrl.startsWith("data:")) {
+    return res.status(400).json({ error: "A captured image is required." });
+  }
+  const system = 'You are an optical music recognition engine. Read ONLY the music notation in the image and transcribe it. Output ONLY one valid compact JSON object — no markdown, no code fences, no explanation. If the notation cannot be read, output {"notes":[]}.';
+  const messages = [{
+    role: "user",
+    content: `${HOMEWORK_RECOGNIZE_TARGETS[mode]}\nReturn only the JSON object.`,
+    imageDataUrl,
+    imageName: "homework-capture",
+  }];
+  try {
+    let text;
+    if ((process.env.AI_PROVIDER || "openai").toLowerCase() === "gemini") {
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ error: "GEMINI_API_KEY is not configured." });
+      }
+      text = await createGeminiResponse({ system, messages, maxTokens: 700 });
+    } else {
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ error: "OPENAI_API_KEY is not configured." });
+      }
+      text = await createDashScopeCompatibleResponse({ system, messages, maxTokens: 700, timeoutMs: getTutorTimeoutMs() });
+    }
+    const parsed = parseRecognitionJson(text);
+    if (!parsed || !Array.isArray(parsed.notes)) {
+      return res.status(422).json({ error: "Could not read notation from the image.", raw: safeString(text).slice(0, 300) });
+    }
+    return res.json({ ok: true, mode, notes: parsed.notes.slice(0, 64) });
+  } catch (error) {
+    return res.status(500).json({ error: safeString(error?.message, "Recognition failed.") });
+  }
+});
+
 app.post("/api/tutor", async (req, res) => {
   const { system, messages = [], maxTokens = 1000 } = req.body || {};
   const rawSafeMessages = (Array.isArray(messages) ? messages.slice(-6) : []).map((message) => ({
