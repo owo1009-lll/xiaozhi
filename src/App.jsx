@@ -95,7 +95,6 @@ export default function App() {
 
         <footer style={{ textAlign: "center", padding: "16px 14px", borderTop: "0.5px solid var(--color-border-tertiary)", fontSize: 0, color: "var(--color-text-tertiary)", background: "rgba(14,12,20,0.5)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, flexWrap: "wrap", marginTop: 0 }}>
-            <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>Contributor: Guan Xingzhi</span>
             <img src="/images/ucsi-logo-user.jpg" alt="UCSI University" style={{ height: 42, width: "auto", objectFit: "contain", display: "block" }} />
           </div>
         </footer>

@@ -835,7 +835,6 @@ const PHRASE_REPLACEMENTS = [
   ["登录", "Log In"],
   ["退出登录", "Log Out"],
   ["测评", "Assessment"],
-  ["贡献者：", "Contributor: "],
   ["综合得分", "Overall Score"],
   ["已完成", "Completed"],
   ["平均评分", "Average Rating"],
