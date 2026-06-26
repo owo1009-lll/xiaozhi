@@ -42,7 +42,7 @@ function PitchExercise({ onScore }) {
       {target !== null && (
         <div style={{ textAlign: "center", padding: 14, background: "var(--color-background-secondary)", borderRadius: 8, marginBottom: 10 }}>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>找到这个音</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "#534AB7" }}>{NT[target]}</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#5d8f46" }}>{NT[target]}</div>
         </div>
       )}
       <div style={{ position: "relative", height: 120, margin: "0 auto", width: WK.length * 36, userSelect: "none" }}>
@@ -52,7 +52,7 @@ function PitchExercise({ onScore }) {
         {BK.map((ni) => {
           const wPos = WK.filter((w) => w < ni).length;
           return (
-            <div key={ni} onClick={() => handleKey(ni)} style={{ position: "absolute", left: wPos * 36 - 12, top: 0, width: 24, height: 72, background: active === ni ? "#534AB7" : "#2C2C2A", borderRadius: "0 0 3px 3px", cursor: "pointer", zIndex: 2, display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 4, fontSize: 9, color: "#999" }}>{NT[ni]}</div>
+            <div key={ni} onClick={() => handleKey(ni)} style={{ position: "absolute", left: wPos * 36 - 12, top: 0, width: 24, height: 72, background: active === ni ? "#5d8f46" : "#2C2C2A", borderRadius: "0 0 3px 3px", cursor: "pointer", zIndex: 2, display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 4, fontSize: 9, color: "#999" }}>{NT[ni]}</div>
           );
         })}
       </div>
@@ -102,11 +102,11 @@ function IntervalExercise({ onScore }) {
         <Tag color="#085041" bg="#E1F5EE">{correct}/{total}</Tag>
       </div>
       <div style={{ textAlign: "center", marginBottom: 10 }}>
-        <button onClick={hear} style={{ padding: "8px 20px", borderRadius: 14, background: "#534AB7", color: "#fff", border: "none", fontSize: 13, cursor: "pointer" }}>播放音程</button>
+        <button onClick={hear} style={{ padding: "8px 20px", borderRadius: 14, background: "#5d8f46", color: "#fff", border: "none", fontSize: 13, cursor: "pointer" }}>播放音程</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(92px, 1fr))", gap: 6 }}>
         {INTERVALS.map((iv) => (
-          <button key={iv.n} onClick={() => answer(iv.n)} disabled={!!fb} style={{ padding: "7px 4px", borderRadius: 6, border: "1px solid var(--color-border-tertiary)", background: "rgba(255,255,255,0.06)", cursor: fb ? "default" : "pointer", fontSize: 12, fontWeight: 500, opacity: fb ? 0.6 : 1 }}>
+          <button key={iv.n} onClick={() => answer(iv.n)} disabled={!!fb} style={{ padding: "7px 4px", borderRadius: 6, border: "1px solid var(--color-border-tertiary)", background: "rgba(94,60,28,0.07)", cursor: fb ? "default" : "pointer", fontSize: 12, fontWeight: 500, opacity: fb ? 0.6 : 1 }}>
             {iv.n}
             <div style={{ fontSize: 10, color: "var(--color-text-tertiary)" }}>{iv.s} 个半音</div>
           </button>
@@ -161,7 +161,7 @@ function ChordExercise({ onScore }) {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 6 }}>
         {CHORDS.map((ch) => (
-          <button key={ch.n} onClick={() => answer(ch.n)} disabled={!!fb} style={{ padding: 8, borderRadius: 6, border: "1px solid var(--color-border-tertiary)", background: "rgba(255,255,255,0.06)", cursor: fb ? "default" : "pointer", fontSize: 12, fontWeight: 500, opacity: fb ? 0.6 : 1 }}>
+          <button key={ch.n} onClick={() => answer(ch.n)} disabled={!!fb} style={{ padding: 8, borderRadius: 6, border: "1px solid var(--color-border-tertiary)", background: "rgba(94,60,28,0.07)", cursor: fb ? "default" : "pointer", fontSize: 12, fontWeight: 500, opacity: fb ? 0.6 : 1 }}>
             {ch.n}
           </button>
         ))}
@@ -225,7 +225,7 @@ function NotationExercise({ onScore }) {
       </div>
       <div style={{ display: "flex", gap: 4 }}>
         {["C", "D", "E", "F", "G", "A", "B"].map((letter) => (
-          <button key={letter} onClick={() => answer(letter)} disabled={!!fb} style={{ flex: 1, padding: "9px 0", borderRadius: 6, fontSize: 15, fontWeight: 600, border: "1px solid var(--color-border-tertiary)", background: "rgba(255,255,255,0.06)", cursor: fb ? "default" : "pointer", opacity: fb ? 0.6 : 1 }}>
+          <button key={letter} onClick={() => answer(letter)} disabled={!!fb} style={{ flex: 1, padding: "9px 0", borderRadius: 6, fontSize: 15, fontWeight: 600, border: "1px solid var(--color-border-tertiary)", background: "rgba(94,60,28,0.07)", cursor: fb ? "default" : "pointer", opacity: fb ? 0.6 : 1 }}>
             {letter}
           </button>
         ))}
@@ -255,11 +255,11 @@ function TermsExercise({ onScore }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-        <Tag color="#3C3489" bg="#EEEDFE">术语卡片</Tag>
+        <Tag color="#3f6e2f" bg="#e3efd6">术语卡片</Tag>
         <Tag color="#085041" bg="#E1F5EE">{idx + 1}/{TERMS.length}</Tag>
       </div>
       <div onClick={() => setShow(true)} style={{ background: "var(--color-background-secondary)", borderRadius: 8, padding: 28, textAlign: "center", cursor: "pointer", marginBottom: 8, minHeight: 80 }}>
-        <div style={{ fontSize: 22, fontWeight: 700, color: "#534AB7" }}>{term.t}</div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: "#5d8f46" }}>{term.t}</div>
         {show ? (
           <div style={{ marginTop: 10 }}>
             <div style={{ fontSize: 18, fontWeight: 600, color: "var(--color-text-primary)" }}>{term.c}</div>
@@ -341,12 +341,12 @@ function RhythmExercise({ onScore }) {
       <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 4 }}>你的点击：</div>
       <div style={{ display: "flex", gap: 3, marginBottom: 10 }}>
         {Array.from({ length: 8 }, (_, i) => (
-          <div key={i} onClick={() => { if (!playing) setTaps((prev) => { const next = [...prev]; next[i] = next[i] ? 0 : 1; return next; }); }} style={{ flex: 1, height: 28, borderRadius: 4, cursor: "pointer", background: taps[i] ? "#534AB7" : "var(--color-background-tertiary)", transition: "all 0.15s" }} />
+          <div key={i} onClick={() => { if (!playing) setTaps((prev) => { const next = [...prev]; next[i] = next[i] ? 0 : 1; return next; }); }} style={{ flex: 1, height: 28, borderRadius: 4, cursor: "pointer", background: taps[i] ? "#5d8f46" : "var(--color-background-tertiary)", transition: "all 0.15s" }} />
         ))}
       </div>
       <div style={{ display: "flex", gap: 5 }}>
-        <button onClick={check} disabled={playing} style={{ flex: 1, padding: 7, borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "rgba(255,255,255,0.06)", cursor: "pointer", fontSize: 12 }}>检查</button>
-        <button onClick={() => { setPi((prev) => (prev + 1) % RHYTHMS.length); setTaps([]); setFb(null); }} style={{ flex: 1, padding: 7, borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "rgba(255,255,255,0.06)", cursor: "pointer", fontSize: 12 }}>下一题</button>
+        <button onClick={check} disabled={playing} style={{ flex: 1, padding: 7, borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "rgba(94,60,28,0.07)", cursor: "pointer", fontSize: 12 }}>检查</button>
+        <button onClick={() => { setPi((prev) => (prev + 1) % RHYTHMS.length); setTaps([]); setFb(null); }} style={{ flex: 1, padding: 7, borderRadius: 5, border: "1px solid var(--color-border-secondary)", background: "rgba(94,60,28,0.07)", cursor: "pointer", fontSize: 12 }}>下一题</button>
       </div>
       {fb ? <FeedbackBar ok={fb.ok} msg={fb.msg} /> : null}
     </div>

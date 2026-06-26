@@ -1,4 +1,4 @@
-export function Tag({ children, color = "#f0d68a", bg = "rgba(212,177,94,0.12)" }) {
+export function Tag({ children, color = "#3f6e2f", bg = "rgba(120,80,40,0.2)" }) {
   return (
     <span
       style={{
@@ -10,7 +10,7 @@ export function Tag({ children, color = "#f0d68a", bg = "rgba(212,177,94,0.12)" 
         fontWeight: 600,
         color,
         background: bg,
-        border: "1px solid rgba(255,255,255,0.1)",
+        border: "1px solid rgba(120,80,40,0.16)",
       }}
     >
       {children}
@@ -27,7 +27,7 @@ export function PBar({ v = 0, max = 100, color = "var(--gradient-accent)" }) {
         width: "100%",
         height: 8,
         borderRadius: 999,
-        background: "rgba(255,255,255,0.1)",
+        background: "rgba(120,80,40,0.16)",
         overflow: "hidden",
       }}
     >
@@ -37,7 +37,7 @@ export function PBar({ v = 0, max = 100, color = "var(--gradient-accent)" }) {
           height: "100%",
           borderRadius: 999,
           background: color,
-          boxShadow: "0 0 12px rgba(212,177,94,0.4)",
+          boxShadow: "0 0 12px rgba(93,143,70,0.45)",
           transition: "width 0.25s ease",
         }}
       />
@@ -63,7 +63,7 @@ export function Stars({ value = 0, onChange, size = 16 }) {
               cursor: onChange ? "pointer" : "default",
               fontSize: size,
               lineHeight: 1,
-              color: active ? "#e6c878" : "rgba(255,255,255,0.22)",
+              color: active ? "#4f8035" : "rgba(255,255,255,0.22)",
             }}
             aria-label={`评分 ${star} 星`}
           >
@@ -98,7 +98,7 @@ export function FeedbackBar({ ok, msg, onNext }) {
         <button
           type="button"
           onClick={onNext}
-          style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)", cursor: "pointer", fontSize: 12 }}
+          style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", color: "var(--color-text-primary)", cursor: "pointer", fontSize: 12 }}
         >
           下一题
         </button>
@@ -135,7 +135,7 @@ export function LessonCharts({ lessonId }) {
           {bars.map((value, index) => (
             <div key={`${lessonId}-bar-${index}`} style={{ flex: 1, textAlign: "center" }}>
               <div style={{ height: 96, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                <div style={{ width: "100%", maxWidth: 34, height: `${value}%`, borderRadius: 10, background: "linear-gradient(180deg,#f0d68a,#b8902f)", boxShadow: "0 0 14px rgba(212,177,94,0.3)" }} />
+                <div style={{ width: "100%", maxWidth: 34, height: `${value}%`, borderRadius: 10, background: "linear-gradient(180deg,#3f6e2f,#3f6e2f)", boxShadow: "0 0 14px rgba(93,143,70,0.4)" }} />
               </div>
               <div style={{ fontSize: 10, color: "var(--color-text-tertiary)", marginTop: 6 }}>{`知识点 ${index + 1}`}</div>
             </div>
@@ -157,7 +157,7 @@ export function WeakPointExplanationCards({ items = [], titleMap = {} }) {
   return (
     <div style={{ display: "grid", gap: 12, marginBottom: 12 }}>
       {items.map((item) => (
-        <div key={item.knowledgePointId} style={{ padding: 14, borderRadius: 14, background: "linear-gradient(180deg, rgba(34,31,42,0.78), rgba(24,22,30,0.64))", border: "1px solid rgba(212,177,94,0.14)" }}>
+        <div key={item.knowledgePointId} style={{ padding: 14, borderRadius: 14, background: "linear-gradient(180deg, #f7ead0, #f1e2bc)", border: "2px solid #9c6b3a", boxShadow: "inset 0 0 0 1px rgba(255,250,235,0.5)" }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
             {titleMap[item.knowledgePointId] || item.knowledgePointId}
           </div>
@@ -165,13 +165,13 @@ export function WeakPointExplanationCards({ items = [], titleMap = {} }) {
             {item.explanation}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
-            <div style={{ padding: 10, borderRadius: 12, background: "rgba(255,255,255,0.04)" }}>
+            <div style={{ padding: 10, borderRadius: 12, background: "rgba(94,60,28,0.05)" }}>
               <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>易错点</div>
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, whiteSpace: "pre-line" }}>
                 {item.misunderstandings.map((line) => `• ${line}`).join("\n")}
               </div>
             </div>
-            <div style={{ padding: 10, borderRadius: 12, background: "rgba(212,177,94,0.08)" }}>
+            <div style={{ padding: 10, borderRadius: 12, background: "rgba(93,143,70,0.12)" }}>
               <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>做题抓手</div>
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, whiteSpace: "pre-line" }}>
                 {item.practiceGuide.map((line) => `• ${line}`).join("\n")}

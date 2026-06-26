@@ -4,8 +4,10 @@ import { Tag } from "./uiBasics";
 import { LessonView } from "./LessonExperience";
 import { AssessmentPage, ModernHomePage } from "./AppPages";
 import { unlockAudioSystem } from "./musicAudio";
+import IntroAnimation from "./IntroAnimation";
 
 const LazyTeacherDashboardPage = lazy(() => import("./TeacherDashboardPage.jsx"));
+const LazyAITutorV2 = lazy(() => import("./AITutorV2.jsx"));
 
 const CHAPTERS = PPT_CHAPTERS;
 const ALL_LESSONS = CHAPTERS.flatMap((chapter) => chapter.ls);
@@ -15,11 +17,13 @@ export default function App() {
   const [scores, setScores] = useState({});
   const [ratings, setRatings] = useState({});
   const [sideOpen, setSideOpen] = useState(false);
+  const [tutorOpenSignal, setTutorOpenSignal] = useState(0);
 
   const handleSetScore = (id, v) => setScores((prev) => ({ ...prev, [id]: Math.max(prev[id] || 0, v) }));
   const handleSetRating = (id, v) => setRatings((prev) => ({ ...prev, [id]: v }));
 
   const currentLesson = ALL_LESSONS.find((l) => l.id === page);
+  const openFloatingTutor = () => setTutorOpenSignal((value) => value + 1);
 
   useEffect(() => {
     const unlock = () => {
@@ -36,10 +40,12 @@ export default function App() {
   }, []);
 
   return (
-    <div className="page-shell" style={{ fontFamily: "var(--font-sans, -apple-system, sans-serif)" }}>
+    <>
+      <IntroAnimation />
+      <div className="page-shell" style={{ fontFamily: "var(--font-sans, -apple-system, sans-serif)" }}>
       <div style={{ width: sideOpen ? 280 : 0, overflow: "hidden", transition: "width 0.25s", flexShrink: 0 }}>
         <div className="sidebar-shell">
-          <div onClick={() => { setPage("home"); setSideOpen(false); }} style={{ padding: "10px 12px", borderRadius: 14, cursor: "pointer", fontSize: 13, fontWeight: 700, marginBottom: 8, color: page === "home" ? "#f0d68a" : "var(--color-text-primary)", background: page === "home" ? "rgba(212,177,94,0.14)" : "transparent" }}>
+          <div onClick={() => { setPage("home"); setSideOpen(false); }} style={{ padding: "10px 12px", borderRadius: 14, cursor: "pointer", fontSize: 13, fontWeight: 700, marginBottom: 8, color: page === "home" ? "#3f6e2f" : "var(--color-text-primary)", background: page === "home" ? "rgba(120,80,40,0.22)" : "transparent" }}>
             首页
           </div>
           {CHAPTERS.map((ch) => (
@@ -49,7 +55,7 @@ export default function App() {
                 <div
                   key={l.id}
                   onClick={() => { setPage(l.id); setSideOpen(false); }}
-                  style={{ padding: "9px 12px", borderRadius: 14, cursor: "pointer", fontSize: 12, display: "flex", justifyContent: "space-between", background: page === l.id ? "rgba(212,177,94,0.14)" : "transparent", color: page === l.id ? "#f0d68a" : "var(--color-text-secondary)", marginBottom: 2 }}
+                  style={{ padding: "9px 12px", borderRadius: 14, cursor: "pointer", fontSize: 12, display: "flex", justifyContent: "space-between", background: page === l.id ? "rgba(120,80,40,0.22)" : "transparent", color: page === l.id ? "#3f6e2f" : "var(--color-text-secondary)", marginBottom: 2 }}
                 >
                   <span>{`第${l.n}课 ${l.t.length > 8 ? `${l.t.slice(0, 8)}...` : l.t}`}</span>
                   {(scores[l.id] || 0) > 0 && <span style={{ fontSize: 9, color: ch.c, fontWeight: 600 }}>{scores[l.id]}%</span>}
@@ -57,10 +63,10 @@ export default function App() {
               ))}
             </div>
           ))}
-          <div onClick={() => { setPage("assessment"); setSideOpen(false); }} style={{ padding: "10px 12px", borderRadius: 14, cursor: "pointer", fontSize: 12, fontWeight: 600, marginTop: 8, color: page === "assessment" ? "#f0d68a" : "var(--color-text-secondary)", background: page === "assessment" ? "rgba(212,177,94,0.14)" : "transparent" }}>
+          <div onClick={() => { setPage("assessment"); setSideOpen(false); }} style={{ padding: "10px 12px", borderRadius: 14, cursor: "pointer", fontSize: 12, fontWeight: 600, marginTop: 8, color: page === "assessment" ? "#3f6e2f" : "var(--color-text-secondary)", background: page === "assessment" ? "rgba(120,80,40,0.22)" : "transparent" }}>
             综合测评
           </div>
-          <div onClick={() => { setPage("teacher"); setSideOpen(false); }} style={{ padding: "10px 12px", borderRadius: 14, cursor: "pointer", fontSize: 12, fontWeight: 600, marginTop: 6, color: page === "teacher" ? "#f0d68a" : "var(--color-text-secondary)", background: page === "teacher" ? "rgba(212,177,94,0.14)" : "transparent" }}>
+          <div onClick={() => { setPage("teacher"); setSideOpen(false); }} style={{ padding: "10px 12px", borderRadius: 14, cursor: "pointer", fontSize: 12, fontWeight: 600, marginTop: 6, color: page === "teacher" ? "#3f6e2f" : "var(--color-text-secondary)", background: page === "teacher" ? "rgba(120,80,40,0.22)" : "transparent" }}>
             教师后台
           </div>
         </div>
@@ -70,12 +76,12 @@ export default function App() {
         <header className="topbar-shell">
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button onClick={() => setSideOpen(!sideOpen)} style={{ padding: "6px 10px", borderRadius: 12, border: "1px solid var(--color-border-tertiary)", background: "transparent", cursor: "pointer", fontSize: 14 }}>菜单</button>
-            <div style={{ width: 30, height: 30, borderRadius: 10, background: "linear-gradient(135deg,#f0d68a,#b8902f)", display: "flex", alignItems: "center", justifyContent: "center", color: "#1a1206", fontSize: 12, fontWeight: 800, boxShadow: "0 4px 12px rgba(212,177,94,0.35)" }}>M</div>
+            <div style={{ width: 30, height: 30, borderRadius: 10, background: "linear-gradient(135deg,#3f6e2f,#3f6e2f)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fdf6e3", fontSize: 12, fontWeight: 800, boxShadow: "0 4px 12px rgba(120,80,40,0.4)" }}>乐</div>
             <span style={{ fontSize: 15, fontWeight: 700 }}>乐理智学</span>
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {currentLesson && <Tag color="#f0d68a" bg="rgba(212,177,94,0.14)">{`第${currentLesson.n}课`}</Tag>}
-            {page === "teacher" && <Tag color="#f0d68a" bg="rgba(212,177,94,0.14)">教师后台</Tag>}
+            {currentLesson && <Tag color="#3f6e2f" bg="rgba(120,80,40,0.22)">{`第${currentLesson.n}课`}</Tag>}
+            {page === "teacher" && <Tag color="#3f6e2f" bg="rgba(120,80,40,0.22)">教师后台</Tag>}
             <button onClick={() => setPage("assessment")} style={{ padding: "6px 10px", borderRadius: 12, border: "1px solid var(--color-border-tertiary)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--color-text-secondary)" }}>测评</button>
             <button onClick={() => setPage("teacher")} style={{ padding: "6px 10px", borderRadius: 12, border: "1px solid var(--color-border-tertiary)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--color-text-secondary)" }}>教师</button>
             <button onClick={() => setPage("home")} style={{ padding: "6px 10px", borderRadius: 12, border: "1px solid var(--color-border-tertiary)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--color-text-secondary)" }}>首页</button>
@@ -90,9 +96,53 @@ export default function App() {
               <LazyTeacherDashboardPage />
             </Suspense>
           )}
-          {currentLesson && <LessonView lesson={currentLesson} ratings={ratings} setRating={handleSetRating} scores={scores} setScore={handleSetScore} />}
+          {currentLesson && <LessonView lesson={currentLesson} ratings={ratings} setRating={handleSetRating} scores={scores} setScore={handleSetScore} onOpenTutor={openFloatingTutor} />}
         </main>
       </div>
+      </div>
+      <FloatingTutor lesson={currentLesson} openSignal={tutorOpenSignal} />
+    </>
+  );
+}
+
+function FloatingTutor({ lesson, openSignal }) {
+  const [open, setOpen] = useState(false);
+  const tutorLesson = lesson || { id: "L12", t: "小智老师" };
+
+  useEffect(() => {
+    if (openSignal > 0) setOpen(true);
+  }, [openSignal]);
+
+  return (
+    <div className={`floating-tutor${open ? " is-open" : ""}`}>
+      {open ? (
+        <div className="floating-tutor-panel" role="dialog" aria-label="智能导师对话框">
+          <div className="floating-tutor-titlebar">
+            <div>
+              <div className="floating-tutor-title">小智老师</div>
+              {lesson ? <div className="floating-tutor-subtitle">{`当前课时：${lesson.t}`}</div> : null}
+            </div>
+            <button type="button" className="floating-tutor-close" onClick={() => setOpen(false)} aria-label="收起智能导师">
+              ×
+            </button>
+          </div>
+          <Suspense fallback={<div className="floating-tutor-loading">智能导师加载中...</div>}>
+            <LazyAITutorV2 lessonId={tutorLesson.id} lessonTitle={tutorLesson.t} generalMode={!lesson} />
+          </Suspense>
+        </div>
+      ) : null}
+      <button
+        type="button"
+        className="floating-tutor-orb"
+        onClick={() => setOpen((value) => !value)}
+        aria-label={open ? "收起智能导师" : "打开智能导师"}
+        aria-expanded={open}
+      >
+        <span className="floating-tutor-bot" aria-hidden="true">
+          <span />
+        </span>
+        <span className="floating-tutor-orb-text">{open ? "收起" : "小智"}</span>
+      </button>
     </div>
   );
 }

@@ -18,6 +18,20 @@ function decodeEscapedUnicodeDeep(value) {
   return value;
 }
 
+function noteValueLabel(value) {
+  const labels = {
+    whole: "全音符",
+    half: "二分音符",
+    quarter: "四分音符",
+    eighth: "八分音符",
+    sixteenth: "十六分音符",
+    "dotted-half": "附点二分音符",
+    "dotted-quarter": "附点四分音符",
+    "dotted-eighth": "附点八分音符",
+  };
+  return labels[value] || value;
+}
+
 export function normalizeRhythmSubmission(rhythmSubmission) {
   if (!rhythmSubmission || typeof rhythmSubmission !== "object") {
     return rhythmSubmission;
@@ -32,22 +46,22 @@ export function normalizeRhythmSubmission(rhythmSubmission) {
 }
 
 export function summarizePianoSubmission(pianoSubmission) {
-  if (!pianoSubmission?.notes?.length) return "No piano pitches entered.";
+  if (!pianoSubmission?.notes?.length) return "暂未输入钢琴音高。";
   return pianoSubmission.notes.map((item) => `${item.note}${item.octave}`).join(" - ");
 }
 
 export function summarizeRhythmSubmission(rhythmSubmission) {
   const normalizedSubmission = normalizeRhythmSubmission(rhythmSubmission);
-  if (!normalizedSubmission?.measures) return "No rhythm entered.";
+  if (!normalizedSubmission?.measures) return "暂未输入节奏。";
   return normalizedSubmission.measures
-    .map((measure, index) => `Measure ${index + 1}: ${(measure || []).map((item) => `${decodeEscapedUnicodeText(item.label)}${item.tieToNext ? "~" : ""}`).join(" / ") || "empty"}`)
-    .join("; ");
+    .map((measure, index) => `第 ${index + 1} 小节：${(measure || []).map((item) => `${decodeEscapedUnicodeText(item.label)}${item.tieToNext ? "~" : ""}`).join(" / ") || "空"}`)
+    .join("；");
 }
 
 export function summarizeStaffSubmission(staffSubmission) {
-  if (!staffSubmission?.notes?.length) return "No staff notation entered.";
+  if (!staffSubmission?.notes?.length) return "暂未输入五线谱记谱。";
   return staffSubmission.notes
     .sort((a, b) => a.slot - b.slot)
-    .map((note) => `Slot ${note.slot + 1}: ${note.pitch}${note.accidental === "sharp" ? "#" : note.accidental === "flat" ? "b" : ""}${note.noteValue ? `(${note.noteValue})` : ""}${note.tieToNext ? "~" : ""}`)
-    .join("; ");
+    .map((note) => `第 ${note.slot + 1} 位：${note.pitch}${note.accidental === "sharp" ? "#" : note.accidental === "flat" ? "b" : ""}${note.noteValue ? `（${noteValueLabel(note.noteValue)}）` : ""}${note.tieToNext ? "~" : ""}`)
+    .join("；");
 }

@@ -19,7 +19,7 @@ function HomeworkImageUploader({
   cameraInputRef,
 }) {
   return (
-    <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
+    <div style={{ padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-primary)" }}>拍照上传与图片附件</div>
@@ -28,10 +28,10 @@ function HomeworkImageUploader({
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={() => cameraInputRef.current?.click()} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: "pointer" }}>
+          <button onClick={() => cameraInputRef.current?.click()} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: "pointer" }}>
             拍照上传
           </button>
-          <button onClick={() => fileInputRef.current?.click()} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", color: "var(--color-text-primary)", cursor: "pointer" }}>
+          <button onClick={() => fileInputRef.current?.click()} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "#f6e8c6", color: "var(--color-text-primary)", cursor: "pointer" }}>
             相册上传
           </button>
         </div>
@@ -41,7 +41,7 @@ function HomeworkImageUploader({
       {images.length ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10 }}>
           {images.map((image, index) => (
-            <div key={`${image.name}-${index}`} style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)" }}>
+            <div key={`${image.name}-${index}`} style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(120,80,40,0.18)", background: "rgba(94,60,28,0.06)" }}>
               <img src={image.dataUrl} alt={image.name || `作业图片 ${index + 1}`} style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
               <div style={{ padding: 8, fontSize: 10, color: "var(--color-text-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {image.name || `图片 ${index + 1}`}
@@ -53,7 +53,7 @@ function HomeworkImageUploader({
           ))}
         </div>
       ) : (
-        <div style={{ padding: 14, borderRadius: 10, background: "rgba(255,255,255,0.05)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+        <div style={{ padding: 14, borderRadius: 10, background: "rgba(94,60,28,0.06)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
           暂未上传图片。如作业需要节奏书写、五线谱记谱或手写分析，请拍照后在此提交。
         </div>
       )}
@@ -73,7 +73,7 @@ const GLYPH_SPEC = {
 };
 const RHYTHM_NOTE_SYMBOLS = RHYTHM_SYMBOLS.filter((symbol) => symbol.kind === "note");
 
-function NoteGlyph({ x, y, id, color = "#f0d68a", scale = 1 }) {
+function NoteGlyph({ x, y, id, color = "#3f6e2f", scale = 1 }) {
   const spec = GLYPH_SPEC[id] || GLYPH_SPEC.quarter;
   const rx = 6.4 * scale;
   const ry = 4.8 * scale;
@@ -118,20 +118,20 @@ function RhythmPadModal({ rhythmSubmission, onChange, onPlay, onClose }) {
   const spacing = 60;
   const rowY = (row) => 70 + (Number(row ?? 5) - 1) * 10;
   const staffWidth = Math.max(660, startX + measure.length * spacing + 60);
-  const iconBtn = { width: 52, height: 52, borderRadius: 999, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "#f0d68a", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" };
+  const iconBtn = { width: 52, height: 52, borderRadius: 999, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", color: "#3f6e2f", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" };
 
   return (
     <FullscreenInputModal onClose={onClose}>
       <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", overflowX: "auto" }}>
-        <svg viewBox={`0 0 ${staffWidth} 200`} style={{ width: "100%", minWidth: 660, height: "auto", background: "rgba(255,255,255,0.04)", borderRadius: 12, border: "1px solid rgba(212,177,94,0.16)" }}>
-          {[1, 3, 5, 7, 9].map((row) => <line key={row} x1="44" y1={rowY(row)} x2={staffWidth - 24} y2={rowY(row)} stroke="rgba(244,239,227,0.5)" strokeWidth="1.3" />)}
-          <text x="52" y={rowY(7) + 16} fontSize="54" fill="#f4efe3">𝄞</text>
+        <svg viewBox={`0 0 ${staffWidth} 200`} style={{ width: "100%", minWidth: 660, height: "auto", background: "rgba(94,60,28,0.05)", borderRadius: 12, border: "1px solid rgba(120,80,40,0.24)" }}>
+          {[1, 3, 5, 7, 9].map((row) => <line key={row} x1="44" y1={rowY(row)} x2={staffWidth - 24} y2={rowY(row)} stroke="rgba(63,45,28,0.5)" strokeWidth="1.3" />)}
+          <text x="52" y={rowY(7) + 16} fontSize="54" fill="#3f2d1c">𝄞</text>
           {STAFF_ROWS.map((item) => (
             <rect key={`band-${item.row}`} x="44" y={rowY(item.row) - 5} width={staffWidth - 68} height="10" fill="transparent" style={{ cursor: "pointer" }} onClick={() => placeAtRow(item.row)} />
           ))}
           {measure.map((entry, index) => (
             <g key={`${entry.id}-${index}`} style={{ pointerEvents: "none" }}>
-              {Number(entry.row ?? 5) >= 11 ? <line x1={startX + index * spacing - 11} y1={rowY(11)} x2={startX + index * spacing + 11} y2={rowY(11)} stroke="rgba(244,239,227,0.5)" strokeWidth="1.3" /> : null}
+              {Number(entry.row ?? 5) >= 11 ? <line x1={startX + index * spacing - 11} y1={rowY(11)} x2={startX + index * spacing + 11} y2={rowY(11)} stroke="rgba(63,45,28,0.5)" strokeWidth="1.3" /> : null}
               <NoteGlyph x={startX + index * spacing} y={rowY(entry.row)} id={entry.id} />
             </g>
           ))}
@@ -142,8 +142,8 @@ function RhythmPadModal({ rhythmSubmission, onChange, onPlay, onClose }) {
         {RHYTHM_NOTE_SYMBOLS.map((symbol) => {
           const active = selectedId === symbol.id;
           return (
-            <button key={symbol.id} onClick={() => setSelectedId(symbol.id)} style={{ width: 58, height: 68, borderRadius: 12, border: active ? "1px solid #e6c878" : "1px solid rgba(212,177,94,0.22)", background: active ? "rgba(212,177,94,0.16)" : "rgba(38,34,46,0.85)", cursor: "pointer", padding: 0 }}>
-              <svg viewBox="0 0 58 68" width="58" height="68"><NoteGlyph x={26} y={46} id={symbol.id} color={active ? "#fff6df" : "#f0d68a"} scale={1.1} /></svg>
+            <button key={symbol.id} onClick={() => setSelectedId(symbol.id)} style={{ width: 58, height: 68, borderRadius: 12, border: active ? "1px solid #4f8035" : "1px solid rgba(120,80,40,0.3)", background: active ? "rgba(120,80,40,0.24)" : "#f6e8c6", cursor: "pointer", padding: 0 }}>
+              <svg viewBox="0 0 58 68" width="58" height="68"><NoteGlyph x={26} y={46} id={symbol.id} color={active ? "#3f2d1c" : "#3f6e2f"} scale={1.1} /></svg>
             </button>
           );
         })}
@@ -207,7 +207,7 @@ function RhythmHomeworkEditorV2({ rhythmSubmission, onChange, onPlay }) {
   }, [onChange]);
 
   return (
-    <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
+    <div style={{ padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-primary)" }}>节奏编辑器</div>
@@ -216,22 +216,22 @@ function RhythmHomeworkEditorV2({ rhythmSubmission, onChange, onPlay }) {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <select value={normalizedSubmission?.meter || "4/4"} onChange={(e) => onChange((prev) => ({ ...prev, meter: e.target.value }))} style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)" }}>
+          <select value={normalizedSubmission?.meter || "4/4"} onChange={(e) => onChange((prev) => ({ ...prev, meter: e.target.value }))} style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid rgba(120,80,40,0.2)", background: "#f6e8c6" }}>
             {["2/4", "3/4", "4/4", "6/8"].map((meter) => <option key={meter} value={meter}>{meter}</option>)}
           </select>
           {[0, 1].map((measureIndex) => (
-            <button key={measureIndex} onClick={() => onChange((prev) => ({ ...prev, activeMeasure: measureIndex }))} style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.14)", background: activeMeasure === measureIndex ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)", color: activeMeasure === measureIndex ? "#1a1206" : "var(--color-text-primary)", cursor: "pointer" }}>
+            <button key={measureIndex} onClick={() => onChange((prev) => ({ ...prev, activeMeasure: measureIndex }))} style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid rgba(120,80,40,0.2)", background: activeMeasure === measureIndex ? "var(--gradient-accent)" : "rgba(94,60,28,0.07)", color: activeMeasure === measureIndex ? "#fdf6e3" : "var(--color-text-primary)", cursor: "pointer" }}>
               第 {measureIndex + 1} 小节
             </button>
           ))}
         </div>
       </div>
-      <button onClick={() => setRhythmPadOpen(true)} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "none", background: "var(--gradient-accent)", color: "#1a1206", fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 10, boxShadow: "0 8px 20px rgba(212,177,94,0.28)" }}>
+      <button onClick={() => setRhythmPadOpen(true)} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "none", background: "var(--gradient-accent)", color: "#fdf6e3", fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 10, boxShadow: "0 8px 20px rgba(93,143,70,0.35)" }}>
         🥁 打开节奏板（全屏 · 点击记录）
       </button>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8, marginBottom: 10 }}>
         {rhythmSymbols.map((symbol) => (
-          <button key={symbol.id} onClick={() => appendSymbol(symbol)} style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", cursor: "pointer", textAlign: "left" }}>
+          <button key={symbol.id} onClick={() => appendSymbol(symbol)} style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.18)", background: "rgba(94,60,28,0.06)", cursor: "pointer", textAlign: "left" }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-primary)" }}>{symbol.label}</div>
             <div style={{ fontSize: 10, color: "var(--color-text-tertiary)", marginTop: 4 }}>{symbol.kind === "tie" ? "连接相邻同音" : `${symbol.duration} 拍`}</div>
           </button>
@@ -243,14 +243,14 @@ function RhythmHomeworkEditorV2({ rhythmSubmission, onChange, onPlay }) {
           const status = currentBeats === targetBeats ? "完整" : currentBeats < targetBeats ? "不足" : "超出";
           const statusColor = currentBeats === targetBeats ? "#7ee2a8" : currentBeats < targetBeats ? "#e0a955" : "#f6a6a6";
           return (
-            <div key={`measure-v2-${index}`} style={{ padding: 10, borderRadius: 10, border: activeMeasure === index ? "1px solid rgba(212,177,94,0.45)" : "1px solid rgba(212,177,94,0.14)", background: activeMeasure === index ? "rgba(212,177,94,0.08)" : "rgba(38,34,46,0.85)" }}>
+            <div key={`measure-v2-${index}`} style={{ padding: 10, borderRadius: 10, border: activeMeasure === index ? "1px solid rgba(93,143,70,0.5)" : "1px solid rgba(120,80,40,0.22)", background: activeMeasure === index ? "rgba(93,143,70,0.12)" : "#f6e8c6" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-primary)" }}>第 {index + 1} 小节</div>
                 <div style={{ fontSize: 10, fontWeight: 600, color: statusColor }}>{`${currentBeats}/${targetBeats} 拍 - ${status}`}</div>
               </div>
               <div style={{ minHeight: 58, display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {measure.length ? measure.map((item, itemIndex) => (
-                  <span key={`${item.id}-${itemIndex}`} style={{ padding: "6px 8px", borderRadius: 999, background: "var(--gradient-accent)", color: "#1a1206", fontSize: 10 }}>
+                  <span key={`${item.id}-${itemIndex}`} style={{ padding: "6px 8px", borderRadius: 999, background: "var(--gradient-accent)", color: "#fdf6e3", fontSize: 10 }}>
                     {item.label}{item.tieToNext ? "~" : ""}
                   </span>
                 )) : <span style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>本小节为空。</span>}
@@ -260,11 +260,11 @@ function RhythmHomeworkEditorV2({ rhythmSubmission, onChange, onPlay }) {
         })}
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-        <button onClick={() => onPlay?.(measures[activeMeasure] || [])} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: "pointer" }}>播放当前小节</button>
-        <button onClick={toggleTieOnLast} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: "pointer" }}>最后一音加连音线</button>
-        <button onClick={removeLastSymbol} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: "pointer" }}>撤销上一步</button>
-        <button onClick={clearMeasure} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: "pointer" }}>清空当前小节</button>
-        <button onClick={resetAll} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>重置两个小节</button>
+        <button onClick={() => onPlay?.(measures[activeMeasure] || [])} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: "pointer" }}>播放当前小节</button>
+        <button onClick={toggleTieOnLast} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "#f6e8c6", cursor: "pointer" }}>最后一音加连音线</button>
+        <button onClick={removeLastSymbol} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "#f6e8c6", cursor: "pointer" }}>撤销上一步</button>
+        <button onClick={clearMeasure} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "#f6e8c6", cursor: "pointer" }}>清空当前小节</button>
+        <button onClick={resetAll} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", cursor: "pointer" }}>重置两个小节</button>
       </div>
       {rhythmPadOpen && <RhythmPadModal rhythmSubmission={normalizedSubmission} onChange={onChange} onPlay={onPlay} onClose={() => setRhythmPadOpen(false)} />}
     </div>
@@ -279,8 +279,8 @@ function StaffPadModal({ staffSubmission, onChange, onClose }) {
 
   const slotX = (slot) => 140 + slot * 78;
   const rowY = (row) => 48 + row * 16;
-  const selStyle = { padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", fontSize: 12 };
-  const ctrlBtn = { padding: "7px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)", cursor: "pointer" };
+  const selStyle = { padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", fontSize: 12 };
+  const ctrlBtn = { padding: "7px 14px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", color: "var(--color-text-primary)", cursor: "pointer" };
 
   const setField = (field, value) => onChange((prev) => ({ ...prev, [field]: value }));
   const placeAt = (slot, row) => {
@@ -310,13 +310,13 @@ function StaffPadModal({ staffSubmission, onChange, onClose }) {
         <button onClick={clear} style={ctrlBtn}>清空</button>
       </div>
       <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", overflowX: "auto" }}>
-        <svg viewBox="0 0 760 290" style={{ width: "100%", minWidth: 680, height: "auto", background: "rgba(255,255,255,0.04)", borderRadius: 12, border: "1px solid rgba(212,177,94,0.16)" }}>
-          {[1, 3, 5, 7, 9].map((row) => <line key={`line-${row}`} x1="96" y1={rowY(row)} x2="710" y2={rowY(row)} stroke="rgba(244,239,227,0.55)" strokeWidth="1.4" />)}
-          <text x="56" y={rowY(7) + 14} fontSize="58" fill="#f4efe3">{clef === "bass" ? "𝄢" : "𝄞"}</text>
+        <svg viewBox="0 0 760 290" style={{ width: "100%", minWidth: 680, height: "auto", background: "rgba(94,60,28,0.05)", borderRadius: 12, border: "1px solid rgba(120,80,40,0.24)" }}>
+          {[1, 3, 5, 7, 9].map((row) => <line key={`line-${row}`} x1="96" y1={rowY(row)} x2="710" y2={rowY(row)} stroke="rgba(63,45,28,0.55)" strokeWidth="1.4" />)}
+          <text x="56" y={rowY(7) + 14} fontSize="58" fill="#3f2d1c">{clef === "bass" ? "𝄢" : "𝄞"}</text>
           {Array.from({ length: 8 }, (_, slot) => (
             <g key={`slot-${slot}`}>
-              <line x1={slotX(slot)} y1="40" x2={slotX(slot)} y2="248" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-              <text x={slotX(slot)} y="270" textAnchor="middle" fontSize="11" fill="rgba(244,239,227,0.45)">{slot + 1}</text>
+              <line x1={slotX(slot)} y1="40" x2={slotX(slot)} y2="248" stroke="rgba(94,60,28,0.07)" strokeWidth="1" />
+              <text x={slotX(slot)} y="270" textAnchor="middle" fontSize="11" fill="rgba(63,45,28,0.45)">{slot + 1}</text>
             </g>
           ))}
           {Array.from({ length: 8 }, (_, slot) => STAFF_ROWS.map((item) => (
@@ -330,9 +330,9 @@ function StaffPadModal({ staffSubmission, onChange, onClose }) {
             const glyph = accGlyph(note.accidental);
             return (
               <g key={`note-${note.slot}`}>
-                {glyph ? <text x={x - 18} y={y + 5} fontSize="15" fill="#f0d68a">{glyph}</text> : null}
-                <ellipse cx={x} cy={y} rx="9" ry="6.5" fill={filled ? "#f0d68a" : "rgba(38,34,46,0.85)"} stroke="#f0d68a" strokeWidth="1.6" transform={`rotate(-10 ${x} ${y})`} />
-                {stem ? <line x1={x + 8} y1={y} x2={x + 8} y2={y - 30} stroke="#f0d68a" strokeWidth="1.8" /> : null}
+                {glyph ? <text x={x - 18} y={y + 5} fontSize="15" fill="#3f6e2f">{glyph}</text> : null}
+                <ellipse cx={x} cy={y} rx="9" ry="6.5" fill={filled ? "#3f6e2f" : "#f6e8c6"} stroke="#3f6e2f" strokeWidth="1.6" transform={`rotate(-10 ${x} ${y})`} />
+                {stem ? <line x1={x + 8} y1={y} x2={x + 8} y2={y - 30} stroke="#3f6e2f" strokeWidth="1.8" /> : null}
               </g>
             );
           })}
@@ -386,7 +386,7 @@ function StaffHomeworkEditorV2({ staffSubmission, onChange }) {
   const sortedNotes = [...(staffSubmission?.notes || [])].sort((a, b) => a.slot - b.slot);
 
   return (
-    <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
+    <div style={{ padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-primary)" }}>五线谱订正编辑器</div>
@@ -395,45 +395,45 @@ function StaffHomeworkEditorV2({ staffSubmission, onChange }) {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <select value={staffSubmission?.clef || "treble"} onChange={(e) => onChange((prev) => ({ ...prev, clef: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)" }}>
+          <select value={staffSubmission?.clef || "treble"} onChange={(e) => onChange((prev) => ({ ...prev, clef: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)" }}>
             <option value="treble">高音谱号</option>
             <option value="bass">低音谱号</option>
           </select>
-          <select value={staffSubmission?.accidental || "natural"} onChange={(e) => onChange((prev) => ({ ...prev, accidental: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)" }}>
+          <select value={staffSubmission?.accidental || "natural"} onChange={(e) => onChange((prev) => ({ ...prev, accidental: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)" }}>
             <option value="natural">还原</option>
             <option value="sharp">升号</option>
             <option value="flat">降号</option>
           </select>
-          <select value={staffSubmission?.noteValue || "quarter"} onChange={(e) => onChange((prev) => ({ ...prev, noteValue: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)" }}>
+          <select value={staffSubmission?.noteValue || "quarter"} onChange={(e) => onChange((prev) => ({ ...prev, noteValue: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)" }}>
             <option value="whole">全音符</option>
             <option value="half">二分音符</option>
             <option value="quarter">四分音符</option>
           </select>
         </div>
       </div>
-      <button onClick={() => setStaffPadOpen(true)} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "none", background: "var(--gradient-accent)", color: "#1a1206", fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 10, boxShadow: "0 8px 20px rgba(212,177,94,0.28)" }}>
+      <button onClick={() => setStaffPadOpen(true)} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "none", background: "var(--gradient-accent)", color: "#fdf6e3", fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 10, boxShadow: "0 8px 20px rgba(93,143,70,0.35)" }}>
         🎼 打开五线谱（全屏 · 点击放置音符）
       </button>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
         {noteSlots.map((item, slot) => (
-          <button key={`slot-v2-${slot}`} onClick={() => onChange((prev) => ({ ...prev, activeSlot: slot }))} style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.14)", background: staffSubmission?.activeSlot === slot ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)", color: staffSubmission?.activeSlot === slot ? "#1a1206" : "var(--color-text-primary)", cursor: "pointer" }}>
+          <button key={`slot-v2-${slot}`} onClick={() => onChange((prev) => ({ ...prev, activeSlot: slot }))} style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid rgba(120,80,40,0.2)", background: staffSubmission?.activeSlot === slot ? "var(--gradient-accent)" : "rgba(94,60,28,0.07)", color: staffSubmission?.activeSlot === slot ? "#fdf6e3" : "var(--color-text-primary)", cursor: "pointer" }}>
             第 {slot + 1} 格{item ? ` - ${item.pitch}` : ""}
           </button>
         ))}
       </div>
-      <svg viewBox="0 0 360 220" style={{ width: "100%", maxWidth: 540, height: "auto", display: "block", margin: "0 auto", background: "rgba(255,255,255,0.04)", borderRadius: 12, border: "1px solid rgba(212,177,94,0.14)" }}>
+      <svg viewBox="0 0 360 220" style={{ width: "100%", maxWidth: 540, height: "auto", display: "block", margin: "0 auto", background: "rgba(94,60,28,0.05)", borderRadius: 12, border: "1px solid rgba(120,80,40,0.22)" }}>
         {[0, 1, 2, 3, 4].map((line) => {
           const y = 54 + line * 22;
-          return <line key={`staff-line-v2-${line}`} x1="32" y1={y} x2="328" y2={y} stroke="rgba(244,239,227,0.6)" strokeWidth="1.3" />;
+          return <line key={`staff-line-v2-${line}`} x1="32" y1={y} x2="328" y2={y} stroke="rgba(63,45,28,0.6)" strokeWidth="1.3" />;
         })}
-        <text x="20" y="68" fontSize="28" fill="#f4efe3">{staffSubmission?.clef === "bass" ? "𝄢" : "𝄞"}</text>
+        <text x="20" y="68" fontSize="28" fill="#3f2d1c">{staffSubmission?.clef === "bass" ? "𝄢" : "𝄞"}</text>
         {Array.from({ length: 8 }, (_, slot) => {
           const x = 78 + slot * 30;
-          return <g key={`guide-v2-${slot}`}><line x1={x} y1="38" x2={x} y2="170" stroke="rgba(255,255,255,0.08)" strokeWidth="1" /><text x={x} y="192" textAnchor="middle" fontSize="10" fill={staffSubmission?.activeSlot === slot ? "#f0d68a" : "rgba(244,239,227,0.5)"}>{slot + 1}</text></g>;
+          return <g key={`guide-v2-${slot}`}><line x1={x} y1="38" x2={x} y2="170" stroke="rgba(120,80,40,0.14)" strokeWidth="1" /><text x={x} y="192" textAnchor="middle" fontSize="10" fill={staffSubmission?.activeSlot === slot ? "#3f6e2f" : "rgba(63,45,28,0.5)"}>{slot + 1}</text></g>;
         })}
         {STAFF_ROWS.map((item) => {
           const y = 32 + item.row * 12;
-          return <g key={`row-v2-${item.row}`} onClick={() => placeNote(item.row)} style={{ cursor: "pointer" }}><rect x="58" y={y - 6} width="250" height="12" fill="transparent" /><text x="332" y={y + 4} fontSize="10" fill="rgba(244,239,227,0.5)">{item.label}</text></g>;
+          return <g key={`row-v2-${item.row}`} onClick={() => placeNote(item.row)} style={{ cursor: "pointer" }}><rect x="58" y={y - 6} width="250" height="12" fill="transparent" /><text x="332" y={y + 4} fontSize="10" fill="rgba(63,45,28,0.5)">{item.label}</text></g>;
         })}
         {sortedNotes.map((note) => {
           const x = 78 + note.slot * 30;
@@ -443,9 +443,9 @@ function StaffHomeworkEditorV2({ staffSubmission, onChange }) {
           const showStem = note.noteValue !== "whole";
           return (
             <g key={`note-v2-${note.slot}-${note.pitch}`}>
-              {accidentalLabel ? <text x={x - 14} y={y + 5} fontSize="13" fill="#f4efe3">{accidentalLabel}</text> : null}
-              <ellipse cx={x} cy={y} rx="8" ry="6" fill={isFilled ? "#f0d68a" : "rgba(38,34,46,0.85)"} stroke="rgba(244,239,227,0.6)" strokeWidth="1.3" />
-              {showStem ? <line x1={x + 7} y1={y} x2={x + 7} y2={y - 28} stroke="rgba(244,239,227,0.6)" strokeWidth="1.4" /> : null}
+              {accidentalLabel ? <text x={x - 14} y={y + 5} fontSize="13" fill="#3f2d1c">{accidentalLabel}</text> : null}
+              <ellipse cx={x} cy={y} rx="8" ry="6" fill={isFilled ? "#3f6e2f" : "#f6e8c6"} stroke="rgba(63,45,28,0.6)" strokeWidth="1.3" />
+              {showStem ? <line x1={x + 7} y1={y} x2={x + 7} y2={y - 28} stroke="rgba(63,45,28,0.6)" strokeWidth="1.4" /> : null}
             </g>
           );
         })}
@@ -456,13 +456,13 @@ function StaffHomeworkEditorV2({ staffSubmission, onChange }) {
           const x1 = 78 + note.slot * 30;
           const x2 = 78 + next.slot * 30;
           const y = Math.max(32 + note.row * 12, 32 + next.row * 12) + 16;
-          return <path key={`tie-v2-${note.slot}`} d={`M ${x1 - 4} ${y} Q ${(x1 + x2) / 2} ${y + 14} ${x2 + 4} ${y}`} fill="none" stroke="rgba(244,239,227,0.6)" strokeWidth="1.3" />;
+          return <path key={`tie-v2-${note.slot}`} d={`M ${x1 - 4} ${y} Q ${(x1 + x2) / 2} ${y + 14} ${x2 + 4} ${y}`} fill="none" stroke="rgba(63,45,28,0.6)" strokeWidth="1.3" />;
         })}
       </svg>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-        <button onClick={toggleTieForCurrent} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: "pointer" }}>切换当前格连音线</button>
-        <button onClick={removeCurrentSlot} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: "pointer" }}>删除当前格</button>
-        <button onClick={resetAll} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>重置五线谱</button>
+        <button onClick={toggleTieForCurrent} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "#f6e8c6", cursor: "pointer" }}>切换当前格连音线</button>
+        <button onClick={removeCurrentSlot} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "#f6e8c6", cursor: "pointer" }}>删除当前格</button>
+        <button onClick={resetAll} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", cursor: "pointer" }}>重置五线谱</button>
       </div>
       {staffPadOpen && <StaffPadModal staffSubmission={staffSubmission} onChange={onChange} onClose={() => setStaffPadOpen(false)} />}
     </div>
@@ -494,13 +494,13 @@ function FullscreenInputModal({ title, subtitle, onClose, children }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(8,7,12,0.96)", backdropFilter: "blur(10px)", display: "flex", flexDirection: "column", padding: 14, gap: 10 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
-          {title ? <div style={{ fontSize: 15, fontWeight: 800, color: "#f4efe3" }}>{title}</div> : null}
-          {subtitle ? <div style={{ fontSize: 11, color: "rgba(244,239,227,0.6)", marginTop: 2 }}>{subtitle}</div> : null}
+          {title ? <div style={{ fontSize: 15, fontWeight: 800, color: "#3f2d1c" }}>{title}</div> : null}
+          {subtitle ? <div style={{ fontSize: 11, color: "rgba(63,45,28,0.6)", marginTop: 2 }}>{subtitle}</div> : null}
         </div>
-        <button onClick={onClose} aria-label="完成" style={{ width: 44, height: 44, borderRadius: 999, border: "none", background: "var(--gradient-accent)", color: "#1a1206", fontWeight: 800, fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✓</button>
+        <button onClick={onClose} aria-label="完成" style={{ width: 44, height: 44, borderRadius: 999, border: "none", background: "var(--gradient-accent)", color: "#fdf6e3", fontWeight: 800, fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✓</button>
       </div>
       {portrait ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "6px 12px", borderRadius: 10, background: "rgba(212,177,94,0.12)", border: "1px solid rgba(212,177,94,0.3)", color: "#f0d68a", fontSize: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "6px 12px", borderRadius: 10, background: "rgba(120,80,40,0.2)", border: "1px solid rgba(93,143,70,0.4)", color: "#3f6e2f", fontSize: 20 }}>
           📱 ↻
         </div>
       ) : null}
@@ -545,16 +545,16 @@ function MobilePianoModal({ pianoSubmission, onChange, onClose }) {
 
   return (
     <FullscreenInputModal title="钢琴输入" subtitle="点击琴键记录旋律 · 键盘可横向滚动" onClose={onClose}>
-      <div style={{ padding: 10, borderRadius: 12, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(212,177,94,0.16)", minHeight: 44, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      <div style={{ padding: 10, borderRadius: 12, background: "rgba(94,60,28,0.06)", border: "1px solid rgba(120,80,40,0.24)", minHeight: 44, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         {notes.length ? notes.map((n, index) => (
-          <span key={`${n.note}${n.octave}-${index}`} style={{ padding: "4px 8px", borderRadius: 8, background: "rgba(212,177,94,0.14)", color: "#f0d68a", fontSize: 12, fontWeight: 600 }}>{n.note}{n.octave}</span>
-        )) : <span style={{ fontSize: 12, color: "rgba(244,239,227,0.5)" }}>暂未输入音符，请点击下方琴键。</span>}
+          <span key={`${n.note}${n.octave}-${index}`} style={{ padding: "4px 8px", borderRadius: 8, background: "rgba(120,80,40,0.22)", color: "#3f6e2f", fontSize: 12, fontWeight: 600 }}>{n.note}{n.octave}</span>
+        )) : <span style={{ fontSize: 12, color: "rgba(63,45,28,0.5)" }}>暂未输入音符，请点击下方琴键。</span>}
       </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button onClick={play} disabled={playing || !notes.length} style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid rgba(212,177,94,0.3)", background: "rgba(212,177,94,0.08)", color: "#f0d68a", fontWeight: 600, cursor: playing || !notes.length ? "default" : "pointer" }}>{playing ? "播放中..." : "▶ 播放"}</button>
-        <button onClick={undo} disabled={!notes.length} style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)", cursor: notes.length ? "pointer" : "default" }}>撤销</button>
-        <button onClick={clear} disabled={!notes.length} style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)", cursor: notes.length ? "pointer" : "default" }}>清空</button>
+        <button onClick={play} disabled={playing || !notes.length} style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid rgba(93,143,70,0.4)", background: "rgba(93,143,70,0.12)", color: "#3f6e2f", fontWeight: 600, cursor: playing || !notes.length ? "default" : "pointer" }}>{playing ? "播放中..." : "▶ 播放"}</button>
+        <button onClick={undo} disabled={!notes.length} style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", color: "var(--color-text-primary)", cursor: notes.length ? "pointer" : "default" }}>撤销</button>
+        <button onClick={clear} disabled={!notes.length} style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", color: "var(--color-text-primary)", cursor: notes.length ? "pointer" : "default" }}>清空</button>
       </div>
 
       <div style={{ flex: 1, display: "flex", alignItems: "center", overflowX: "auto", overflowY: "hidden" }}>
@@ -570,7 +570,7 @@ function MobilePianoModal({ pianoSubmission, onChange, onClose }) {
             const id = `${k.name}${k.octave}`;
             const active = pressed === id;
             return (
-              <button key={`b-${id}-${index}`} onClick={() => press(k.name, k.octave)} style={{ position: "absolute", left: k.left, top: 0, width: 28, height: 134, borderRadius: "0 0 6px 6px", border: "1px solid #000", background: active ? "linear-gradient(180deg,#b8902f,#8a6c1f)" : "linear-gradient(180deg,#2a2730,#16141c)", color: "#d4b15e", zIndex: 2, fontSize: 8, display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 6, cursor: "pointer" }}>{k.name}{k.octave}</button>
+              <button key={`b-${id}-${index}`} onClick={() => press(k.name, k.octave)} style={{ position: "absolute", left: k.left, top: 0, width: 28, height: 134, borderRadius: "0 0 6px 6px", border: "1px solid #000", background: active ? "linear-gradient(180deg,#3f6e2f,#8a6c1f)" : "linear-gradient(180deg,#2a2730,#16141c)", color: "#6e451f", zIndex: 2, fontSize: 8, display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 6, cursor: "pointer" }}>{k.name}{k.octave}</button>
             );
           })}
         </div>
@@ -594,7 +594,7 @@ function HomeworkPianoEditor({ pianoSubmission, onChange }) {
   }, [octave, onChange]);
 
   return (
-    <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
+    <div style={{ padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-primary)" }}>钢琴输入</div>
@@ -603,31 +603,31 @@ function HomeworkPianoEditor({ pianoSubmission, onChange }) {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <button onClick={() => onChange((prev) => ({ ...prev, notes: (prev.notes || []).slice(0, -1) }))} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>
+          <button onClick={() => onChange((prev) => ({ ...prev, notes: (prev.notes || []).slice(0, -1) }))} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", cursor: "pointer" }}>
             撤销
           </button>
-          <button onClick={() => onChange((prev) => ({ ...prev, notes: [] }))} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>
+          <button onClick={() => onChange((prev) => ({ ...prev, notes: [] }))} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", cursor: "pointer" }}>
             清空
           </button>
         </div>
       </div>
-      <button onClick={() => setPianoOpen(true)} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "none", background: "var(--gradient-accent)", color: "#1a1206", fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 10, boxShadow: "0 8px 20px rgba(212,177,94,0.28)" }}>
+      <button onClick={() => setPianoOpen(true)} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "none", background: "var(--gradient-accent)", color: "#fdf6e3", fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 10, boxShadow: "0 8px 20px rgba(93,143,70,0.35)" }}>
         🎹 打开钢琴键盘
       </button>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <select value={octave} onChange={(e) => onChange((prev) => ({ ...prev, octave: Number(e.target.value) }))} style={{ padding: "6px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", fontSize: 11 }}>
+        <select value={octave} onChange={(e) => onChange((prev) => ({ ...prev, octave: Number(e.target.value) }))} style={{ padding: "6px 10px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", fontSize: 11 }}>
           {[3, 4, 5].map((value) => <option key={value} value={value}>第 {value} 组</option>)}
         </select>
         <span style={{ fontSize: 11, color: "var(--color-text-tertiary)" }}>快捷琴键</span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 8 }}>
         {["C", "D", "E", "F", "G", "A", "B"].map((note) => (
-          <button key={note} onClick={() => addNote(note)} style={{ padding: "12px 8px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.04)", color: "var(--color-text-primary)", cursor: "pointer", fontWeight: 600 }}>
+          <button key={note} onClick={() => addNote(note)} style={{ padding: "12px 8px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.18)", background: "rgba(94,60,28,0.05)", color: "var(--color-text-primary)", cursor: "pointer", fontWeight: 600 }}>
             {note}{octave}
           </button>
         ))}
       </div>
-      <div style={{ marginTop: 10, padding: 10, borderRadius: 10, background: "rgba(255,255,255,0.05)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+      <div style={{ marginTop: 10, padding: 10, borderRadius: 10, background: "rgba(94,60,28,0.06)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
         {notes.length ? notes.map((item) => `${item.note}${item.octave}`).join(" - ") : "暂未输入钢琴音高。"}
       </div>
       {pianoOpen && <MobilePianoModal pianoSubmission={pianoSubmission} onChange={onChange} onClose={() => setPianoOpen(false)} />}
@@ -649,7 +649,7 @@ function HomeworkVoiceInput({
   onApplyTranscript,
 }) {
   return (
-    <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
+    <div style={{ padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-primary)" }}>语音输入</div>
@@ -660,32 +660,32 @@ function HomeworkVoiceInput({
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {voiceSupported ? (
             <>
-              <button onClick={onStartListening} disabled={listening} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: listening ? "rgba(255,255,255,0.06)" : "var(--gradient-accent)", color: listening ? "var(--color-text-tertiary)" : "#1a1206", cursor: listening ? "default" : "pointer" }}>
+              <button onClick={onStartListening} disabled={listening} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: listening ? "rgba(94,60,28,0.07)" : "var(--gradient-accent)", color: listening ? "var(--color-text-tertiary)" : "#fdf6e3", cursor: listening ? "default" : "pointer" }}>
                 开始实时识别
               </button>
-              <button onClick={onStopListening} disabled={!listening} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: !listening ? "default" : "pointer" }}>
+              <button onClick={onStopListening} disabled={!listening} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "#f6e8c6", cursor: !listening ? "default" : "pointer" }}>
                 停止识别
               </button>
             </>
           ) : (
             <span style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>当前浏览器不支持实时语音识别。</span>
           )}
-          <button onClick={onStartRecording} disabled={transcribing} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: transcribing ? "default" : "pointer" }}>
+          <button onClick={onStartRecording} disabled={transcribing} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "#f6e8c6", cursor: transcribing ? "default" : "pointer" }}>
             开始录音
           </button>
-          <button onClick={onStopRecording} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>
+          <button onClick={onStopRecording} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", cursor: "pointer" }}>
             停止并转写
           </button>
         </div>
       </div>
-      <div style={{ padding: 10, borderRadius: 10, background: "rgba(255,255,255,0.05)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+      <div style={{ padding: 10, borderRadius: 10, background: "rgba(94,60,28,0.06)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
         <div><strong>转写文本：</strong>{transcript.trim() || "暂未生成转写文本。"}</div>
         <div style={{ marginTop: 6 }}><strong>音频文件：</strong>{audioSubmission?.name || "暂未录音"}</div>
         {transcribing ? <div style={{ marginTop: 6, color: "#e0a955" }}>正在转写录音，请稍候...</div> : null}
         {error ? <div style={{ marginTop: 6, color: "#f6a6a6" }}>{error}</div> : null}
       </div>
       <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }}>
-        <button onClick={onApplyTranscript} disabled={!transcript.trim()} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: !transcript.trim() ? "default" : "pointer" }}>
+        <button onClick={onApplyTranscript} disabled={!transcript.trim()} style={{ padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: !transcript.trim() ? "default" : "pointer" }}>
           应用到文字说明
         </button>
       </div>
@@ -696,15 +696,15 @@ function HomeworkVoiceInput({
 function HomeworkEvaluationCard({ evaluation }) {
   if (!evaluation) {
     return (
-      <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(212,177,94,0.14)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-        提交后，结构化课程反馈和 AI 初评会显示在这里。
+      <div style={{ padding: 12, borderRadius: 12, background: "rgba(94,60,28,0.06)", border: "1px solid rgba(120,80,40,0.22)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+        提交后，结构化课程反馈和智能初评会显示在这里。
       </div>
     );
   }
 
   const scoreEntries = Object.entries(evaluation.scores || {});
   return (
-    <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(212,177,94,0.14)" }}>
+    <div style={{ padding: 12, borderRadius: 12, background: "rgba(94,60,28,0.06)", border: "1px solid rgba(120,80,40,0.22)" }}>
       <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-primary)", marginBottom: 8 }}>课程评价</div>
       <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
         {evaluation.overallComment || "暂无评价。"}
@@ -712,7 +712,7 @@ function HomeworkEvaluationCard({ evaluation }) {
       {scoreEntries.length ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginBottom: 10 }}>
           {scoreEntries.map(([label, value]) => (
-            <div key={label} style={{ padding: 10, borderRadius: 10, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
+            <div key={label} style={{ padding: 10, borderRadius: 10, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)" }}>
               <div style={{ fontSize: 10, color: "var(--color-text-tertiary)", marginBottom: 4 }}>{label}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)" }}>{value}</div>
             </div>

@@ -13,11 +13,58 @@ const BKT_TRACKED_KNOWLEDGE_POINT_COUNT = getBktKnowledgePoints().length;
 const DIAGNOSTIC_KNOWLEDGE_POINT_COUNT = TOTAL_KNOWLEDGE_POINT_COUNT - BKT_TRACKED_KNOWLEDGE_POINT_COUNT;
 const TEACHER_DASHBOARD_TABS = [
   { id: "overview", label: "概览" },
-  { id: "rq4", label: "RQ4" },
+  { id: "rq4", label: "深度使用" },
   { id: "reports", label: "学生报告" },
-  { id: "bkt", label: "BKT 验证" },
+  { id: "bkt", label: "掌握度验证" },
   { id: "export", label: "样本导出" },
 ];
+const DIFFICULTY_LABELS = {
+  easy: "基础",
+  basic: "基础",
+  medium: "进阶",
+  hard: "挑战",
+  core: "核心",
+};
+const RQ4_LABELS = {
+  total_time_min: "总学习时长",
+  total_exercises: "完成题量",
+  overall_accuracy: "整体正确率",
+  avg_pL: "平均掌握概率",
+  mastered_count: "已掌握知识点数",
+  tutor_queries: "导师提问次数",
+  error_count: "错误次数",
+  time_vs_exercises: "学习时长与完成题量",
+  exercises_vs_accuracy: "完成题量与正确率",
+  accuracy_vs_avg_pL: "正确率与平均掌握概率",
+  avg_pL_vs_mastered_count: "平均掌握概率与已掌握数",
+  avg_pL_vs_post_MTE_formB: "平均掌握概率与后测成绩",
+  post_MTE_formB: "后测试卷成绩",
+  pre_MTE_formA: "前测试卷成绩",
+  post_attention: "后测注意维度",
+  post_relevance: "后测关联维度",
+  post_confidence: "后测自信维度",
+  post_satisfaction: "后测满意维度",
+  pu_mean: "感知有用性",
+  peu_mean: "感知易用性",
+};
+const PROFILE_LABELS = {
+  excellent: "优等型",
+  steady: "中等稳定型",
+  imbalanced: "偏科型",
+  lowengage: "低参与型",
+};
+
+function formatDifficulty(value) {
+  return DIFFICULTY_LABELS[value] || value || "-";
+}
+
+function formatResearchLabel(value) {
+  return RQ4_LABELS[value] || value || "-";
+}
+
+function formatProfile(value) {
+  return PROFILE_LABELS[value] || value || "-";
+}
 
 export default function TeacherDashboardPage() {
   const [data, setData] = useState(null);
@@ -78,7 +125,7 @@ export default function TeacherDashboardPage() {
     try {
       json = raw ? JSON.parse(raw) : null;
     } catch {
-      throw new Error(`${label} 返回了非 JSON 内容。`);
+      throw new Error(`${label} 返回了非标准数据内容。`);
     }
     if (!response.ok) {
       throw new Error(json?.error || `${label} 请求失败（${response.status}）`);
@@ -117,12 +164,12 @@ export default function TeacherDashboardPage() {
 
   const loadTeacherBktOverview = useCallback(async () => {
     const bktResponse = await fetch("/api/teacher/bkt-overview");
-    const bktJson = await parseResponseJson(bktResponse, "教师后台 BKT 概览");
+    const bktJson = await parseResponseJson(bktResponse, "教师后台掌握度概览");
     const trackedCount = bktJson.summary?.totalKnowledgePoints ?? BKT_TRACKED_KNOWLEDGE_POINT_COUNT;
     setCheckState(
       "bkt",
       "success",
-      `成功（BKT 追踪 ${trackedCount} 个；综合诊断 ${DIAGNOSTIC_KNOWLEDGE_POINT_COUNT} 个；总计 ${TOTAL_KNOWLEDGE_POINT_COUNT} 个）`,
+      `成功（掌握度模型追踪 ${trackedCount} 个；综合诊断 ${DIAGNOSTIC_KNOWLEDGE_POINT_COUNT} 个；总计 ${TOTAL_KNOWLEDGE_POINT_COUNT} 个）`,
     );
     return bktJson;
   }, [parseResponseJson, setCheckState]);
@@ -404,13 +451,13 @@ export default function TeacherDashboardPage() {
       <div className="section-card" style={{ maxWidth: 420, margin: "0 auto" }}>
         <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>教师后台登录</div>
         <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 14 }}>
-          请使用教师账号登录后再查看 BKT 概览、学生报告和试点数据。
+          请使用教师账号登录后再查看掌握度概览、学生报告和试点数据。
         </div>
         <form onSubmit={handleTeacherLogin} style={{ display: "grid", gap: 10 }}>
-          <input value={loginUsername} onChange={(event) => setLoginUsername(event.target.value)} placeholder="账号" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)" }} />
-          <input type="password" value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} placeholder="密码" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)" }} />
+          <input value={loginUsername} onChange={(event) => setLoginUsername(event.target.value)} placeholder="账号" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)" }} />
+          <input type="password" value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} placeholder="密码" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)" }} />
           {loginError ? <div style={{ fontSize: 12, color: "#f6a6a6" }}>{loginError}</div> : null}
-          <button type="submit" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: "pointer" }}>
+          <button type="submit" style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: "pointer" }}>
             登录
           </button>
         </form>
@@ -436,7 +483,7 @@ export default function TeacherDashboardPage() {
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>教师后台</h2>
-        <button onClick={handleTeacherLogout} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>退出登录</button>
+        <button onClick={handleTeacherLogout} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", cursor: "pointer" }}>退出登录</button>
       </div>
 
       <div className="section-card" style={{ marginBottom: 18 }}>
@@ -445,7 +492,7 @@ export default function TeacherDashboardPage() {
           {[
             ["服务是否在线", selfCheck.service],
             ["概览接口是否成功", selfCheck.overview],
-            ["BKT 接口是否成功", selfCheck.bkt],
+            ["掌握度接口是否成功", selfCheck.bkt],
           ].map(([label, item]) => {
             const color = item.status === "success" ? "#7ee2a8" : item.status === "error" ? "#f6a6a6" : "var(--color-text-tertiary)";
             return (
@@ -459,10 +506,10 @@ export default function TeacherDashboardPage() {
           <div className="subtle-card" style={{ padding: 12 }}>
             <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 6 }}>知识点口径</div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-primary)" }}>
-              BKT {bktData?.summary?.totalKnowledgePoints ?? BKT_TRACKED_KNOWLEDGE_POINT_COUNT} / 全部 {TOTAL_KNOWLEDGE_POINT_COUNT}
+              掌握度模型 {bktData?.summary?.totalKnowledgePoints ?? BKT_TRACKED_KNOWLEDGE_POINT_COUNT} / 全部 {TOTAL_KNOWLEDGE_POINT_COUNT}
             </div>
             <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.6, marginTop: 6 }}>
-              BKT 只追踪 L1-L11 的 {BKT_TRACKED_KNOWLEDGE_POINT_COUNT} 个过程性知识点；L12 的 {DIAGNOSTIC_KNOWLEDGE_POINT_COUNT} 个综合复习点用于诊断展示，不计入自适应掌握度更新。
+              掌握度模型只追踪 L1-L11 的 {BKT_TRACKED_KNOWLEDGE_POINT_COUNT} 个过程性知识点；L12 的 {DIAGNOSTIC_KNOWLEDGE_POINT_COUNT} 个综合复习点用于诊断展示，不计入自适应掌握度更新。
             </div>
           </div>
         </div>
@@ -473,7 +520,7 @@ export default function TeacherDashboardPage() {
           <button
             onClick={initializeTeacherSamples}
             disabled={seedingSamples}
-            style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: seedingSamples ? "default" : "pointer" }}
+            style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: seedingSamples ? "default" : "pointer" }}
           >
             {seedingSamples ? "初始化中..." : "一键初始化教师样本数据"}
           </button>
@@ -497,9 +544,9 @@ export default function TeacherDashboardPage() {
                 style={{
                   padding: "8px 12px",
                   borderRadius: 999,
-                  border: active ? "1px solid transparent" : "1px solid rgba(255,255,255,0.14)",
-                  background: active ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)",
-                  color: active ? "#1a1206" : "var(--color-text-primary)",
+                  border: active ? "1px solid transparent" : "1px solid rgba(120,80,40,0.2)",
+                  background: active ? "var(--gradient-accent)" : "rgba(94,60,28,0.07)",
+                  color: active ? "#fdf6e3" : "var(--color-text-primary)",
                   cursor: "pointer",
                   fontSize: 12,
                   fontWeight: 700,
@@ -517,16 +564,16 @@ export default function TeacherDashboardPage() {
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>导出教师样本报告</div>
             <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-              聚合当前教师后台样本数据，导出为 `JSON / CSV / HTML`，用于团队验收、试点说明或人工复核。
+              聚合当前教师后台样本数据，可导出为数据文件、表格文件或网页报告，用于团队验收、试点说明或人工复核。
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={previewTeacherSampleReport} disabled={teacherSampleReportLoading} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: teacherSampleReportLoading ? "default" : "pointer" }}>
+            <button onClick={previewTeacherSampleReport} disabled={teacherSampleReportLoading} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", cursor: teacherSampleReportLoading ? "default" : "pointer" }}>
               {teacherSampleReportLoading ? "加载中..." : "预览样本报告"}
             </button>
-            <button onClick={() => downloadTeacherSampleReport("json")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>导出 JSON</button>
-            <button onClick={() => downloadTeacherSampleReport("csv")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>导出 CSV</button>
-            <button onClick={() => downloadTeacherSampleReport("html")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: "pointer" }}>导出 HTML</button>
+            <button onClick={() => downloadTeacherSampleReport("json")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", cursor: "pointer" }}>导出数据文件</button>
+            <button onClick={() => downloadTeacherSampleReport("csv")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", cursor: "pointer" }}>导出表格文件</button>
+            <button onClick={() => downloadTeacherSampleReport("html")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: "pointer" }}>导出网页报告</button>
           </div>
         </div>
         {teacherSampleReportPreview ? (
@@ -568,7 +615,7 @@ export default function TeacherDashboardPage() {
         <div className="section-card" style={{ marginBottom: 18 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>RQ4 深度使用实验组数据</div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>深度使用实验组数据</div>
               <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
                 来源：{data.experimentSimulation?.source === "seed-json" ? "随部署样本" : "本地 experiment-sim-package-v2.xlsx"}
                 <br />
@@ -576,14 +623,14 @@ export default function TeacherDashboardPage() {
               </div>
             </div>
             <div style={{ fontSize: 12, fontWeight: 700, color: rq4Data.overallPass ? "#166534" : "#b91c1c" }}>
-              {rq4Data.overallPass ? "RQ4 达标" : "RQ4 未达标"}
+              {rq4Data.overallPass ? "深度使用达标" : "深度使用未达标"}
             </div>
           </div>
 
           <div className="metric-grid" style={{ marginBottom: 14 }}>
             {(rq4Data.summaryMetrics || []).filter((item) => !["low_participation_count", "significant_pearsons", "strong_predictors", "overall_pass"].includes(item.metric)).map((item) => (
               <div key={`rq4-metric-${item.metric}`} className="subtle-card" style={{ padding: 12 }}>
-                <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 6 }}>{item.metric}</div>
+                <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 6 }}>{formatResearchLabel(item.metric)}</div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: "var(--color-text-primary)" }}>
                   {typeof item.mean === "number" ? Number(item.mean).toFixed(item.metric.includes("accuracy") || item.metric.includes("pL") ? 3 : 1) : item.mean}
                 </div>
@@ -600,7 +647,7 @@ export default function TeacherDashboardPage() {
               <div style={{ display: "grid", gap: 6 }}>
                 {(rq4Data.correlations || []).map((item) => (
                   <div key={`rq4-corr-${item.variableY}`} style={{ display: "grid", gridTemplateColumns: "1fr 70px 70px 90px", gap: 8, fontSize: 11, alignItems: "center" }}>
-                    <div style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{item.variableY}</div>
+                    <div style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{formatResearchLabel(item.variableY)}</div>
                     <div>r={Number(item.r || 0).toFixed(3)}</div>
                     <div>p={Number(item.p || 0).toFixed(4)}</div>
                     <div style={{ color: item.pass ? "#166534" : "#b91c1c" }}>{item.pass ? "达标" : "未达标"}</div>
@@ -613,7 +660,7 @@ export default function TeacherDashboardPage() {
               <div style={{ display: "grid", gap: 6 }}>
                 {(rq4Data.logicChecks || []).map((item) => (
                   <div key={`rq4-logic-${item.check}`} style={{ display: "grid", gridTemplateColumns: "1fr 70px 70px 90px", gap: 8, fontSize: 11, alignItems: "center" }}>
-                    <div style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{item.check}</div>
+                    <div style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{formatResearchLabel(item.check)}</div>
                     <div>r={Number(item.r || 0).toFixed(3)}</div>
                     <div>p={Number(item.p || 0).toFixed(4)}</div>
                     <div style={{ color: item.pass ? "#166534" : "#b91c1c" }}>{item.pass ? "通过" : "失败"}</div>
@@ -627,11 +674,11 @@ export default function TeacherDashboardPage() {
             <div className="subtle-card" style={{ padding: 12 }}>
               <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>层级回归摘要</div>
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 8 }}>
-                Block 1 R²：{Number(rq4Data.regression?.block1?.rSquared || 0).toFixed(4)}
+                第一层 R²：{Number(rq4Data.regression?.block1?.rSquared || 0).toFixed(4)}
                 <br />
-                Block 2 R²：{Number(rq4Data.regression?.block2?.rSquared || 0).toFixed(4)}
+                第二层 R²：{Number(rq4Data.regression?.block2?.rSquared || 0).toFixed(4)}
                 <br />
-                ΔR²：{Number(rq4Data.regression?.block2?.deltaRSquared || 0).toFixed(4)}，F change：{Number(rq4Data.regression?.block2?.fChange || 0).toFixed(4)}，p：{Number(rq4Data.regression?.block2?.pChange || 0).toFixed(4)}
+                ΔR²：{Number(rq4Data.regression?.block2?.deltaRSquared || 0).toFixed(4)}，变化量 F：{Number(rq4Data.regression?.block2?.fChange || 0).toFixed(4)}，p：{Number(rq4Data.regression?.block2?.pChange || 0).toFixed(4)}
               </div>
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
@@ -640,14 +687,14 @@ export default function TeacherDashboardPage() {
                       <th style={{ padding: "6px 8px" }}>预测变量</th>
                       <th style={{ padding: "6px 8px" }}>β</th>
                       <th style={{ padding: "6px 8px" }}>p</th>
-                      <th style={{ padding: "6px 8px" }}>Tolerance</th>
+                      <th style={{ padding: "6px 8px" }}>容忍度</th>
                       <th style={{ padding: "6px 8px" }}>VIF</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(rq4Data.regression?.coefficients || []).map((item) => (
-                      <tr key={`rq4-beta-${item.predictor}`} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                        <td style={{ padding: "6px 8px" }}>{item.predictor}</td>
+                      <tr key={`rq4-beta-${item.predictor}`} style={{ borderTop: "1px solid rgba(120,80,40,0.14)" }}>
+                        <td style={{ padding: "6px 8px" }}>{formatResearchLabel(item.predictor)}</td>
                         <td style={{ padding: "6px 8px" }}>{Number(item.standardizedBeta || 0).toFixed(3)}</td>
                         <td style={{ padding: "6px 8px" }}>{Number(item.p || 0).toFixed(4)}</td>
                         <td style={{ padding: "6px 8px" }}>{Number(item.tolerance || 0).toFixed(3)}</td>
@@ -664,8 +711,8 @@ export default function TeacherDashboardPage() {
                 <input
                   value={rq4StudentQuery}
                   onChange={(event) => setRq4StudentQuery(event.target.value)}
-                  placeholder="按学生 ID 搜索"
-                  style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", minWidth: 180 }}
+                  placeholder="按学生编号搜索"
+                  style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", minWidth: 180 }}
                 />
               </div>
               <div style={{ overflowX: "auto", maxHeight: 420 }}>
@@ -682,8 +729,8 @@ export default function TeacherDashboardPage() {
                       <th style={{ padding: "6px 8px" }}>时长</th>
                       <th style={{ padding: "6px 8px" }}>题量</th>
                       <th style={{ padding: "6px 8px" }}>正确率</th>
-                      <th style={{ padding: "6px 8px" }}>P(L)</th>
-                      <th style={{ padding: "6px 8px" }}>mastered</th>
+                      <th style={{ padding: "6px 8px" }}>掌握概率</th>
+                      <th style={{ padding: "6px 8px" }}>已掌握数</th>
                       <th style={{ padding: "6px 8px" }}>导师提问</th>
                       <th style={{ padding: "6px 8px" }}>错误数</th>
                       <th style={{ padding: "6px 8px" }}>A/R/C/S 后测</th>
@@ -691,7 +738,7 @@ export default function TeacherDashboardPage() {
                   </thead>
                   <tbody>
                     {filteredRq4Students.map((item) => (
-                      <tr key={`rq4-student-${item.studentId}`} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                      <tr key={`rq4-student-${item.studentId}`} style={{ borderTop: "1px solid rgba(120,80,40,0.14)" }}>
                         <td style={{ padding: "6px 8px" }}>{item.studentId}</td>
                         <td style={{ padding: "6px 8px" }}>{item.preMte ?? "-"}</td>
                         <td style={{ padding: "6px 8px" }}>{item.postMte ?? "-"}</td>
@@ -729,11 +776,11 @@ export default function TeacherDashboardPage() {
 
       {activeDashboardTab === "bkt" && bktLoadError ? (
         <div className="section-card" style={{ marginBottom: 18, borderColor: "rgba(185,28,28,0.18)", background: "rgba(254,242,242,0.9)" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#991b1b", marginBottom: 6 }}>BKT 面板加载失败</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#991b1b", marginBottom: 6 }}>掌握度面板加载失败</div>
           <div style={{ fontSize: 12, color: "#7f1d1d", lineHeight: 1.8 }}>
             {bktLoadError}
             <br />
-            当前仍可查看基础教师后台数据；BKT 概览恢复后会自动显示。
+            当前仍可查看基础教师后台数据；掌握度概览恢复后会自动显示。
           </div>
         </div>
       ) : null}
@@ -743,15 +790,15 @@ export default function TeacherDashboardPage() {
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>10-20 名真实学生试点模板</div>
             <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-              选择试点规模后，可直接导出试点记录模板，供音乐教师记录学生使用过程、困惑点、最好用功能和 bug。
+              选择试点规模后，可直接导出试点记录模板，供音乐教师记录学生使用过程、困惑点、最好用功能和问题。
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <select value={selectedPilotTemplateId} onChange={(event) => setSelectedPilotTemplateId(event.target.value)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)" }}>
+            <select value={selectedPilotTemplateId} onChange={(event) => setSelectedPilotTemplateId(event.target.value)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)" }}>
               {REAL_STUDENT_PILOT_TEMPLATES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
             </select>
-            <button onClick={() => downloadPilotTemplate("json")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>导出 JSON 模板</button>
-            <button onClick={() => downloadPilotTemplate("csv")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: "pointer" }}>导出 CSV 记录表</button>
+            <button onClick={() => downloadPilotTemplate("json")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", cursor: "pointer" }}>导出数据模板</button>
+            <button onClick={() => downloadPilotTemplate("csv")} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: "pointer" }}>导出表格记录表</button>
           </div>
         </div>
         {selectedPilotTemplate ? (
@@ -800,19 +847,19 @@ export default function TeacherDashboardPage() {
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>自动导出单个学生 PDF 学习报告</div>
             <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-              这里按单个学生聚合课堂练习、课后作业和知识点 P(L) 生成报告，不是 10-20 人整批导出。
+              这里按单个学生聚合课堂练习、课后作业和知识点掌握概率生成报告，不是 10-20 人整批导出。
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <select value={selectedReportUserId} onChange={(event) => setSelectedReportUserId(event.target.value)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", minWidth: 220 }}>
+            <select value={selectedReportUserId} onChange={(event) => setSelectedReportUserId(event.target.value)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", minWidth: 220 }}>
               {(bktData?.students || []).map((item) => (
                 <option key={item.userId} value={item.userId}>{item.studentLabel}（{item.userId}）</option>
               ))}
             </select>
-            <button onClick={previewStudentReport} disabled={!selectedReportUserId || reportLoading} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", cursor: !selectedReportUserId || reportLoading ? "default" : "pointer" }}>
+            <button onClick={previewStudentReport} disabled={!selectedReportUserId || reportLoading} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", cursor: !selectedReportUserId || reportLoading ? "default" : "pointer" }}>
               {reportLoading ? "加载中..." : "预览报告"}
             </button>
-            <button onClick={generateStudentPdfReport} disabled={!selectedReportUserId || reportGenerating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: !selectedReportUserId || reportGenerating ? "default" : "pointer" }}>
+            <button onClick={generateStudentPdfReport} disabled={!selectedReportUserId || reportGenerating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: !selectedReportUserId || reportGenerating ? "default" : "pointer" }}>
               {reportGenerating ? "生成中..." : "生成 PDF"}
             </button>
           </div>
@@ -842,24 +889,24 @@ export default function TeacherDashboardPage() {
               </div>
             </div>
             <div className="subtle-card" style={{ padding: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>知识点 P(L) 预览</div>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>知识点掌握概率预览</div>
               <div style={{ overflowX: "auto", maxHeight: 280 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
                   <thead>
                     <tr style={{ textAlign: "left", color: "var(--color-text-secondary)" }}>
                       <th style={{ padding: "6px 8px" }}>知识点</th>
-                      <th style={{ padding: "6px 8px" }}>P(L)</th>
-                      <th style={{ padding: "6px 8px" }}>mastered</th>
-                      <th style={{ padding: "6px 8px" }}>difficulty</th>
+                      <th style={{ padding: "6px 8px" }}>掌握概率</th>
+                      <th style={{ padding: "6px 8px" }}>是否掌握</th>
+                      <th style={{ padding: "6px 8px" }}>难度</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(reportPreview.knowledgeStates || []).map((item) => (
-                      <tr key={`preview-${item.id}`} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                      <tr key={`preview-${item.id}`} style={{ borderTop: "1px solid rgba(120,80,40,0.14)" }}>
                         <td style={{ padding: "6px 8px" }}>{item.title}</td>
                         <td style={{ padding: "6px 8px" }}>{Number(item.pL || 0).toFixed(3)}</td>
                         <td style={{ padding: "6px 8px" }}>{item.mastered ? "是" : "否"}</td>
-                        <td style={{ padding: "6px 8px" }}>{item.difficulty}</td>
+                        <td style={{ padding: "6px 8px" }}>{formatDifficulty(item.difficulty)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -873,16 +920,16 @@ export default function TeacherDashboardPage() {
       <div className="section-card" style={tabPanelStyle("bkt", { marginBottom: 18 })}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>知识点级 BKT 测试面板</div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>知识点级掌握度测试面板</div>
             <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
               可生成 12 名虚拟学生，用于验证 24 个知识点的掌握度分布、自适应推荐和教师后台统计。
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={regenerateVirtualStudents} disabled={simulating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: simulating ? "default" : "pointer" }}>
+            <button onClick={regenerateVirtualStudents} disabled={simulating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: simulating ? "default" : "pointer" }}>
               {simulating ? "处理中..." : "生成虚拟学生"}
             </button>
-            <button onClick={clearVirtualStudents} disabled={simulating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)", cursor: simulating ? "default" : "pointer" }}>
+            <button onClick={clearVirtualStudents} disabled={simulating} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", color: "var(--color-text-primary)", cursor: simulating ? "default" : "pointer" }}>
               清空模拟数据
             </button>
           </div>
@@ -892,16 +939,16 @@ export default function TeacherDashboardPage() {
       <div className="section-card" style={tabPanelStyle("bkt", { marginBottom: 18 })}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>2 小时 BKT 验证报告</div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>2 小时掌握度验证报告</div>
             <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-              运行 4 类学生轨迹，输出 24 个知识点最终 P(L)、mastered 数量、难度升级次数和异常诊断。
+              运行 4 类学生轨迹，输出 24 个知识点最终掌握概率、已掌握数量、难度升级次数和异常诊断。
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={runBktValidation} disabled={testRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: testRunning ? "default" : "pointer" }}>
+            <button onClick={runBktValidation} disabled={testRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: testRunning ? "default" : "pointer" }}>
               {testRunning ? "验证中..." : "运行 2 小时验证"}
             </button>
-            <button onClick={resetBktValidation} disabled={testRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)", cursor: testRunning ? "default" : "pointer" }}>
+            <button onClick={resetBktValidation} disabled={testRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", color: "var(--color-text-primary)", cursor: testRunning ? "default" : "pointer" }}>
               清空验证结果
             </button>
           </div>
@@ -913,10 +960,10 @@ export default function TeacherDashboardPage() {
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>150 名随机学生深度测试</div>
             <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-              随机生成 150 名学生轨迹，统计他们最困惑的知识点、最好用的功能和最常遇到的 bug，用于教师视角的产品诊断。
+              随机生成 150 名学生轨迹，统计他们最困惑的知识点、最好用的功能和最常遇到的问题，用于教师视角的产品诊断。
             </div>
           </div>
-          <button onClick={runDeepSimulation} disabled={deepRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: deepRunning ? "default" : "pointer" }}>
+          <button onClick={runDeepSimulation} disabled={deepRunning} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: deepRunning ? "default" : "pointer" }}>
             {deepRunning ? "测试中..." : "运行 150 人深度测试"}
           </button>
         </div>
@@ -956,7 +1003,7 @@ export default function TeacherDashboardPage() {
       {activeDashboardTab === "bkt" && bktData?.ok ? (
         <div className="lesson-layout" style={{ marginBottom: 18 }}>
           <div className="section-card">
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>当前学生知识点 P(L) 明细</div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>当前学生知识点掌握概率明细</div>
             {currentStudentRecord ? (
               <>
                 <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
@@ -969,22 +1016,22 @@ export default function TeacherDashboardPage() {
                     <thead>
                       <tr style={{ textAlign: "left", color: "var(--color-text-secondary)" }}>
                         <th style={{ padding: "6px 8px" }}>知识点</th>
-                        <th style={{ padding: "6px 8px" }}>P(L)</th>
-                        <th style={{ padding: "6px 8px" }}>mastered</th>
-                        <th style={{ padding: "6px 8px" }}>difficulty</th>
-                        <th style={{ padding: "6px 8px" }}>attempts</th>
-                        <th style={{ padding: "6px 8px" }}>accuracy</th>
+                        <th style={{ padding: "6px 8px" }}>掌握概率</th>
+                        <th style={{ padding: "6px 8px" }}>是否掌握</th>
+                        <th style={{ padding: "6px 8px" }}>难度</th>
+                        <th style={{ padding: "6px 8px" }}>作答次数</th>
+                        <th style={{ padding: "6px 8px" }}>正确率</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(currentStudentRecord.knowledgeStates || []).map((item) => {
                         const accuracy = Number(item.totalAttempts || 0) > 0 ? Math.round((Number(item.correctAttempts || 0) / Number(item.totalAttempts || 1)) * 100) : 0;
                         return (
-                          <tr key={`current-student-${item.id}`} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                          <tr key={`current-student-${item.id}`} style={{ borderTop: "1px solid rgba(120,80,40,0.14)" }}>
                             <td style={{ padding: "6px 8px" }}>{item.title}</td>
                             <td style={{ padding: "6px 8px" }}>{Number(item.pL || 0).toFixed(3)}</td>
                             <td style={{ padding: "6px 8px" }}>{item.mastered ? "是" : "否"}</td>
-                            <td style={{ padding: "6px 8px" }}>{item.difficulty}</td>
+                            <td style={{ padding: "6px 8px" }}>{formatDifficulty(item.difficulty)}</td>
                             <td style={{ padding: "6px 8px" }}>{item.totalAttempts || 0}</td>
                             <td style={{ padding: "6px 8px" }}>{accuracy}%</td>
                           </tr>
@@ -1053,7 +1100,7 @@ export default function TeacherDashboardPage() {
             <div className="subtle-card" style={{ padding: 12 }}>
               <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>综合诊断</div>
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-                场景平均 P(L) 差异：{bktData.latestTestRun.judgement?.averageSpread ?? "-"}
+                场景平均掌握概率差异：{bktData.latestTestRun.judgement?.averageSpread ?? "-"}
                 <br />
                 异常：{bktData.latestTestRun.judgement?.issues?.length ? bktData.latestTestRun.judgement.issues.join("；") : "未发现明显异常"}
                 <br />
@@ -1079,7 +1126,7 @@ export default function TeacherDashboardPage() {
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-primary)" }}>{scenario.label}</div>
                     <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
-                      正确率：{Math.round(Number(scenario.accuracyTarget || 0) * 100)}%，平均 P(L)：{scenario.averagePL}，mastered：{scenario.masteredCount}，难度升级：{scenario.difficultyUpgradeCount}
+                      正确率：{Math.round(Number(scenario.accuracyTarget || 0) * 100)}%，平均掌握概率：{scenario.averagePL}，已掌握数量：{scenario.masteredCount}，难度升级：{scenario.difficultyUpgradeCount}
                     </div>
                   </div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: scenario.passed ? "#166534" : "#b91c1c" }}>
@@ -1099,11 +1146,11 @@ export default function TeacherDashboardPage() {
                   {(scenario.knowledgeStates || []).map((item) => (
                     <div key={item.id} style={{ display: "grid", gridTemplateColumns: "220px 1fr 70px 70px", gap: 8, alignItems: "center", fontSize: 11 }}>
                       <div style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{item.title}</div>
-                      <div style={{ height: 10, borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
-                        <div style={{ width: `${Math.round(Number(item.pL || 0) * 100)}%`, height: "100%", background: Number(item.pL || 0) >= 0.8 ? "#f0d68a" : Number(item.pL || 0) >= 0.45 ? "#b8902f" : "rgba(255,255,255,0.3)" }} />
+                      <div style={{ height: 10, borderRadius: 999, background: "rgba(120,80,40,0.16)", overflow: "hidden" }}>
+                        <div style={{ width: `${Math.round(Number(item.pL || 0) * 100)}%`, height: "100%", background: Number(item.pL || 0) >= 0.8 ? "#3f6e2f" : Number(item.pL || 0) >= 0.45 ? "#3f6e2f" : "rgba(255,255,255,0.3)" }} />
                       </div>
                       <div style={{ color: "var(--color-text-primary)" }}>{item.pL}</div>
-                      <div style={{ color: item.mastered ? "#166534" : "var(--color-text-secondary)" }}>{item.mastered ? "mastered" : item.difficulty}</div>
+                      <div style={{ color: item.mastered ? "#166534" : "var(--color-text-secondary)" }}>{item.mastered ? "已掌握" : formatDifficulty(item.difficulty)}</div>
                     </div>
                   ))}
                 </div>
@@ -1113,20 +1160,20 @@ export default function TeacherDashboardPage() {
                     <thead>
                       <tr style={{ textAlign: "left", color: "var(--color-text-secondary)" }}>
                         <th style={{ padding: "6px 8px" }}>知识点</th>
-                        <th style={{ padding: "6px 8px" }}>P(L)</th>
-                        <th style={{ padding: "6px 8px" }}>mastered</th>
-                        <th style={{ padding: "6px 8px" }}>difficulty</th>
-                        <th style={{ padding: "6px 8px" }}>attempts</th>
-                        <th style={{ padding: "6px 8px" }}>accuracy</th>
+                        <th style={{ padding: "6px 8px" }}>掌握概率</th>
+                        <th style={{ padding: "6px 8px" }}>是否掌握</th>
+                        <th style={{ padding: "6px 8px" }}>难度</th>
+                        <th style={{ padding: "6px 8px" }}>作答次数</th>
+                        <th style={{ padding: "6px 8px" }}>正确率</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(scenario.knowledgeStates || []).map((item) => (
-                        <tr key={`${scenario.scenarioId}-${item.id}`} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                        <tr key={`${scenario.scenarioId}-${item.id}`} style={{ borderTop: "1px solid rgba(120,80,40,0.14)" }}>
                           <td style={{ padding: "6px 8px" }}>{item.title}</td>
                           <td style={{ padding: "6px 8px" }}>{item.pL}</td>
                           <td style={{ padding: "6px 8px" }}>{item.mastered ? "是" : "否"}</td>
-                          <td style={{ padding: "6px 8px" }}>{item.difficulty}</td>
+                          <td style={{ padding: "6px 8px" }}>{formatDifficulty(item.difficulty)}</td>
                           <td style={{ padding: "6px 8px" }}>{item.totalAttempts}</td>
                           <td style={{ padding: "6px 8px" }}>{Math.round(Number(item.accuracy || 0) * 100)}%</td>
                         </tr>
@@ -1150,7 +1197,7 @@ export default function TeacherDashboardPage() {
               </div>
             </div>
             <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-primary)" }}>
-              平均 P(L)：{bktData.latestDeepRun.summary?.averagePL ?? "-"} · 平均 mastered：{bktData.latestDeepRun.summary?.averageMastered ?? "-"}
+              平均掌握概率：{bktData.latestDeepRun.summary?.averagePL ?? "-"} · 平均已掌握数：{bktData.latestDeepRun.summary?.averageMastered ?? "-"}
             </div>
           </div>
 
@@ -1195,7 +1242,7 @@ export default function TeacherDashboardPage() {
 
           <div className="lesson-layout" style={{ marginBottom: 14 }}>
             <div className="subtle-card" style={{ padding: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>最常报告的 bug</div>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>最常报告的问题</div>
               <div style={{ display: "grid", gap: 6 }}>
                 {(bktData.latestDeepRun.summary?.topReportedBugs || []).map((item) => (
                   <div key={item.bug} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11 }}>
@@ -1210,21 +1257,21 @@ export default function TeacherDashboardPage() {
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
                 当前样本中，困惑点主要集中在统计结果前列的知识点，说明相关题组和课件解释仍需加强。
                 <br />
-                若“AI 导师”与“课时内容 PPT”同时高频出现，说明学生最依赖的是即时解释与原课件联动，而不是额外功能。
+                若“智能导师”与“课时内容课件”同时高频出现，说明学生最依赖的是即时解释与原课件联动，而不是额外功能。
                 <br />
-                高频 bug 可直接作为下一轮前端优化优先级。
+                高频问题可直接作为下一轮前端优化优先级。
               </div>
             </div>
           </div>
 
           <div className="subtle-card" style={{ padding: 14, marginBottom: 14 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>24 个知识点最终平均 P(L)</div>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>24 个知识点最终平均掌握概率</div>
             <div style={{ display: "grid", gap: 6, marginBottom: 12 }}>
               {(bktData.latestDeepRun.summary?.knowledgePointAverages || []).map((item) => (
                 <div key={item.id} style={{ display: "grid", gridTemplateColumns: "220px 1fr 60px 70px", gap: 8, alignItems: "center", fontSize: 11 }}>
                   <div style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{item.title}</div>
-                  <div style={{ height: 10, borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
-                    <div style={{ width: `${Math.round(Number(item.averagePL || 0) * 100)}%`, height: "100%", background: Number(item.averagePL || 0) >= 0.8 ? "#f0d68a" : Number(item.averagePL || 0) >= 0.45 ? "#b8902f" : "rgba(255,255,255,0.3)" }} />
+                  <div style={{ height: 10, borderRadius: 999, background: "rgba(120,80,40,0.16)", overflow: "hidden" }}>
+                    <div style={{ width: `${Math.round(Number(item.averagePL || 0) * 100)}%`, height: "100%", background: Number(item.averagePL || 0) >= 0.8 ? "#3f6e2f" : Number(item.averagePL || 0) >= 0.45 ? "#3f6e2f" : "rgba(255,255,255,0.3)" }} />
                   </div>
                   <div style={{ color: "var(--color-text-primary)" }}>{item.averagePL}</div>
                   <div style={{ color: "var(--color-text-secondary)" }}>{Math.round(Number(item.masteredRate || 0) * 100)}%</div>
@@ -1237,14 +1284,14 @@ export default function TeacherDashboardPage() {
                   <tr style={{ textAlign: "left", color: "var(--color-text-secondary)" }}>
                     <th style={{ padding: "6px 8px" }}>知识点</th>
                     <th style={{ padding: "6px 8px" }}>课时</th>
-                    <th style={{ padding: "6px 8px" }}>平均 P(L)</th>
-                    <th style={{ padding: "6px 8px" }}>mastered 率</th>
+                    <th style={{ padding: "6px 8px" }}>平均掌握概率</th>
+                    <th style={{ padding: "6px 8px" }}>掌握率</th>
                     <th style={{ padding: "6px 8px" }}>样本数</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(bktData.latestDeepRun.summary?.knowledgePointAverages || []).map((item) => (
-                    <tr key={`deep-kp-${item.id}`} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                    <tr key={`deep-kp-${item.id}`} style={{ borderTop: "1px solid rgba(120,80,40,0.14)" }}>
                       <td style={{ padding: "6px 8px" }}>{item.title}</td>
                       <td style={{ padding: "6px 8px" }}>{item.lessonId}</td>
                       <td style={{ padding: "6px 8px" }}>{item.averagePL}</td>
@@ -1257,20 +1304,20 @@ export default function TeacherDashboardPage() {
             </div>
           </div>
 
-          <div className="section-card" style={{ padding: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,177,94,0.14)" }}>
+          <div className="section-card" style={{ padding: 12, background: "rgba(94,60,28,0.05)", border: "1px solid rgba(120,80,40,0.22)" }}>
             <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>样本学生反馈摘录</div>
             <div style={{ display: "grid", gap: 8 }}>
               {(bktData.latestDeepRun.students || []).slice(0, 12).map((student) => (
                 <div key={student.userId} className="subtle-card" style={{ padding: "10px 12px" }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 6 }}>
-                    {student.studentLabel} · {student.profile} · P(L) {student.averagePL} · mastered {student.masteredCount}
+                    {student.studentLabel} · {formatProfile(student.profile)} · 掌握概率 {student.averagePL} · 已掌握 {student.masteredCount}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
                     最困惑：{student.mostConfused?.join(" / ") || "暂无"}
                     <br />
                     最好用：{student.preferredTool}
                     <br />
-                    常见 bug：{student.reportedBug}
+                    常见问题：{student.reportedBug}
                     <br />
                     反馈：{student.confusionReport}
                     <br />
@@ -1298,37 +1345,37 @@ export default function TeacherDashboardPage() {
                 <br />
                 提交类型：{Array.isArray(record.submissionTypes) && record.submissionTypes.length ? record.submissionTypes.join(" / ") : "无"}，图片：{record.homeworkImageCount || 0} 张，节奏：{record.homeworkRhythmData ? "已提交" : "无"}，五线谱：{record.homeworkStaffData ? "已提交" : "无"}
                 <br />
-                AI 初评：{record.aiHomeworkFeedback ? `${String(record.aiHomeworkFeedback).slice(0, 80)}${String(record.aiHomeworkFeedback).length > 80 ? "..." : ""}` : "暂无"}
+                智能初评：{record.aiHomeworkFeedback ? `${String(record.aiHomeworkFeedback).slice(0, 80)}${String(record.aiHomeworkFeedback).length > 80 ? "..." : ""}` : "暂无"}
               </div>
               {(record.homeworkLength || record.homeworkRhythmData || record.homeworkStaffData || record.homeworkPianoData || record.homeworkVoiceTranscript || record.evaluationScores || (Array.isArray(record.homeworkImages) && record.homeworkImages.length > 0)) && (
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                   {record.homeworkText ? (
-                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(212,177,94,0.14)" }}>
+                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(94,60,28,0.07)", border: "1px solid rgba(120,80,40,0.22)" }}>
                       <strong>文字说明：</strong>{`${String(record.homeworkText).slice(0, 120)}${String(record.homeworkText).length > 120 ? "..." : ""}`}
                     </div>
                   ) : null}
                   {record.homeworkRhythmData ? (
-                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(212,177,94,0.14)" }}>
+                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(94,60,28,0.07)", border: "1px solid rgba(120,80,40,0.22)" }}>
                       <strong>节奏摘要：</strong>{summarizeRhythmSubmission(record.homeworkRhythmData)}
                     </div>
                   ) : null}
                   {record.homeworkStaffData ? (
-                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(212,177,94,0.14)" }}>
+                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(94,60,28,0.07)", border: "1px solid rgba(120,80,40,0.22)" }}>
                       <strong>五线谱摘要：</strong>{summarizeStaffSubmission(record.homeworkStaffData)}
                     </div>
                   ) : null}
                   {record.homeworkPianoData ? (
-                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(212,177,94,0.14)" }}>
+                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(94,60,28,0.07)", border: "1px solid rgba(120,80,40,0.22)" }}>
                       <strong>钢琴输入：</strong>{summarizePianoSubmission(record.homeworkPianoData)}
                     </div>
                   ) : null}
                   {record.homeworkVoiceTranscript ? (
-                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(212,177,94,0.14)" }}>
+                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(94,60,28,0.07)", border: "1px solid rgba(120,80,40,0.22)" }}>
                       <strong>语音转写：</strong>{`${String(record.homeworkVoiceTranscript).slice(0, 120)}${String(record.homeworkVoiceTranscript).length > 120 ? "..." : ""}`}
                     </div>
                   ) : null}
                   {record.evaluationScores ? (
-                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(212,177,94,0.14)" }}>
+                    <div style={{ fontSize: 11, color: "var(--color-text-primary)", lineHeight: 1.8, padding: "8px 10px", borderRadius: 10, background: "rgba(94,60,28,0.07)", border: "1px solid rgba(120,80,40,0.22)" }}>
                       <strong>课程评价：</strong>{Object.entries(record.evaluationScores).map(([label, value]) => `${label} ${value}`).join(" / ")}
                       {Array.isArray(record.evaluationTags) && record.evaluationTags.length ? <><br /><strong>评价标签：</strong>{record.evaluationTags.join(" / ")}</> : null}
                       {record.evaluationComment ? <><br /><strong>评价评语：</strong>{record.evaluationComment}</> : null}
@@ -1341,7 +1388,7 @@ export default function TeacherDashboardPage() {
                           key={`${record.studentId}-${record.lessonId}-${imageIndex}`}
                           src={image.dataUrl}
                           alt={image.name || `作业图片${imageIndex + 1}`}
-                          style={{ width: "100%", height: 80, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(212,177,94,0.14)", background: "rgba(255,255,255,0.06)" }}
+                          style={{ width: "100%", height: 80, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(120,80,40,0.22)", background: "rgba(94,60,28,0.07)" }}
                         />
                       ))}
                     </div>

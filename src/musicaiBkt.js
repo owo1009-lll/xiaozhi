@@ -267,7 +267,7 @@ export function getRecommendationFromSummary(summary) {
     return "请先完成课前预习和课堂练习；系统会逐步建立你的知识掌握画像。";
   }
   if (weak.pL < 0.45) {
-    return `请先复习与“${weak.title}”相关的课前导图和 PPT，再向 AI 导师提问。`;
+    return `请先复习与“${weak.title}”相关的课前导图和课件，再向智能导师提问。`;
   }
   if (weak.pL < 0.75) {
     return `请继续完成课堂练习，并优先强化“${weak.title}”。`;

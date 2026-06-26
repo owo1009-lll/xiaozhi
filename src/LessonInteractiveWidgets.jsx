@@ -24,8 +24,8 @@ function SectionWidget({ title, intro, rows = [], accent = "#111111" }) {
                 textAlign: "left",
                 padding: 12,
                 borderRadius: 12,
-                border: selected ? `1px solid ${accent}` : "1px solid rgba(212,177,94,0.14)",
-                background: selected ? accent : "rgba(38,34,46,0.85)",
+                border: selected ? `1px solid ${accent}` : "1px solid rgba(120,80,40,0.22)",
+                background: selected ? accent : "#f6e8c6",
                 color: selected ? "#ffffff" : "var(--color-text-primary)",
                 cursor: "pointer",
               }}
@@ -86,8 +86,8 @@ function InteractivePitchFrequencyWidgetCn() {
                   flex: 1,
                   height: 140,
                   borderRadius: 14,
-                  border: selected ? "1px solid #e6c878" : "1px solid rgba(212,177,94,0.14)",
-                  background: "rgba(38,34,46,0.85)",
+                  border: selected ? "1px solid #4f8035" : "1px solid rgba(120,80,40,0.22)",
+                  background: "#f6e8c6",
                   cursor: "pointer",
                   padding: 10,
                   display: "flex",
@@ -152,8 +152,8 @@ function InteractiveVolumeAmplitudeWidgetCn() {
                 flex: 1,
                 height: 104,
                 borderRadius: 12,
-                border: selected ? "1px solid #e6c878" : "1px solid rgba(212,177,94,0.14)",
-                background: "rgba(38,34,46,0.85)",
+                border: selected ? "1px solid #4f8035" : "1px solid rgba(120,80,40,0.22)",
+                background: "#f6e8c6",
                 cursor: "pointer",
                 padding: 8,
                 display: "flex",
@@ -197,13 +197,13 @@ function StaffDrillWidget({ title, intro, targets, options, referenceText }) {
           <svg viewBox="0 0 420 230" style={{ width: "100%", display: "block" }}>
             {[0, 1, 2, 3, 4].map((line) => {
               const y = 58 + line * 22;
-              return <line key={line} x1="42" y1={y} x2="372" y2={y} stroke="rgba(244,239,227,0.6)" strokeWidth="1.2" />;
+              return <line key={line} x1="42" y1={y} x2="372" y2={y} stroke="rgba(63,45,28,0.6)" strokeWidth="1.2" />;
             })}
-            <text x="52" y="205" fontSize="12" fill="rgba(244,239,227,0.5)">{referenceText}</text>
+            <text x="52" y="205" fontSize="12" fill="rgba(63,45,28,0.5)">{referenceText}</text>
             {targets.map((target, index) => (
               <g key={target.id} onClick={() => pickTarget(index)} style={{ cursor: "pointer" }}>
-                <ellipse cx={target.x} cy={target.y} rx="12" ry="8" fill={index === activeIndex ? "#f0d68a" : "rgba(38,34,46,0.85)"} stroke="rgba(244,239,227,0.7)" strokeWidth="1.4" transform={`rotate(-12 ${target.x} ${target.y})`} />
-                <text x={target.x - 12} y={target.y - 18} fontSize="12" fill="#f4efe3">{target.label}</text>
+                <ellipse cx={target.x} cy={target.y} rx="12" ry="8" fill={index === activeIndex ? "#3f6e2f" : "#f6e8c6"} stroke="rgba(63,45,28,0.68)" strokeWidth="1.4" transform={`rotate(-12 ${target.x} ${target.y})`} />
+                <text x={target.x - 12} y={target.y - 18} fontSize="12" fill="#3f2d1c">{target.label}</text>
               </g>
             ))}
           </svg>
@@ -219,9 +219,9 @@ function StaffDrillWidget({ title, intro, targets, options, referenceText }) {
                 style={{
                   padding: "8px 10px",
                   borderRadius: 10,
-                  border: selectedAnswer === option ? "1px solid #e6c878" : "1px solid rgba(255,255,255,0.12)",
-                  background: selectedAnswer === option ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)",
-                  color: selectedAnswer === option ? "#1a1206" : "var(--color-text-primary)",
+                  border: selectedAnswer === option ? "1px solid #4f8035" : "1px solid rgba(120,80,40,0.18)",
+                  background: selectedAnswer === option ? "var(--gradient-accent)" : "rgba(94,60,28,0.07)",
+                  color: selectedAnswer === option ? "#fdf6e3" : "var(--color-text-primary)",
                   cursor: "pointer",
                   textAlign: "left",
                 }}

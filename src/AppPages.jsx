@@ -17,7 +17,7 @@ function AssessmentPage({ scores, ratings }) {
     <div>
       <h2 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 14px" }}>综合测评报告</h2>
       <div className="metric-grid" style={{ marginBottom: 20 }}>
-        {[{ l: "综合得分", v: `${avg}%`, c: "#534AB7" }, { l: "已完成", v: `${done}/12`, c: "#0F6E56" }, { l: "平均评分", v: avgR, c: "#EF9F27" }, { l: "等级", v: lv(avg), c: "#993556" }].map((m, i) => (
+        {[{ l: "综合得分", v: `${avg}%`, c: "#5d8f46" }, { l: "已完成", v: `${done}/12`, c: "#0F6E56" }, { l: "平均评分", v: avgR, c: "#EF9F27" }, { l: "等级", v: lv(avg), c: "#993556" }].map((m, i) => (
           <div key={i} className="section-card" style={{ padding: "16px 12px", textAlign: "center" }}>
             <div style={{ fontSize: 10, color: "var(--color-text-secondary)" }}>{m.l}</div>
             <div style={{ fontSize: 20, fontWeight: 700, color: m.c }}>{m.v}</div>
@@ -44,7 +44,7 @@ function AssessmentPage({ scores, ratings }) {
         <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>智能学习建议</div>
         <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
           {avg === 0 ? "开始任意课时后，系统会根据你的表现生成个性化建议。"
-            : avg < 40 ? "建议每天进行 15-20 分钟短时练习，重点巩固基础概念，并结合 AI 导师查漏补缺。"
+            : avg < 40 ? "建议每天进行 15-20 分钟短时练习，重点巩固基础概念，并结合智能导师查漏补缺。"
             : avg < 70 ? "基础掌握较好，建议重点突破薄弱章节，并在创作与实验模块中实践乐理知识。"
             : "当前表现优秀，建议挑战综合题，并把所学知识迁移到创作与分析任务中。"}
         </div>
@@ -109,15 +109,15 @@ function MusicCreatorV2() {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 6 }}>
         <div style={{ display: "flex", gap: 6 }}>
-          <button onClick={playSeq} style={{ padding: "6px 14px", borderRadius: 8, background: isPlaying ? "#c0392b" : "var(--gradient-accent)", color: isPlaying ? "#ffffff" : "#1a1206", border: "none", fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={playSeq} style={{ padding: "6px 14px", borderRadius: 8, background: isPlaying ? "#c0392b" : "var(--gradient-accent)", color: isPlaying ? "#ffffff" : "#fdf6e3", border: "none", fontWeight: 600, cursor: "pointer" }}>
             {isPlaying ? "停止" : "播放"}
           </button>
-          <button onClick={() => setGrid(Array.from({ length: ROWS }, () => Array(COLS).fill(false)))} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)", cursor: "pointer" }}>清空</button>
+          <button onClick={() => setGrid(Array.from({ length: ROWS }, () => Array(COLS).fill(false)))} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(120,80,40,0.2)", background: "rgba(94,60,28,0.07)", color: "var(--color-text-primary)", cursor: "pointer" }}>清空</button>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <label style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>BPM: {bpm}</label>
           <input type="range" min="60" max="200" step="5" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} style={{ width: 80 }} />
-          <select value={timbre} onChange={(e) => setTimbre(e.target.value)} style={{ fontSize: 11, padding: "4px 6px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.14)" }}>
+          <select value={timbre} onChange={(e) => setTimbre(e.target.value)} style={{ fontSize: 11, padding: "4px 6px", borderRadius: 6, border: "1px solid rgba(120,80,40,0.2)" }}>
             <option value="piano">钢琴</option>
             <option value="sine">正弦波</option>
             <option value="triangle">三角波</option>
@@ -139,8 +139,8 @@ function MusicCreatorV2() {
                     height: 22,
                     borderRadius: 3,
                     cursor: "pointer",
-                    background: grid[r][c] ? (col === c ? "#fff6df" : "#d4b15e") : col === c ? "rgba(212,177,94,0.18)" : c % 4 === 0 ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.03)",
-                    border: `1px solid ${grid[r][c] ? "#b8902f" : "rgba(255,255,255,0.06)"}`,
+                    background: grid[r][c] ? (col === c ? "#3f2d1c" : "#6e451f") : col === c ? "rgba(120,80,40,0.26)" : c % 4 === 0 ? "rgba(94,60,28,0.08)" : "rgba(255,255,255,0.03)",
+                    border: `1px solid ${grid[r][c] ? "#3f6e2f" : "rgba(94,60,28,0.07)"}`,
                   }}
                 />
               ))}
@@ -157,7 +157,7 @@ function HomePage({ setPage, scores }) {
   return (
     <div>
       <div style={{ textAlign: "center", padding: "30px 16px 22px" }}>
-        <div style={{ fontSize: 11, fontWeight: 500, color: "#534AB7", letterSpacing: 2, marginBottom: 4 }}>AI 驱动 · 自主学习</div>
+        <div style={{ fontSize: 11, fontWeight: 500, color: "#5d8f46", letterSpacing: 2, marginBottom: 4 }}>智能驱动 · 自主学习</div>
         <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 6px" }}>乐理智学平台</h1>
       </div>
       {CHAPTERS.map((ch, ci) => {
@@ -189,30 +189,33 @@ function HomePage({ setPage, scores }) {
 /* App Shell */
 function ModernHomePage({ setPage, scores }) {
   return (
-    <div>
+    <div className="home-scene">
+      <div className="home-scene-bg" aria-hidden="true">
+        <span className="home-cloud c1" />
+        <span className="home-cloud c2" />
+        <span className="home-note n1">♪</span>
+        <span className="home-note n2">♫</span>
+        <span className="home-note n3">♩</span>
+      </div>
       <section className="home-hero">
         <div style={{ position: "relative", zIndex: 1 }}>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
-            <div className="motion-chip">
-              <span className="motion-dot" />
-              <span>智能引导学习</span>
-            </div>
-            <div className="motion-chip">
-              <span className="motion-bars"><span /><span /><span /></span>
-              <span>互动音乐工作台</span>
-            </div>
-          </div>
-          <h1 style={{ fontSize: 34, fontWeight: 800, margin: "0 0 10px", letterSpacing: "-0.03em" }}>音乐理论智能学习平台</h1>
-          <div style={{ maxWidth: 680, fontSize: 14, lineHeight: 1.85, color: "rgba(255,255,255,0.72)" }}>
-            每个单元下直接展示课时卡片，点击课时即可进入课前预习、内容呈现、课堂练习与课后作业。
+          <h1 style={{ fontSize: 30, fontWeight: 800, margin: "0 0 8px", letterSpacing: "-0.02em" }}>乐理智学</h1>
+          <div style={{ maxWidth: 560, fontSize: 14, lineHeight: 1.8, color: "rgba(63,45,28,0.7)" }}>
+            选择下方单元，进入课前预习、内容、练习与作业。
           </div>
         </div>
       </section>
 
+      <div className="trail">
       {CHAPTERS.map((ch, ci) => {
         const ca = Math.round(ch.ls.reduce((s, l) => s + (scores[l.id] || 0), 0) / ch.ls.length);
+        const chapterDone = (chapter) => chapter.ls.length > 0 && chapter.ls.every((l) => (scores[l.id] || 0) >= 60);
+        const isDone = chapterDone(ch);
+        const currentIdx = CHAPTERS.findIndex((chapter) => !chapterDone(chapter));
+        const markerClass = isDone ? "trail-marker is-done" : ci === currentIdx ? "trail-marker is-current" : "trail-marker";
         return (
-          <section key={ch.id} className="chapter-panel">
+          <section key={ch.id} className="trail-stop chapter-panel">
+            <div className={markerClass}>{isDone ? "✓" : ci + 1}</div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
               <div>
                 <div style={{ fontSize: 12, color: "var(--color-text-tertiary)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
@@ -223,7 +226,7 @@ function ModernHomePage({ setPage, scores }) {
               <div style={{ minWidth: 160 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "var(--color-text-secondary)" }}>
                   <span>学习进度</span>
-                  <strong style={{ color: "#f0d68a" }}>{ca}%</strong>
+                  <strong style={{ color: "#3f6e2f" }}>{ca}%</strong>
                 </div>
                 <PBar v={ca} max={100} color="var(--gradient-accent)" />
               </div>
@@ -236,7 +239,7 @@ function ModernHomePage({ setPage, scores }) {
                     <span className="lesson-no">{`第 ${String(l.n).padStart(2, "0")} 课`}</span>
                     <span className="lesson-status">{(scores[l.id] || 0) > 0 ? `已完成 ${scores[l.id]}%` : "未开始"}</span>
                   </div>
-                  <div style={{ fontSize: 17, fontWeight: 700, color: "#f4efe3", marginBottom: 8, lineHeight: 1.45 }}>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: "#3f2d1c", marginBottom: 8, lineHeight: 1.45 }}>
                     {l.t}
                   </div>
                 </button>
@@ -245,6 +248,7 @@ function ModernHomePage({ setPage, scores }) {
           </section>
         );
       })}
+      </div>
     </div>
   );
 }

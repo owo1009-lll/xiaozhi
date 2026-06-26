@@ -20,7 +20,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "A4 = 440 Hz 国际标准音"
                         ],
         "exerciseTypes":  [
-                              "主要：AI 导师问答 (概念性问题)",
+                              "主要：智能导师问答（概念性问题）",
                               "辅助：术语闪卡"
                           ],
         "easy":  [
@@ -66,7 +66,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "大调音阶模式：全全半全全全半"
                         ],
         "exerciseTypes":  [
-                              "主要：音程练习 (Interval Exercise)",
+                              "主要：音程练习",
                               "辅助：音高识别练习"
                           ],
         "easy":  [
@@ -112,8 +112,8 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "频率约 261.63 Hz"
                         ],
         "exerciseTypes":  [
-                              "主要：记谱练习 (Notation Exercise)",
-                              "辅助：AI 导师问答"
+                              "主要：记谱练习",
+                              "辅助：智能导师问答"
                           ],
         "easy":  [
                      "识别小字一组、二组的音名",
@@ -158,7 +158,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "不同调性中等音的选择"
                         ],
         "exerciseTypes":  [
-                              "主要：AI 导师问答",
+                              "主要：智能导师问答",
                               "辅助：术语闪卡"
                           ],
         "easy":  [
@@ -198,13 +198,13 @@ const CHINESE_KNOWLEDGE_POINTS = [
         "title":  "高音谱号识读",
         "subConcepts":  [
                             "G 谱号的螺旋中心 = G4",
-                            "五线音名：E-G-B-D-F (Every Good Boy Does Fine)",
-                            "四间音名：F-A-C-E (FACE)",
+                            "五线音名：E-G-B-D-F（自下而上）",
+                            "四间音名：F-A-C-E（自下而上）",
                             "中央 C 在下加一线",
                             "加线音的识读"
                         ],
         "exerciseTypes":  [
-                              "主要：记谱练习 (Notation Exercise)",
+                              "主要：记谱练习",
                               "辅助：术语闪卡"
                           ],
         "easy":  [
@@ -227,7 +227,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                       "高音谱表五线音名从下到上依次为：E4、G4、B4、D5、F5",
                       "高音谱表四间音名从下到上依次为：F4、A4、C5、E5",
                       "中央C（c¹）在高音谱表中位于下加一线",
-                      "记忆口诀：五线Every Good Boy Does Fine，四间FACE"
+                      "记忆口诀：五线 E-G-B-D-F，四间 F-A-C-E，自下而上依次识读"
                   ],
         "comparisons":  [
                             "高音谱表第一线(E4) vs 第一间(F4)：相差半音，线和间音名交替排列",
@@ -244,13 +244,13 @@ const CHINESE_KNOWLEDGE_POINTS = [
         "title":  "低音谱号识读",
         "subConcepts":  [
                             "F 谱号两点夹住第四线 = F3",
-                            "五线音名：G-B-D-F-A (Good Boys Do Fine Always)",
-                            "四间音名：A-C-E-G (All Cows Eat Grass)",
+                            "五线音名：G-B-D-F-A（自下而上）",
+                            "四间音名：A-C-E-G（自下而上）",
                             "中央 C 在上加一线",
                             "与高音谱号的衔接关系"
                         ],
         "exerciseTypes":  [
-                              "主要：记谱练习 (Notation Exercise)",
+                              "主要：记谱练习",
                               "辅助：术语闪卡"
                           ],
         "easy":  [
@@ -273,7 +273,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                       "低音谱表五线音名从下到上依次为：G2、B2、D3、F3、A3",
                       "低音谱表四间音名从下到上依次为：A2、C3、E3、G3",
                       "中央C（c¹）在低音谱表中位于上加一线",
-                      "记忆口诀：五线Good Boys Do Fine Always，四间All Cows Eat Grass"
+                      "记忆口诀：低音谱号五线 G-B-D-F-A，四间 A-C-E-G，自下而上依次识读"
                   ],
         "comparisons":  [
                             "低音谱号第四线(F3) vs 高音谱号第二线(G4)：低音谱号基准音比高音谱号低一个大九度",
@@ -296,8 +296,8 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "符头、符干、符尾的构成"
                         ],
         "exerciseTypes":  [
-                              "主要：节奏练习 (Rhythm Exercise)",
-                              "辅助：AI 导师问答"
+                              "主要：节奏练习",
+                              "辅助：智能导师问答"
                           ],
         "easy":  [
                      "识别音符的名称",
@@ -342,8 +342,8 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "三连音的记写"
                         ],
         "exerciseTypes":  [
-                              "主要：节奏练习 (Rhythm Exercise)",
-                              "辅助：AI 导师问答"
+                              "主要：节奏练习",
+                              "辅助：智能导师问答"
                           ],
         "easy":  [
                      "附点四分=1.5拍",
@@ -388,7 +388,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "颤音的收尾"
                         ],
         "exerciseTypes":  [
-                              "主要：术语闪卡 + AI 导师",
+                              "主要：术语闪卡 + 智能导师",
                               "辅助：记谱练习 (识别符号)"
                           ],
         "easy":  [
@@ -434,7 +434,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "倚音的演奏速度"
                         ],
         "exerciseTypes":  [
-                              "主要：术语闪卡 + AI 导师",
+                              "主要：术语闪卡 + 智能导师",
                               "辅助：记谱练习"
                           ],
         "easy":  [
@@ -480,7 +480,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "forte-piano (fp)"
                         ],
         "exerciseTypes":  [
-                              "主要：术语闪卡 + AI 导师",
+                              "主要：术语闪卡 + 智能导师",
                               "辅助：记谱练习"
                           ],
         "easy":  [
@@ -526,7 +526,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "跳音、拨奏等"
                         ],
         "exerciseTypes":  [
-                              "主要：术语闪卡 + AI 导师",
+                              "主要：术语闪卡 + 智能导师",
                               "辅助：记谱练习"
                           ],
         "easy":  [
@@ -572,7 +572,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "反复次数标注"
                         ],
         "exerciseTypes":  [
-                              "主要：AI 导师 + 术语闪卡",
+                              "主要：智能导师 + 术语闪卡",
                               "辅助：记谱练习"
                           ],
         "easy":  [
@@ -618,7 +618,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "常见组合 (al Fine, al Coda)"
                         ],
         "exerciseTypes":  [
-                              "主要：AI 导师 + 术语闪卡",
+                              "主要：智能导师 + 术语闪卡",
                               "辅助：记谱练习"
                           ],
         "easy":  [
@@ -664,7 +664,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "accel., rit., a tempo"
                         ],
         "exerciseTypes":  [
-                              "主要：术语闪卡 + AI 导师",
+                              "主要：术语闪卡 + 智能导师",
                               "辅助：记谱练习"
                           ],
         "easy":  [
@@ -710,8 +710,8 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "maestoso 庄严"
                         ],
         "exerciseTypes":  [
-                              "主要：术语闪卡 + AI 导师",
-                              "辅助：AI 导师问答"
+                              "主要：术语闪卡 + 智能导师",
+                              "辅助：智能导师问答"
                           ],
         "easy":  [
                      "5 个最常用表情术语",
@@ -756,8 +756,8 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "6/8 = 强弱弱次强弱弱"
                         ],
         "exerciseTypes":  [
-                              "主要：节奏练习 (Rhythm Exercise)",
-                              "辅助：AI 导师"
+                              "主要：节奏练习",
+                              "辅助：智能导师"
                           ],
         "easy":  [
                      "识别 2/4、3/4、4/4 拍号",
@@ -803,7 +803,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                         ],
         "exerciseTypes":  [
                               "主要：节奏练习",
-                              "辅助：AI 导师"
+                              "辅助：智能导师"
                           ],
         "easy":  [
                      "判断单/复拍子",
@@ -849,7 +849,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                         ],
         "exerciseTypes":  [
                               "主要：节奏练习",
-                              "辅助：AI 导师 + 记谱练习"
+                              "辅助：智能导师 + 记谱练习"
                           ],
         "easy":  [
                      "识别正确 vs 错误的音值组合",
@@ -940,8 +940,8 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "切分 vs 规整节奏的对比"
                         ],
         "exerciseTypes":  [
-                              "主要：节奏练习 (Rhythm Exercise)",
-                              "辅助：AI 导师"
+                              "主要：节奏练习",
+                              "辅助：智能导师"
                           ],
         "easy":  [
                      "识别切分节奏的存在",
@@ -987,7 +987,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                         ],
         "exerciseTypes":  [
                               "主要：节奏练习",
-                              "辅助：AI 导师"
+                              "辅助：智能导师"
                           ],
         "easy":  [
                      "识别「短-长-短」基本型",
@@ -1030,7 +1030,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "• 谱号、谱表、音符、休止符"
                         ],
         "exerciseTypes":  [
-                              "AI 导师问答",
+                              "智能导师问答",
                               "所有题型的混合练习"
                           ],
         "easy":  "基础概念的快速回顾",
@@ -1062,7 +1062,7 @@ const CHINESE_KNOWLEDGE_POINTS = [
                             "• 节奏、拍号、切分"
                         ],
         "exerciseTypes":  [
-                              "AI 导师问答",
+                              "智能导师问答",
                               "所有题型的混合练习"
                           ],
         "easy":  "基础概念的快速回顾",

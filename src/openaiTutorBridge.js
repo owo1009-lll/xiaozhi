@@ -28,7 +28,7 @@ export function installOpenAITutorBridge() {
         return new Response(JSON.stringify({
           content: [{
             type: "text",
-            text: data.detail || data.error || "AI 服务请求失败，请检查 API Key 和模型配置。",
+            text: data.detail || data.error || "智能服务请求失败，请检查接口密钥和模型配置。",
           }],
         }), {
           status: 200,
@@ -44,7 +44,7 @@ export function installOpenAITutorBridge() {
       });
     } catch (error) {
       return new Response(JSON.stringify({
-        error: error instanceof Error ? error.message : "AI request failed",
+        error: error instanceof Error ? error.message : "智能服务请求失败",
       }), {
         status: 500,
         headers: { "Content-Type": "application/json" },

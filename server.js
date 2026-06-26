@@ -589,10 +589,10 @@ function shouldSkipKnowledgePointMatching(prompt) {
 function buildTutorMetaFallback(prompt) {
   const normalized = normalizeTutorPrompt(prompt);
   if (/^(你在干嘛|你是谁|你会什么)$/i.test(normalized)) {
-    return "我是 AI 乐理导师，正在帮助你学习当前课时。你可以询问乐理问题、练习、谱例或作业要求，例如“什么是等音？”或“升 C 和降 D 有什么关系？”。";
+    return "我是智能乐理导师，正在帮助你学习当前课时。你可以询问乐理问题、练习、谱例或作业要求，例如“什么是等音？”或“升 C 和降 D 有什么关系？”。";
   }
   if (/^(你好|在吗|hello|hi|hey)$/i.test(normalized)) {
-    return "你好，我是 AI 乐理导师。请输入乐理问题，我会结合当前课时内容进行讲解。";
+    return "你好，我是智能乐理导师。请输入乐理问题，我会结合当前课时内容进行讲解。";
   }
   if (/随便|聊聊|聊天|闲聊|无关/.test(normalized)) {
     return "你可以输入任意问题。如果问题与乐理无关，我会简要回应，并在合适时引导回当前课时。";
@@ -786,7 +786,7 @@ function buildHomeworkInfoFallback() {
   return [
     "课后作业是用于检查本课知识点理解情况的练习与提交区域。",
     "它可以包含概念问答、节奏或记谱练习，也可以上传图片供系统和教师查看。",
-    "请先完成页面要求，再向 AI 导师询问不确定的地方，例如节奏错误或等音拼写问题。",
+    "请先完成页面要求，再向智能导师询问不确定的地方，例如节奏错误或等音拼写问题。",
   ].join("");
 }
 
@@ -1644,6 +1644,17 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+function formatDifficultyLabel(value) {
+  const labels = {
+    easy: "基础",
+    basic: "基础",
+    medium: "进阶",
+    hard: "挑战",
+    core: "核心",
+  };
+  return labels[value] || value || "-";
+}
+
 function decodeSafeText(value, fallback = "") {
   const text = safeString(value, fallback).trim();
   if (!text) return fallback;
@@ -1892,13 +1903,13 @@ function buildTeacherSampleReportCsv(report) {
     item.count,
   ]);
   const sections = [
-    ["summaryKey", "value"],
+    ["摘要字段", "数值"],
     ...summaryRows,
     [],
-    ["studentId", "studentLabel", "lessonsVisited", "averageScore", "totalStudyMinutes", "totalErrors", "totalInteractions", "averageMastery", "masteredCount", "weakPoints"],
+    ["学生编号", "学生", "访问课时数", "平均得分", "学习分钟", "错误总数", "交互总数", "平均掌握度", "已掌握数量", "薄弱知识点"],
     ...studentRows,
     [],
-    ["lessonId", "knowledgePointId", "knowledgePointTitle", "averagePL", "masteredRate", "sampleCount"],
+    ["课时", "知识点编号", "知识点", "平均掌握概率", "掌握率", "样本数"],
     ...weakRows,
   ];
   return `\uFEFF${sections.map((row) => row.map((value) => {
@@ -1963,12 +1974,12 @@ function buildTeacherSampleReportHtml(report) {
       <div class="grid">${profileCards}</div>
       <h2>当前最弱知识点</h2>
       <table>
-        <thead><tr><th>课时</th><th>知识点</th><th>平均 P(L)</th><th>mastered 率</th><th>样本数</th></tr></thead>
+        <thead><tr><th>课时</th><th>知识点</th><th>平均掌握概率</th><th>掌握率</th><th>样本数</th></tr></thead>
         <tbody>${weakRows}</tbody>
       </table>
       <h2>学生样本明细</h2>
       <table>
-        <thead><tr><th>学生</th><th>ID</th><th>访问课时</th><th>平均得分</th><th>学习分钟</th><th>平均掌握度</th><th>mastered 数</th></tr></thead>
+        <thead><tr><th>学生</th><th>编号</th><th>访问课时</th><th>平均得分</th><th>学习分钟</th><th>平均掌握度</th><th>已掌握数量</th></tr></thead>
         <tbody>${studentRows}</tbody>
       </table>
     </body>
@@ -1984,7 +1995,7 @@ function buildStudentReportHtml(report) {
       <td>${escapeHtml(item.title)}</td>
       <td>${Number(item.pL || 0).toFixed(3)}</td>
       <td>${item.mastered ? "是" : "否"}</td>
-      <td>${escapeHtml(item.difficulty)}</td>
+      <td>${escapeHtml(formatDifficultyLabel(item.difficulty))}</td>
       <td>${Number(item.totalAttempts || 0)}</td>
       <td>${Number(item.totalAttempts || 0) > 0 ? Math.round((Number(item.correctAttempts || 0) / Number(item.totalAttempts || 1)) * 100) : 0}%</td>
     </tr>
@@ -2023,7 +2034,7 @@ function buildStudentReportHtml(report) {
     </head>
     <body>
       <h1>${escapeHtml(report.studentLabel)} 学习报告</h1>
-      <div class="meta">学生 ID：${escapeHtml(report.userId)} ｜ 生成时间：${escapeHtml(report.generatedAt)}</div>
+      <div class="meta">学生编号：${escapeHtml(report.userId)} ｜ 生成时间：${escapeHtml(report.generatedAt)}</div>
       <div class="grid">
         <div class="card"><div class="label">访问课时数</div><div class="value">${report.lessonsVisited}</div></div>
         <div class="card"><div class="label">平均得分</div><div class="value">${report.averageScore}%</div></div>
@@ -2037,10 +2048,10 @@ function buildStudentReportHtml(report) {
         <div><strong>累计交互次数：</strong>${report.totalInteractions}</div>
         <div><strong>累计错误次数：</strong>${report.totalErrors}</div>
       </div>
-      <h2>知识点 P(L) 明细</h2>
+      <h2>知识点掌握概率明细</h2>
       <table>
         <thead>
-          <tr><th>课时</th><th>知识点</th><th>P(L)</th><th>mastered</th><th>difficulty</th><th>attempts</th><th>accuracy</th></tr>
+          <tr><th>课时</th><th>知识点</th><th>掌握概率</th><th>是否掌握</th><th>难度</th><th>作答次数</th><th>正确率</th></tr>
         </thead>
         <tbody>${knowledgeRows}</tbody>
       </table>
@@ -2058,7 +2069,7 @@ function buildStudentReportHtml(report) {
 async function generateStudentReportPdf(report) {
   const edgePath = findEdgeExecutable();
   if (!edgePath) {
-    throw new Error("Microsoft Edge is not installed on this machine.");
+    throw new Error("当前机器未安装可用于生成报告的浏览器。");
   }
   await fs.mkdir(REPORTS_DIR, { recursive: true });
   const safeId = report.userId.replace(/[^\w.-]/g, "_");
@@ -2113,7 +2124,7 @@ function isValidDifficulty(value) {
 function validateKnowledgeStatesPayload(knowledgeStates, lessonId) {
   const errors = [];
   if (!Array.isArray(knowledgeStates) || !knowledgeStates.length) {
-    return ["knowledgeStates must be a non-empty array."];
+    return ["知识点掌握状态必须是非空列表。"];
   }
 
   knowledgeStates.forEach((item, index) => {
@@ -2127,7 +2138,7 @@ function validateKnowledgeStatesPayload(knowledgeStates, lessonId) {
       return;
     }
     if (lessonId && point.lessonId !== lessonId) {
-      errors.push(`knowledgeStates[${index}].id does not belong to lesson ${lessonId}.`);
+      errors.push(`第 ${index + 1} 个知识点不属于课时 ${lessonId}。`);
     }
     if (!Number.isFinite(Number(item.pL)) || Number(item.pL) < 0 || Number(item.pL) > 1) {
       errors.push(`knowledgeStates[${index}].pL must be a number between 0 and 1.`);
@@ -2139,7 +2150,7 @@ function validateKnowledgeStatesPayload(knowledgeStates, lessonId) {
       }
     });
     if (!isValidDifficulty(item.difficulty)) {
-      errors.push(`knowledgeStates[${index}].difficulty is invalid.`);
+      errors.push(`第 ${index + 1} 个知识点难度无效。`);
     }
   });
 
@@ -2335,13 +2346,13 @@ function buildScenarioResult({ scenarioId, label, profile, accuracyTarget, durat
   const expectations = [];
 
   if (profile === "excellent" && (masteredCount < 18 || masteredCount > 22)) {
-    expectations.push("优等型 mastered 数量未落在 18-22 范围");
+    expectations.push("优等型已掌握数量未落在 18-22 范围");
   }
   if (profile === "steady" && (masteredCount < 10 || masteredCount > 15)) {
-    expectations.push("中等稳定型 mastered 数量未落在 10-15 范围");
+    expectations.push("中等稳定型已掌握数量未落在 10-15 范围");
   }
   if (profile === "lowengage" && (masteredCount < 0 || masteredCount > 5)) {
-    expectations.push("低参与型 mastered 数量未落在 0-5 范围");
+    expectations.push("低参与型已掌握数量未落在 0-5 范围");
   }
   if (profile === "imbalanced") {
     const sorted = [...knowledgeStates].sort((a, b) => a.pL - b.pL);
@@ -2388,19 +2399,19 @@ function buildScenarioJudgement(results) {
   const suggestions = [];
 
   if (spread < 0.2) {
-    issues.push("四类学生平均 P(L) 差异小于 0.2，区分度不足。");
+    issues.push("四类学生平均掌握概率差异小于 0.2，区分度不足。");
   }
   if (byProfile.lowengage && byProfile.lowengage.masteredCount > 5) {
-    issues.push("低参与型仍 mastered 过多知识点，算法过于宽松。");
-    suggestions.push("优先检查 P(G) 和 P(T)，建议先把 P(G) 调低到 0.20。");
+    issues.push("低参与型仍掌握过多知识点，算法过于宽松。");
+    suggestions.push("优先检查猜测概率和迁移概率，建议先把猜测概率调低到 0.20。");
   }
   if (byProfile.excellent && byProfile.excellent.masteredCount < 18) {
-    issues.push("优等型学生也难以 mastered，多数知识点提升不足。");
-    suggestions.push("优先检查 P(T) 或 P(S)，建议先把 P(T) 提高到 0.20。");
+    issues.push("优等型学生也难以达到掌握状态，多数知识点提升不足。");
+    suggestions.push("优先检查迁移概率或失误概率，建议先把迁移概率提高到 0.20。");
   }
   if (byProfile.excellent && byProfile.excellent.masteredCount > 22) {
-    issues.push("优等型 mastered 过多，可能过快收敛。");
-    suggestions.push("优先检查 P(T) 或 mastered 阈值，建议先把 P(T) 调低到 0.10。");
+    issues.push("优等型已掌握数量过多，可能过快收敛。");
+    suggestions.push("优先检查迁移概率或掌握阈值，建议先把迁移概率调低到 0.10。");
   }
   if (!suggestions.length) {
     suggestions.push("当前参数表现基本符合预期，可继续观察真实学生数据。");
@@ -2453,12 +2464,12 @@ function getTeacherPerspectiveTool(pointTitle = "", averagePL = 0) {
     return averagePL < 0.45 ? "课堂练习 + 音乐创作实验室" : "课堂练习";
   }
   if (/谱号|谱表|记谱|五线谱|中央 C|音组/.test(pointTitle)) {
-    return "课时内容 PPT + AI 导师";
+    return "课时内容课件 + 智能导师";
   }
   if (/术语|力度|奏法|装饰音|回音|倚音|颤音|波音/.test(pointTitle)) {
-    return "AI 导师 + 课时内容 PPT";
+    return "智能导师 + 课时内容课件";
   }
-  return averagePL < 0.45 ? "课前预习导图 + AI 导师" : "课前预习导图 + 课堂练习";
+  return averagePL < 0.45 ? "课前预习导图 + 智能导师" : "课前预习导图 + 课堂练习";
 }
 
 function buildStudentFeedback({ profile, summary, rng }) {
@@ -2466,12 +2477,12 @@ function buildStudentFeedback({ profile, summary, rng }) {
   const strongest = summary.strongPoints?.slice(0, 1) || [];
   const topWeakTitle = weakest[0]?.title || "基础概念";
   const preferredTool = getTeacherPerspectiveTool(topWeakTitle, summary.averageMastery);
-  const bugPool = preferredTool.includes("AI 导师")
-    ? ["AI 导师高峰期回复偏慢", "拍照上传后分析等待较久", "连续提问时偶尔提示网络超时"]
+  const bugPool = preferredTool.includes("智能导师")
+    ? ["智能导师高峰期回复偏慢", "拍照上传后分析等待较久", "连续提问时偶尔提示网络超时"]
     : preferredTool.includes("音乐创作实验室")
       ? ["节奏编辑器手机端按钮偏小，容易误触", "实验室首次加载钢琴音源较慢", "切换页面后节奏播放偶尔需要再次点击"]
-      : preferredTool.includes("PPT")
-        ? ["PPT 图片首次翻页偶尔加载偏慢", "连续快速翻页时有短暂空白", "个别图片在弱网下出现延迟加载"]
+      : preferredTool.includes("课件")
+        ? ["课件图片首次翻页偶尔加载偏慢", "连续快速翻页时有短暂空白", "个别图片在弱网下出现延迟加载"]
         : ["知识导图节点较多时需要再适应", "课前预习与课堂练习切换后定位不够直观", "长页面回到顶部时操作稍慢"];
   const confusionTemplates = [
     `我最困惑的是“${topWeakTitle}”，主要是规则容易和相近知识点混淆。`,
@@ -2897,7 +2908,7 @@ app.post("/api/bkt/sync", async (req, res) => {
   if (validationErrors.length) {
     return res.status(400).json({
       ok: false,
-      error: "Invalid knowledgeStates payload.",
+      error: "知识点掌握状态数据无效。",
       details: validationErrors,
     });
   }
@@ -3472,7 +3483,7 @@ app.post("/api/tutor", async (req, res) => {
   );
   const startedAt = Date.now();
   const cacheKey = buildTutorCacheKey({
-    system: system || "你是一名专业高校乐理教师和 AI 导师。请用中文简洁、准确地回答。遇到带问号的句子，应当视为正常问题，不要判定为无效输入。",
+    system: system || "你是一名专业高校乐理教师和智能导师。请用中文简洁、准确地回答。遇到带问号的句子，应当视为正常问题，不要判定为无效输入。",
     messages: rawSafeMessages,
     model: tutorModel,
     maxTokens: normalizedMaxTokens,
@@ -3499,7 +3510,7 @@ app.post("/api/tutor", async (req, res) => {
     let inflight = getTutorInflightRequest(cacheKey);
     if (!inflight) {
       inflight = createTutorResponseWithFallback({
-        system: system || "你是一名专业高校乐理教师和 AI 导师。请用中文简洁、准确地回答。遇到带问号的句子，应当视为正常问题，不要判定为无效输入。",
+        system: system || "你是一名专业高校乐理教师和智能导师。请用中文简洁、准确地回答。遇到带问号的句子，应当视为正常问题，不要判定为无效输入。",
         messages: safeMessages,
         rawMessages: rawSafeMessages,
         maxTokens: normalizedMaxTokens,
@@ -3527,7 +3538,7 @@ app.post("/api/tutor", async (req, res) => {
     const detail = error.message || "Unknown error";
     const status = error.status || (/timed out|timeout|aborted/i.test(detail) ? 504 : 500);
     return res.status(status).json({
-      error: "AI tutor request failed.",
+      error: "智能导师请求失败。",
       detail,
       kind: status === 504
         ? "timeout"
@@ -3546,7 +3557,7 @@ async function createGeminiResponse({ system, messages, maxTokens }) {
   const contents = messages.map((message) => {
     const parts = [];
     if (message.content) {
-      parts.push({ text: `${message.role === "assistant" ? "AI导师" : "学生"}：${String(message.content || "")}` });
+      parts.push({ text: `${message.role === "assistant" ? "智能导师" : "学生"}：${String(message.content || "")}` });
     }
     if (message.imageDataUrl && message.role !== "assistant") {
       const match = String(message.imageDataUrl).match(/^data:(.+);base64,(.+)$/);
@@ -3575,7 +3586,7 @@ async function createGeminiResponse({ system, messages, maxTokens }) {
     },
     body: JSON.stringify({
       systemInstruction: {
-        parts: [{ text: system || "你是一名专业高校乐理教师和 AI 导师。请用中文简洁、准确地回答。" }],
+        parts: [{ text: system || "你是一名专业高校乐理教师和智能导师。请用中文简洁、准确地回答。" }],
       },
       contents: contents.length ? contents : [{
         role: "user",

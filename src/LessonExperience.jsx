@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getPptLessonData } from "./pptLessonData";
 import { getKnowledgePointsForLesson } from "./musicaiKnowledge";
 import { getQuestionsForLesson } from "./musicaiQuestionBank";
@@ -65,8 +65,6 @@ import {
   TrillVsMordentWidgetCn,
 } from "./LessonInteractiveWidgets";
 import { EXERCISE_COMPONENTS } from "./LessonExercises";
-
-const LazyAITutorV2 = lazy(() => import("./AITutorV2.jsx"));
 
 function createKnowledgeMappingKey(lessonId, signature) {
   return `${lessonId}:${String(signature || "").slice(0, 120)}`;
@@ -135,10 +133,10 @@ function buildKnowledgePointQuestionSet(point, lessonPoints = []) {
     ["基础概念辨识", "术语闪卡", "综合分析"],
   );
 
-  const exerciseAnswer = point.exerciseTypes?.[0] || "AI 导师问答";
+  const exerciseAnswer = point.exerciseTypes?.[0] || "智能导师问答";
   const exerciseOptions = ensureQuestionOptions(
     [exerciseAnswer, ...exercisePool],
-    ["AI 导师问答", "术语闪卡", "记谱练习", "节奏练习"],
+    ["智能导师问答", "术语闪卡", "记谱练习", "节奏练习"],
   );
 
   const easyAnswer = point.easy?.[0] || point.subConcepts?.[0] || point.title;
@@ -286,6 +284,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [activeSection, setActiveSection] = useState("content");
+  const [practiceStatusOpen, setPracticeStatusOpen] = useState(false);
   const [pptPageHint, setPptPageHint] = useState(null);
   const [activeHomeworkEditor, setActiveHomeworkEditor] = useState(null);
   const [recognizing, setRecognizing] = useState(false);
@@ -791,9 +790,9 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
   const sectionButtonStyle = (id) => ({
     padding: "9px 14px",
     borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.14)",
-    background: activeSection === id ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)",
-    color: activeSection === id ? "#1a1206" : "var(--color-text-primary)",
+    border: "1px solid rgba(120,80,40,0.2)",
+    background: activeSection === id ? "var(--gradient-accent)" : "rgba(94,60,28,0.07)",
+    color: activeSection === id ? "#fdf6e3" : "var(--color-text-primary)",
     cursor: "pointer",
     fontSize: 12,
     fontWeight: 600,
@@ -955,7 +954,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
       setHomeworkRunning(false);
       setHomeworkFeedback(feedback);
       setHomeworkEvaluation(evaluation);
-      setStats((prev) => ({ ...prev, interactions: prev.interactions + 1, lastExplanation: "作业已提交，AI 初评已完成。" }));
+      setStats((prev) => ({ ...prev, interactions: prev.interactions + 1, lastExplanation: "作业已提交，智能初评已完成。" }));
       setShowHomeworkDialog(false);
       reportStudentAnalytics({
         lessonId: lesson.id,
@@ -983,7 +982,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         evaluationTags: evaluation?.tags || [],
         evaluationComment: evaluation?.overallComment || "",
         submissionTypes,
-        lastExplanation: "作业已提交，AI 初评已完成。",
+        lastExplanation: "作业已提交，智能初评已完成。",
       });
 
       const scoreValues = Object.values(evaluation?.scores || {}).map((value) => Number(value || 0));
@@ -1060,27 +1059,6 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
           const clean = String(text || "").replace(/\s+/g, " ").trim();
           return clean.length > 40 ? `${clean.slice(0, 40)}…` : clean;
         };
-        const interactiveNode = (
-          <div style={{ display: "grid", gap: 12 }}>
-            {lesson.id === "L2" ? <TemperamentEnharmonicWidgetCn /> : null}
-            {lesson.id === "L3" ? <TrebleClefDrillWidgetCn /> : null}
-            {lesson.id === "L3" ? <BassClefDrillWidgetCn /> : null}
-            {lesson.id === "L4" ? <DotsAndTiesGuideWidgetCn /> : null}
-            {lesson.id === "L4" ? <NoteValueHierarchyWidgetCn /> : null}
-            {lesson.id === "L5" ? <TrillVsMordentWidgetCn /> : null}
-            {lesson.id === "L5" ? <OrnamentComparisonWidgetCn /> : null}
-            {lesson.id === "L6" ? <DynamicsScaleWidgetCn /> : null}
-            {lesson.id === "L6" ? <ArticulationContrastWidgetCn /> : null}
-            {lesson.id === "L7" ? <RepeatPathGuideWidgetCn /> : null}
-            {lesson.id === "L7" ? <DcDsCodaGuideWidgetCn /> : null}
-            {lesson.id === "L8" ? <ExpressionVsTempoCardCn /> : null}
-            {lesson.id === "L9" ? <MeterAccentGuideWidgetCn /> : null}
-            {lesson.id === "L10" ? <CrossBarTieGuideWidgetCn /> : null}
-            {lesson.id === "L11" ? <SyncopationTypeGuideWidgetCn /> : null}
-            {lesson.id === "L11" ? <SyncopationPatternWidgetCn /> : null}
-          </div>
-        );
-        const hasInteractive = ["L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11"].includes(lesson.id);
         const branches = [
           ...lessonContentItems.map((item, index) => ({
             key: `kp-${index}`,
@@ -1090,7 +1068,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             body: (
               <>
                 <p style={{ margin: 0, fontSize: 12, lineHeight: 1.85, color: "var(--color-text-secondary)" }}>{item.b || "—"}</p>
-                <button type="button" className="kmap-jump" onClick={() => setPptPageHint(index)}>在课时 PPT 中查看 →</button>
+                <button type="button" className="kmap-jump" onClick={() => setPptPageHint(index)}>在课时课件中查看 →</button>
               </>
             ),
           })),
@@ -1100,58 +1078,18 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             title: "重点强化",
             body: <WeakPointExplanationCards items={weakEnhancements} titleMap={weakPointTitleMap} />,
           }] : []),
-          ...(hasInteractive ? [{
-            key: "interactive",
-            badge: "♪",
-            title: "互动演示",
-            body: interactiveNode,
-          }] : []),
         ];
         return (
           <div className="section-stack">
-            <ContentOutline branches={branches} subtitle={`${branches.length} 个板块 · 收起 / 摘要 / 详情`} />
+            <ContentOutline branches={branches} subtitle={`${branches.length} 个板块 · 点击展开`} />
             {pptLessonData && <PptContentEmbedFixed lessonId={lesson.id} pageHint={pptPageHint ?? contentPageHint} />}
           </div>
         );
       })()}
 
-      {activeSection === "practice" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,177,94,0.14)" }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 8 }}>课堂练习</div>
-        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
-          系统会结合你的内容互动记录与 20 题练习，显示当前知识掌握状态。
-        </div>
-        {weakEnhancements.length ? (
-          <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)", marginBottom: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>练习引导</div>
-            <div style={{ display: "grid", gap: 8 }}>
-              {weakEnhancements.map((item) => (
-                <div key={`guide-${item.knowledgePointId}`} style={{ padding: "8px 10px", borderRadius: 10, background: "rgba(83,74,183,0.05)" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4 }}>{weakPointTitleMap[item.knowledgePointId] || item.knowledgePointId}</div>
-                  <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, whiteSpace: "pre-line" }}>
-                    {item.practiceGuide.map((line) => `• ${line}`).join("\n")}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-        <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)", marginBottom: 10 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>知识点掌握摘要</div>
-          <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-            已掌握较好：{lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "尚未形成稳定强项"}
-            <br />
-            当前薄弱点：{lessonKnowledgeSummary.weak.map((item) => item.title).join(" / ") || "暂无"}
-            <br />
-            下一步建议：{getRecommendationFromSummary(lessonKnowledgeSummary)}
-          </div>
-        </div>
-        <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)", marginBottom: 10 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>互动检测</div>
-          <div style={{ fontSize: 11, color: stats.errors > 0 ? "#b91c1c" : "var(--color-text-secondary)" }}>
-            {lastInterval ? `最近结果：${lastInterval.label}。${lastInterval.detail}` : "请先在内容呈现中完成一次钢琴或互动操作，系统随后会生成检测结果。"}
-          </div>
-        </div>
-        <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)", marginBottom: 10 }}>
+      {activeSection === "practice" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(94,60,28,0.05)", border: "1px solid rgba(120,80,40,0.22)" }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 10 }}>课堂练习</div>
+        <div style={{ padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)", marginBottom: 10 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
             <div style={{ fontSize: 12, fontWeight: 600 }}>课堂练习题</div>
             <div style={{ textAlign: "right" }}>
@@ -1164,7 +1102,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
           <div style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.7, marginBottom: 8 }}>{currentPractice?.prompt}</div>
           <div style={{ display: "grid", gap: 6 }}>
             {currentPractice?.options.map((option) => (
-              <button key={option} onClick={() => answerPractice(option)} disabled={Boolean(practiceAnswers[practiceIndex])} style={{ textAlign: "left", padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)", background: practiceAnswers[practiceIndex] && option === currentPractice.answer ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)", color: practiceAnswers[practiceIndex] && option === currentPractice.answer ? "#1a1206" : "var(--color-text-primary)", cursor: practiceAnswers[practiceIndex] ? "default" : "pointer" }}>
+              <button key={option} onClick={() => answerPractice(option)} disabled={Boolean(practiceAnswers[practiceIndex])} style={{ textAlign: "left", padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.18)", background: practiceAnswers[practiceIndex] && option === currentPractice.answer ? "var(--gradient-accent)" : "rgba(94,60,28,0.07)", color: practiceAnswers[practiceIndex] && option === currentPractice.answer ? "#fdf6e3" : "var(--color-text-primary)", cursor: practiceAnswers[practiceIndex] ? "default" : "pointer" }}>
                 {option}
               </button>
             ))}
@@ -1175,21 +1113,60 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             {practiceResult.explanation}
           </div>}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-            <button onClick={nextPracticeQuestion} disabled={!practiceAnswers[practiceIndex] || practiceIndex >= practiceQuestions.length - 1} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "var(--gradient-accent)", color: "#1a1206", cursor: !practiceAnswers[practiceIndex] || practiceIndex >= practiceQuestions.length - 1 ? "default" : "pointer" }}>下一题</button>
-            <button onClick={restartPractice} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>切换到新的 20 题</button>
+            <button onClick={nextPracticeQuestion} disabled={!practiceAnswers[practiceIndex] || practiceIndex >= practiceQuestions.length - 1} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(120,80,40,0.18)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: !practiceAnswers[practiceIndex] || practiceIndex >= practiceQuestions.length - 1 ? "default" : "pointer" }}>下一题</button>
+            <button onClick={restartPractice} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(120,80,40,0.18)", background: "rgba(94,60,28,0.07)", cursor: "pointer" }}>切换到新的 20 题</button>
           </div>
           <div style={{ marginTop: 10, fontSize: 11, color: "var(--color-text-secondary)" }}>
             答对题数 / 总题数：{correctCount}/{practiceQuestions.length}
           </div>
         </div>
+
+        <button type="button" onClick={() => setPracticeStatusOpen((prev) => !prev)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.22)", background: "rgba(94,60,28,0.06)", color: "var(--color-text-primary)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+          <span>📊 学习状态与练习引导</span>
+          <span>{practiceStatusOpen ? "▲" : "▼"}</span>
+        </button>
+
+        {practiceStatusOpen && <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+          {weakEnhancements.length ? (
+            <div style={{ padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)" }}>
+              <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>练习引导</div>
+              <div style={{ display: "grid", gap: 8 }}>
+                {weakEnhancements.map((item) => (
+                  <div key={`guide-${item.knowledgePointId}`} style={{ padding: "8px 10px", borderRadius: 10, background: "rgba(93,143,70,0.1)" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4 }}>{weakPointTitleMap[item.knowledgePointId] || item.knowledgePointId}</div>
+                    <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, whiteSpace: "pre-line" }}>
+                      {item.practiceGuide.map((line) => `• ${line}`).join("\n")}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <div style={{ padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)" }}>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>知识点掌握摘要</div>
+            <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+              已掌握较好：{lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "尚未形成稳定强项"}
+              <br />
+              当前薄弱点：{lessonKnowledgeSummary.weak.map((item) => item.title).join(" / ") || "暂无"}
+              <br />
+              下一步建议：{getRecommendationFromSummary(lessonKnowledgeSummary)}
+            </div>
+          </div>
+          <div style={{ padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)" }}>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>互动检测</div>
+            <div style={{ fontSize: 11, color: stats.errors > 0 ? "#b91c1c" : "var(--color-text-secondary)" }}>
+              {lastInterval ? `最近结果：${lastInterval.label}。${lastInterval.detail}` : "请先在内容呈现中完成一次钢琴或互动操作，系统随后会生成检测结果。"}
+            </div>
+          </div>
+        </div>}
       </div>}
 
-      {activeSection === "homework" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,177,94,0.14)" }}>
+      {activeSection === "homework" && <div style={{ padding: 16, borderRadius: 16, background: "rgba(94,60,28,0.05)", border: "1px solid rgba(120,80,40,0.22)" }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 8 }}>课后作业</div>
         <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
           系统会根据本课知识点生成作业引导，并记录学习时长、错误类型与互动数据，供教师复核。
         </div>
-        <div style={{ marginBottom: 12, padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+        <div style={{ marginBottom: 12, padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-primary)", marginBottom: 6 }}>自适应建议</div>
           已掌握较好：{lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "尚未形成稳定强项"}
           <br />
@@ -1199,36 +1176,36 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
           {labelingState.pending ? <><br />知识点匹配：{labelingState.message}</> : null}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
-          <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
+          <div style={{ padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 600 }}>作业计时器</div>
               <div style={{ fontSize: 18, fontWeight: 700, color: "var(--color-text-primary)" }}>{formattedHomeworkTime}</div>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-              <button onClick={() => setHomeworkRunning(true)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "var(--gradient-accent)", color: "#1a1206", cursor: "pointer" }}>继续计时</button>
-              <button onClick={() => setHomeworkRunning(false)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(38,34,46,0.85)", cursor: "pointer" }}>暂停</button>
-              <button onClick={() => { setHomeworkRunning(false); setHomeworkRemaining(30 * 60); }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>重置为 30 分钟</button>
+              <button onClick={() => setHomeworkRunning(true)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(120,80,40,0.18)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: "pointer" }}>继续计时</button>
+              <button onClick={() => setHomeworkRunning(false)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(120,80,40,0.18)", background: "#f6e8c6", cursor: "pointer" }}>暂停</button>
+              <button onClick={() => { setHomeworkRunning(false); setHomeworkRemaining(30 * 60); }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(120,80,40,0.18)", background: "rgba(94,60,28,0.07)", cursor: "pointer" }}>重置为 30 分钟</button>
             </div>
             <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
               打开本页后，倒计时会自动开始。
               <br />
-              AI 分配任务：{lessonHomework}
+              智能分配任务：{lessonHomework}
               <br />
               当前学习轨迹：约 {studyMinutes} 分钟，{stats.interactions} 次互动。
             </div>
           </div>
-          <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
-            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>AI 生成作业</div>
+          <div style={{ padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)" }}>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>智能生成作业</div>
             <div style={{ display: "grid", gap: 8 }}>
               {homeworkItems.map((item) => (
-                <div key={item} style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.7, padding: "8px 10px", borderRadius: 10, background: "rgba(255,255,255,0.05)" }}>
+                <div key={item} style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.7, padding: "8px 10px", borderRadius: 10, background: "rgba(94,60,28,0.06)" }}>
                   {item}
                 </div>
               ))}
             </div>
           </div>
         </div>
-        <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
+        <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)", fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
           <div style={{ marginBottom: 4 }}>提交通道：{homeworkChannelLabels}</div>
           <div>作业说明：{homeworkRequirement.helper}</div>
         </div>
@@ -1238,9 +1215,9 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
               const active = activeHomeworkEditor === tool.id;
               const filled = homeworkSubmissionState?.[tool.id];
               return (
-                <button key={tool.id} type="button" onClick={() => setActiveHomeworkEditor(active ? null : tool.id)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: 12, border: active ? "1px solid transparent" : "1px solid rgba(255,255,255,0.14)", background: active ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)", color: active ? "#1a1206" : "var(--color-text-primary)", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+                <button key={tool.id} type="button" onClick={() => setActiveHomeworkEditor(active ? null : tool.id)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: 12, border: active ? "1px solid transparent" : "1px solid rgba(120,80,40,0.2)", background: active ? "var(--gradient-accent)" : "rgba(94,60,28,0.07)", color: active ? "#fdf6e3" : "var(--color-text-primary)", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
                   <span style={{ fontSize: 15 }}>{tool.icon}</span>{tool.label}
-                  {filled ? <span style={{ width: 6, height: 6, borderRadius: 999, background: active ? "#1a1206" : "#f0d68a" }} /> : null}
+                  {filled ? <span style={{ width: 6, height: 6, borderRadius: 999, background: active ? "#fdf6e3" : "#3f6e2f" }} /> : null}
                 </button>
               );
             })}
@@ -1255,18 +1232,18 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
                 cameraInputRef={homeworkCameraInputRef}
               />
               {recognizeTargets.length > 0 && (
-                <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
+                <div style={{ padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)" }}>
                   <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>📷 → 从照片自动填入</div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {recognizeTargets.map((target) => (
-                      <button key={target.mode} type="button" disabled={recognizing} onClick={() => recognizeHomework(target.mode)} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(212,177,94,0.3)", background: "rgba(212,177,94,0.08)", color: "#f0d68a", fontWeight: 600, fontSize: 12, cursor: recognizing ? "default" : "pointer" }}>
+                      <button key={target.mode} type="button" disabled={recognizing} onClick={() => recognizeHomework(target.mode)} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(93,143,70,0.4)", background: "rgba(93,143,70,0.12)", color: "#3f6e2f", fontWeight: 600, fontSize: 12, cursor: recognizing ? "default" : "pointer" }}>
                         识别 → {target.label}
                       </button>
                     ))}
                   </div>
                   {recognizeNote ? <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 8 }}>{recognizeNote}</div> : null}
                   <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 6, lineHeight: 1.7 }}>
-                    AI 识别仅作辅助，识别后请务必打开编辑器复核并修正。
+                    智能识别仅作辅助，识别后请务必打开编辑器复核并修正。
                   </div>
                 </div>
               )}
@@ -1298,16 +1275,16 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
             onStopRecording={stopAudioRecording}
             onApplyTranscript={applyTranscriptToDraft}
           />}
-          {activeHomeworkEditor === "text" && <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
+          {activeHomeworkEditor === "text" && <div style={{ padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)" }}>
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>文字说明</div>
             <textarea
               value={homeworkDraft}
               onChange={(e) => setHomeworkDraft(e.target.value)}
               placeholder="补充概念解释、作业推理、节奏分析、音高判断依据，或对上传图片的说明。"
-              style={{ width: "100%", minHeight: 140, borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", padding: 12, fontSize: 12, lineHeight: 1.8, resize: "vertical", outline: "none" }}
+              style={{ width: "100%", minHeight: 140, borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", padding: 12, fontSize: 12, lineHeight: 1.8, resize: "vertical", outline: "none" }}
             />
           </div>}
-          <div style={{ padding: 12, borderRadius: 12, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
+          <div style={{ padding: 12, borderRadius: 12, background: "#f6e8c6", border: "1px solid rgba(120,80,40,0.22)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-primary)" }}>提交概览</div>
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
@@ -1344,7 +1321,7 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
                 错误类型：{Object.keys(stats.errorTypes).length ? Object.entries(stats.errorTypes).map(([k, v]) => `${k} x${v}`).join("; ") : "暂无错误记录"}
               </div>
-              <button onClick={openLessonHomeworkSubmit} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: "pointer" }}>
+              <button onClick={openLessonHomeworkSubmit} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: "pointer" }}>
                 提交作业
               </button>
             </div>
@@ -1355,10 +1332,10 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
           </div>
         </div>
         {showHomeworkDialog && <div onClick={() => { if (!homeworkReviewing) setShowHomeworkDialog(false); }} style={{ position: "fixed", inset: 0, background: "rgba(17,17,17,0.36)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-          <div onClick={(event) => event.stopPropagation()} style={{ width: "min(640px, 100%)", background: "rgba(38,34,46,0.85)", borderRadius: 16, padding: 18, boxShadow: "0 24px 80px rgba(0,0,0,0.18)" }}>
+          <div onClick={(event) => event.stopPropagation()} style={{ width: "min(640px, 100%)", background: "#f6e8c6", borderRadius: 16, padding: 18, boxShadow: "0 24px 80px rgba(0,0,0,0.18)" }}>
             <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>确认提交作业</div>
             <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 10 }}>
-              当前剩余时间：{formattedHomeworkTime}。提交后会生成 AI 初评，并同步到教师后台。
+              当前剩余时间：{formattedHomeworkTime}。提交后会生成智能初评，并同步到教师后台。
             </div>
             <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
               <div className="subtle-card" style={{ padding: 10, fontSize: 12, color: "var(--color-text-primary)" }}>
@@ -1376,9 +1353,9 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
               </div>
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button onClick={() => setShowHomeworkDialog(false)} disabled={homeworkReviewing} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: homeworkReviewing ? "default" : "pointer" }}>继续编辑</button>
-              <button onClick={confirmMixedHomeworkSubmit} disabled={homeworkReviewing} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: homeworkReviewing ? "default" : "pointer" }}>
-                {homeworkReviewing ? "AI 评阅中..." : "确认提交"}
+              <button onClick={() => setShowHomeworkDialog(false)} disabled={homeworkReviewing} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "#f6e8c6", cursor: homeworkReviewing ? "default" : "pointer" }}>继续编辑</button>
+              <button onClick={confirmMixedHomeworkSubmit} disabled={homeworkReviewing} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: homeworkReviewing ? "default" : "pointer" }}>
+                {homeworkReviewing ? "智能评阅中..." : "确认提交"}
               </button>
             </div>
           </div>
@@ -1435,15 +1412,15 @@ function InteractivePitchFrequencyWidget() {
                     flex: 1,
                     height: 140,
                     borderRadius: 14,
-                    border: active ? "1px solid #e6c878" : "1px solid rgba(212,177,94,0.14)",
-                    background: active ? "linear-gradient(180deg, rgba(60,52,30,0.6), rgba(38,34,46,0.85))" : "rgba(38,34,46,0.85)",
+                    border: active ? "1px solid #4f8035" : "1px solid rgba(120,80,40,0.22)",
+                    background: active ? "linear-gradient(180deg, rgba(60,52,30,0.6), #f6e8c6)" : "#f6e8c6",
                     cursor: "pointer",
                     padding: 10,
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "flex-end",
                     alignItems: "center",
-                    boxShadow: active ? "inset 0 -16px 28px rgba(212,177,94,0.18)" : "none",
+                    boxShadow: active ? "inset 0 -16px 28px rgba(120,80,40,0.26)" : "none",
                   }}
                 >
                   <div style={{ width: "100%", height, borderRadius: 10, background: active ? "#111111" : "#D1D5DB", transition: "height 0.2s ease" }} />
@@ -1550,14 +1527,14 @@ function PptContentEmbedFixed({ lessonId, pageHint = null }) {
     <div className="section-card" style={{ marginTop: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10, flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>课时 PPT</div>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>课时课件</div>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{`第 ${lessonData.lessonNumber} 课 - ${lessonData.lessonTitle}`}</div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <button
             onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))}
             disabled={pageIndex === 0}
-            style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: pageIndex === 0 ? "default" : "pointer" }}
+            style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(120,80,40,0.2)", background: "#f6e8c6", cursor: pageIndex === 0 ? "default" : "pointer" }}
           >
             上一页
           </button>
@@ -1565,7 +1542,7 @@ function PptContentEmbedFixed({ lessonId, pageHint = null }) {
           <button
             onClick={() => setPageIndex((prev) => Math.min(slideNumbers.length - 1, prev + 1))}
             disabled={pageIndex === slideNumbers.length - 1}
-            style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: pageIndex === slideNumbers.length - 1 ? "default" : "pointer" }}
+            style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(120,80,40,0.2)", background: "var(--gradient-accent)", color: "#fdf6e3", cursor: pageIndex === slideNumbers.length - 1 ? "default" : "pointer" }}
           >
             下一页
           </button>
@@ -1577,13 +1554,13 @@ function PptContentEmbedFixed({ lessonId, pageHint = null }) {
           alt={`${lessonData.lessonTitle} - 第 ${currentSlideNo} 页`}
           loading="lazy"
           onClick={() => setLightboxOpen(true)}
-          style={{ width: "100%", display: "block", borderRadius: 12, border: "1px solid rgba(212,177,94,0.14)", background: "rgba(255,255,255,0.06)", cursor: "zoom-in" }}
+          style={{ width: "100%", display: "block", borderRadius: 12, border: "1px solid rgba(120,80,40,0.22)", background: "rgba(94,60,28,0.07)", cursor: "zoom-in" }}
         />
       </div>
       <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>点击当前幻灯片可放大查看。</div>
         <a href={sourcePpt} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "#185FA5", textDecoration: "none" }}>
-          打开原始 PPT
+          打开原始课件
         </a>
       </div>
       {lightboxOpen ? (
@@ -1605,7 +1582,7 @@ function PptContentEmbedFixed({ lessonId, pageHint = null }) {
             <img
               src={imageSrc}
               alt={`${lessonData.lessonTitle} - 第 ${currentSlideNo} 页放大图`}
-              style={{ maxWidth: "100%", maxHeight: "94vh", width: "auto", height: "auto", display: "block", borderRadius: 14, background: "rgba(38,34,46,0.85)" }}
+              style={{ maxWidth: "100%", maxHeight: "94vh", width: "auto", height: "auto", display: "block", borderRadius: 14, background: "#f6e8c6" }}
             />
           </div>
         </div>
@@ -1620,7 +1597,6 @@ function LessonMediaHub({ lesson }) {
 
 function LessonSupportLinks({ onOpen }) {
   const items = [
-    { id: "tutor", label: "AI 导师", desc: "围绕当前课时提问，获取讲解、纠错和复习建议。" },
     { id: "lab", label: "音乐创作实验室", desc: "打开音乐创作实验室，进行延伸探索。" },
   ];
 
@@ -1641,13 +1617,8 @@ function LessonSupportLinks({ onOpen }) {
 }
 
 function ContentOutline({ branches = [], title = "课时内容", subtitle }) {
-  const [mode, setMode] = useState("level1");
   const [open, setOpen] = useState(() => new Set());
 
-  const applyMode = (nextMode) => {
-    setMode(nextMode);
-    setOpen(nextMode === "level2" ? new Set(branches.map((branch) => branch.key)) : new Set());
-  };
   const toggleBranch = (key) => setOpen((prev) => {
     const next = new Set(prev);
     if (next.has(key)) next.delete(key); else next.add(key);
@@ -1656,29 +1627,15 @@ function ContentOutline({ branches = [], title = "课时内容", subtitle }) {
 
   if (!branches.length) return null;
 
-  const segments = [
-    { id: "collapse", label: "收起" },
-    { id: "level1", label: "摘要" },
-    { id: "level2", label: "详情" },
-  ];
-
   return (
     <div className="section-card">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 4 }}>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>{title}</div>
-          <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginTop: 2 }}>{subtitle || `${branches.length} 个板块 · 点击分支展开`}</div>
-        </div>
-        <div className="kmap-seg">
-          {segments.map((seg) => (
-            <button key={seg.id} type="button" className={mode === seg.id ? "is-active" : ""} onClick={() => applyMode(seg.id)}>{seg.label}</button>
-          ))}
-        </div>
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ fontSize: 14, fontWeight: 700 }}>{title}</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginTop: 2 }}>{subtitle || `${branches.length} 个板块 · 点击展开`}</div>
       </div>
       <div className="kmap-outline">
         {branches.map((branch) => {
-          const full = open.has(branch.key) || mode === "level2";
-          const peek = !full && mode === "level1" && branch.peek;
+          const full = open.has(branch.key);
           return (
             <div className="kmap-branch" key={branch.key}>
               <button type="button" className="kmap-branch-head" onClick={() => toggleBranch(branch.key)}>
@@ -1687,11 +1644,121 @@ function ContentOutline({ branches = [], title = "课时内容", subtitle }) {
                 <span className="kmap-branch-title">{branch.title}</span>
               </button>
               {full && <div className="kmap-branch-body">{branch.body}</div>}
-              {peek && <div className="kmap-branch-peek">{branch.peek}</div>}
             </div>
           );
         })}
       </div>
+    </div>
+  );
+}
+
+const VILLAGE_SPOTS = [
+  { x: 22, y: 26 }, { x: 50, y: 17 }, { x: 78, y: 26 },
+  { x: 33, y: 50 }, { x: 67, y: 50 }, { x: 50, y: 38 },
+];
+
+function KnowledgeVillageMap({ lessonTitle, kps = [], onEnterKp, onGoCourseware, onGoPractice }) {
+  const houses = [
+    ...kps.map((kp, index) => ({ key: kp.id, kind: "kp", icon: "🏠", label: kp.title, spot: VILLAGE_SPOTS[index % VILLAGE_SPOTS.length], onEnter: () => onEnterKp?.(kp) })),
+    { key: "courseware", kind: "util", icon: "📚", label: "课件屋", spot: { x: 17, y: 76 }, onEnter: onGoCourseware },
+    { key: "practice", kind: "util", icon: "🎯", label: "练习屋", spot: { x: 83, y: 76 }, onEnter: onGoPractice },
+  ];
+  const [pos, setPos] = useState({ x: 50, y: 90 });
+  const [walking, setWalking] = useState(false);
+  const timerRef = useRef(null);
+  useEffect(() => () => window.clearTimeout(timerRef.current), []);
+  const goto = (house) => {
+    if (walking) return;
+    setWalking(true);
+    setPos({ x: house.spot.x, y: Math.min(94, house.spot.y + 13) });
+    window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      setWalking(false);
+      house.onEnter?.();
+    }, 780);
+  };
+  return (
+    <div className="section-card">
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ fontSize: 14, fontWeight: 700 }}>课前预习村 · {lessonTitle}</div>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginTop: 2 }}>点一座小屋，小智走过去带你进门 →</div>
+      </div>
+      <div className="village">
+        {houses.map((house) => (
+          <button key={house.key} type="button" className={`village-house village-house--${house.kind}`} style={{ left: `${house.spot.x}%`, top: `${house.spot.y}%` }} onClick={() => goto(house)}>
+            <span className="village-icon">{house.icon}</span>
+            <span className="village-label">{house.label}</span>
+          </button>
+        ))}
+        <div className="village-hero" style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
+          <span className={walking ? "hero-wobble" : ""}>🧑‍🎓</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KnowledgePointDetail({ kp, onBack, onAsk, onPractice, onCourseware }) {
+  if (!kp) return null;
+  const examples = (kp.examples && kp.examples.length)
+    ? kp.examples
+    : [...(kp.easy || []).slice(0, 1), ...(kp.medium || []).slice(0, 1), ...(kp.hard || []).slice(0, 1)];
+  return (
+    <div className="section-card">
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+        <span style={{ fontSize: 26 }}>📖</span>
+        <div style={{ flex: 1, minWidth: 0, fontSize: 18, fontWeight: 800 }}>{kp.title}</div>
+        <button type="button" onClick={onBack} className="kp-back">← 返回导图</button>
+      </div>
+      {kp.intro ? (
+        <div className="kp-block">
+          <div className="kp-sec-title">📝 简介</div>
+          <div style={{ fontSize: 12.5, lineHeight: 1.85, color: "var(--color-text-secondary)" }}>{kp.intro}</div>
+        </div>
+      ) : null}
+      {kp.subConcepts?.length ? (
+        <div className="kp-block">
+          <div className="kp-sec-title">📌 要点</div>
+          <ul className="kp-list">{kp.subConcepts.map((s, i) => <li key={i}>{s}</li>)}</ul>
+        </div>
+      ) : null}
+      {kp.facts?.length ? (
+        <div className="kp-block">
+          <div className="kp-sec-title">📖 详解</div>
+          <ul className="kp-list">{kp.facts.map((s, i) => <li key={i}>{s}</li>)}</ul>
+        </div>
+      ) : null}
+      {examples.length ? (
+        <div className="kp-block">
+          <div className="kp-sec-title">✏️ 例题</div>
+          <ul className="kp-list">{examples.map((s, i) => <li key={i}>{s}</li>)}</ul>
+        </div>
+      ) : null}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+        <button type="button" onClick={onAsk} className="kp-cta kp-cta--green">问小智老师</button>
+        <button type="button" onClick={onCourseware} className="kp-cta">看课件</button>
+        <button type="button" onClick={onPractice} className="kp-cta">去练习</button>
+      </div>
+    </div>
+  );
+}
+
+const LESSON_HAS_INTERACTIVE = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11"];
+
+function LessonInteractiveWidgets({ lessonId }) {
+  return (
+    <div style={{ display: "grid", gap: 12 }}>
+      {lessonId === "L1" ? <><InteractivePitchFrequencyWidgetCn /><InteractiveVolumeAmplitudeWidgetCn /></> : null}
+      {lessonId === "L2" ? <TemperamentEnharmonicWidgetCn /> : null}
+      {lessonId === "L3" ? <><TrebleClefDrillWidgetCn /><BassClefDrillWidgetCn /></> : null}
+      {lessonId === "L4" ? <><DotsAndTiesGuideWidgetCn /><NoteValueHierarchyWidgetCn /></> : null}
+      {lessonId === "L5" ? <><TrillVsMordentWidgetCn /><OrnamentComparisonWidgetCn /></> : null}
+      {lessonId === "L6" ? <><DynamicsScaleWidgetCn /><ArticulationContrastWidgetCn /></> : null}
+      {lessonId === "L7" ? <><RepeatPathGuideWidgetCn /><DcDsCodaGuideWidgetCn /></> : null}
+      {lessonId === "L8" ? <ExpressionVsTempoCardCn /> : null}
+      {lessonId === "L9" ? <MeterAccentGuideWidgetCn /> : null}
+      {lessonId === "L10" ? <CrossBarTieGuideWidgetCn /> : null}
+      {lessonId === "L11" ? <><SyncopationTypeGuideWidgetCn /><SyncopationPatternWidgetCn /></> : null}
     </div>
   );
 }
@@ -1710,96 +1777,46 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  if (!nodes.length) return null;
+
   const leftCount = Math.ceil(nodes.length / 2);
   const layoutNodes = nodes.map((item, index) => {
     const isLeft = index < leftCount;
     const laneIndex = isLeft ? index : index - leftCount;
-    const laneTotal = isLeft ? leftCount : nodes.length - leftCount;
-    // evenly distribute each lane across the canvas height so cards never crowd
-    const top = 24;
-    const slot = 200; // vertical pitch between cards (card height ~140 + breathing room)
-    const offset = isLeft ? 0 : 110; // stagger the right lane against the left
-    const y = top + offset + laneIndex * slot;
-    return {
-      ...item,
-      index,
-      isLeft,
-      laneTotal,
-      x: isLeft ? 70 : 690,
-      y,
-      anchorX: isLeft ? 290 : 690,
-      anchorY: y + 44,
-    };
+    const y = 24 + (isLeft ? 0 : 110) + laneIndex * 200;
+    return { ...item, index, isLeft, x: isLeft ? 70 : 690, y, anchorX: isLeft ? 290 : 690, anchorY: y + 44 };
   });
 
   return (
     <div className="section-card">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>知识导图</div>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>课前预习 · 知识导图</div>
           <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{chapterTitle}</div>
         </div>
-        <Tag>{`${nodes.length} 条预习线索`}</Tag>
+        <Tag>{`${nodes.length} 个知识点`}</Tag>
       </div>
 
       {isMobile ? (
         <div className="kmap-canvas" style={{ padding: 14 }}>
-          <div
-            style={{
-              padding: 16,
-              borderRadius: 18,
-              background: "linear-gradient(160deg, rgba(20,20,28,0.99), rgba(46,42,68,0.96))",
-              color: "#ffffff",
-              marginBottom: 14,
-              boxShadow: "0 18px 40px rgba(212,177,94,0.22), inset 0 1px 0 rgba(255,255,255,0.1)",
-            }}
-          >
-            <div style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(240,214,138,0.8)", marginBottom: 8 }}>核心主题</div>
-            <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.35, marginBottom: 10 }}>{lessonTitle}</div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.74)", lineHeight: 1.7 }}>
-              先浏览四个主要节点，再打开完整课时 PPT。
-            </div>
+          <div style={{ padding: 16, borderRadius: 18, background: "linear-gradient(160deg, #8a5a2b, #6e451f)", color: "#fff4d8", marginBottom: 14, boxShadow: "inset 0 1px 0 rgba(255,250,235,0.2), 0 6px 0 rgba(94,60,28,0.4)" }}>
+            <div style={{ fontSize: 11, letterSpacing: "0.14em", color: "rgba(255,244,216,0.8)", marginBottom: 8 }}>本课主题</div>
+            <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.35 }}>{lessonTitle}</div>
           </div>
-
           <div style={{ position: "relative", paddingLeft: 24, display: "grid", gap: 12 }}>
-            <div style={{ position: "absolute", left: 11, top: 6, bottom: 6, width: 2, background: "linear-gradient(180deg, rgba(212,177,94,0.5), rgba(212,177,94,0.12))" }} />
+            <div style={{ position: "absolute", left: 11, top: 6, bottom: 6, width: 2, background: "linear-gradient(180deg, rgba(120,80,40,0.5), rgba(120,80,40,0.12))" }} />
             {nodes.map((item, index) => {
               const active = hoveredIndex === index;
               return (
-                <button
-                  key={`${lessonTitle}-mobile-map-${index}`}
-                  type="button"
-                  onMouseEnter={() => setHoveredIndex(index)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                  onFocus={() => setHoveredIndex(index)}
-                  onBlur={() => setHoveredIndex(null)}
-                  onClick={() => onNodeSelect?.(index)}
-                  style={{
-                    position: "relative",
-                    padding: 14,
-                    borderRadius: 16,
-                    background: active
-                      ? "linear-gradient(180deg, #f0d68a, #d4b15e)"
-                      : "linear-gradient(180deg, rgba(38,34,46,0.92), rgba(24,22,30,0.82))",
-                    border: active ? "1px solid #e6c878" : "1px solid rgba(212,177,94,0.16)",
-                    boxShadow: active ? "0 14px 30px rgba(212,177,94,0.3)" : "0 10px 24px rgba(0,0,0,0.4)",
-                    textAlign: "left",
-                    cursor: "pointer",
-                  }}
-                >
-                  <div style={{ position: "absolute", left: -21, top: 18, width: 12, height: 12, borderRadius: 999, background: active ? "#f0d68a" : "#1a1206", border: "2px solid #d4b15e" }} />
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: 999, background: active ? "#1a1206" : "linear-gradient(135deg,#f0d68a,#b8902f)", color: active ? "#f0d68a" : "#1a1206", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
-                      {index + 1}
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: active ? "#1a1206" : "#f4efe3", lineHeight: 1.4 }}>{item.h}</div>
+                <button key={`${lessonTitle}-m-${index}`} type="button" onMouseEnter={() => setHoveredIndex(index)} onMouseLeave={() => setHoveredIndex(null)} onClick={() => onNodeSelect?.(index)}
+                  style={{ position: "relative", padding: 14, borderRadius: 14, background: active ? "linear-gradient(180deg,#7bb45a,#4f8035)" : "linear-gradient(180deg,#fbf0d6,#f3e3bf)", border: active ? "2px solid #4f8035" : "2px solid #9c6b3a", boxShadow: active ? "0 4px 0 rgba(63,110,47,0.35)" : "inset 0 0 0 1px rgba(255,250,235,0.5), 0 3px 0 rgba(94,60,28,0.2)", textAlign: "left", cursor: "pointer" }}>
+                  <div style={{ position: "absolute", left: -21, top: 18, width: 12, height: 12, borderRadius: 999, background: active ? "#7bb45a" : "#8a5a2b", border: "2px solid #6e451f" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: 999, background: active ? "#fff4d8" : "linear-gradient(135deg,#7bb45a,#4f8035)", color: active ? "#3f6e2f" : "#fff4d8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{index + 1}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: active ? "#fff4d8" : "#3f2d1c", lineHeight: 1.4 }}>{item.h}</div>
                   </div>
-                  <div style={{ fontSize: 12, color: active ? "rgba(26,18,6,0.78)" : "var(--color-text-secondary)", lineHeight: 1.8 }}>
-                    {summarize(item.b)}
-                  </div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: active ? "rgba(26,18,6,0.9)" : "#d4b15e", marginTop: 8 }}>
-                    打开相关课时内容 →
-                  </div>
+                  <div style={{ fontSize: 12, color: active ? "rgba(255,250,235,0.85)" : "var(--color-text-secondary)", lineHeight: 1.8 }}>{summarize(item.b)}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: active ? "#fff4d8" : "#6e451f", marginTop: 8 }}>查看课件 →</div>
                 </button>
               );
             })}
@@ -1808,124 +1825,46 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
       ) : (
         <div className="kmap-canvas">
           <div style={{ position: "relative", width: 980, minHeight: 520, margin: "0 auto", padding: "18px 0" }}>
-            <svg
-              width="980"
-              height="520"
-              viewBox="0 0 980 520"
-              style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
-              aria-hidden="true"
-            >
+            <svg width="980" height="520" viewBox="0 0 980 520" style={{ position: "absolute", inset: 0, pointerEvents: "none" }} aria-hidden="true">
               <defs>
                 <linearGradient id="mind-line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="rgba(212,177,94,0.18)" />
-                  <stop offset="100%" stopColor="rgba(212,177,94,0.6)" />
+                  <stop offset="0%" stopColor="rgba(120,80,40,0.2)" />
+                  <stop offset="100%" stopColor="rgba(93,143,70,0.55)" />
                 </linearGradient>
               </defs>
               {layoutNodes.map((item) => {
                 const active = hoveredIndex === item.index;
                 const curve = `M 490 235 C ${item.isLeft ? 430 : 550} 235, ${item.isLeft ? 360 : 620} ${item.anchorY}, ${item.anchorX} ${item.anchorY}`;
                 return (
-                  <g key={`line-${lessonTitle}-${item.index}`}>
-                    <path
-                      className="kmap-link"
-                      d={curve}
-                      pathLength="1"
-                      stroke={active ? "#f0d68a" : "url(#mind-line-gradient)"}
-                      strokeWidth={active ? 4 : 2.5}
-                      style={{ animationDelay: `${item.index * 0.12}s` }}
-                    />
-                    <path
-                      className="kmap-link is-flow"
-                      d={curve}
-                      pathLength="1"
-                      stroke={active ? "#fff6df" : "#d4b15e"}
-                      strokeWidth={active ? 4.5 : 3}
-                      style={{ opacity: active ? 0.95 : 0.6 }}
-                    />
-                    <circle
-                      className="kmap-anchor-dot"
-                      cx={item.anchorX}
-                      cy={item.anchorY}
-                      r={active ? 5 : 4}
-                      fill={active ? "#f0d68a" : "#d4b15e"}
-                      style={{ animationDelay: `${item.index * 0.3}s` }}
-                    />
+                  <g key={`line-${item.index}`}>
+                    <path className="kmap-link" d={curve} pathLength="1" stroke={active ? "#5d8f46" : "url(#mind-line-gradient)"} strokeWidth={active ? 4 : 2.5} style={{ animationDelay: `${item.index * 0.12}s` }} />
+                    <path className="kmap-link is-flow" d={curve} pathLength="1" stroke={active ? "#3f6e2f" : "#8a5a2b"} strokeWidth={active ? 4.5 : 3} style={{ opacity: active ? 0.9 : 0.55 }} />
+                    <circle className="kmap-anchor-dot" cx={item.anchorX} cy={item.anchorY} r={active ? 5 : 4} fill={active ? "#5d8f46" : "#8a5a2b"} style={{ animationDelay: `${item.index * 0.3}s` }} />
                   </g>
                 );
               })}
             </svg>
 
-            <div
-              className="kmap-center"
-              style={{
-                position: "absolute",
-                left: 380,
-                top: 150,
-                width: 220,
-                minHeight: 150,
-                padding: 18,
-                borderRadius: 24,
-                background: "linear-gradient(160deg, rgba(20,20,28,0.99), rgba(46,42,68,0.96))",
-                color: "#ffffff",
-                boxShadow: "0 22px 48px rgba(60,52,137,0.28), inset 0 1px 0 rgba(255,255,255,0.10)",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-              }}
-            >
+            <div className="kmap-center" style={{ position: "absolute", left: 380, top: 150, width: 220, minHeight: 150, padding: 18, borderRadius: 18, background: "linear-gradient(160deg, #8a5a2b, #6e451f)", color: "#fff4d8", border: "2px solid #5e3c1c", boxShadow: "inset 0 1px 0 rgba(255,250,235,0.2), 0 8px 0 rgba(94,60,28,0.4)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                 <span className="motion-bars" style={{ height: 12 }}><span /><span /><span /></span>
-                <span style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.6)" }}>核心主题</span>
+                <span style={{ fontSize: 11, letterSpacing: "0.14em", color: "rgba(255,244,216,0.7)" }}>本课主题</span>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.35, marginBottom: 10 }}>{lessonTitle}</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.74)", lineHeight: 1.7 }}>
-                先浏览四个主要节点，再进入内容学习和课堂练习。
-              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.35, fontFamily: "var(--font-display)" }}>{lessonTitle}</div>
+              <div style={{ fontSize: 12, color: "rgba(255,244,216,0.78)", lineHeight: 1.7, marginTop: 8 }}>先看四个主要知识点，再进入内容与课堂练习。</div>
             </div>
 
             {layoutNodes.map((item) => {
               const active = hoveredIndex === item.index;
               return (
-                <button
-                  key={`${lessonTitle}-map-${item.index}`}
-                  type="button"
-                  className="kmap-node"
-                  onMouseEnter={() => setHoveredIndex(item.index)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                  onFocus={() => setHoveredIndex(item.index)}
-                  onBlur={() => setHoveredIndex(null)}
-                  onClick={() => onNodeSelect?.(item.index)}
-                  style={{
-                    position: "absolute",
-                    left: item.x,
-                    top: item.y,
-                    width: 220,
-                    padding: 16,
-                    borderRadius: 18,
-                    background: active
-                      ? "linear-gradient(180deg, #f0d68a, #d4b15e)"
-                      : "linear-gradient(180deg, rgba(38,34,46,0.92), rgba(24,22,30,0.82))",
-                    border: active ? "1px solid #e6c878" : "1px solid rgba(212,177,94,0.16)",
-                    boxShadow: active
-                      ? "0 18px 40px rgba(212,177,94,0.3), inset 0 1px 0 rgba(255,255,255,0.25)"
-                      : "0 10px 28px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
-                    textAlign: "left",
-                    cursor: "pointer",
-                    animationDelay: `${0.15 + item.index * 0.12}s`,
-                  }}
-                >
+                <button key={`map-${item.index}`} type="button" className="kmap-node" onMouseEnter={() => setHoveredIndex(item.index)} onMouseLeave={() => setHoveredIndex(null)} onFocus={() => setHoveredIndex(item.index)} onBlur={() => setHoveredIndex(null)} onClick={() => onNodeSelect?.(item.index)}
+                  style={{ position: "absolute", left: item.x, top: item.y, width: 220, padding: 16, borderRadius: 14, background: active ? "linear-gradient(180deg, #7bb45a, #4f8035)" : "linear-gradient(180deg, #fbf0d6, #f3e3bf)", border: active ? "2px solid #4f8035" : "2px solid #9c6b3a", boxShadow: active ? "0 5px 0 rgba(63,110,47,0.35), inset 0 1px 0 rgba(255,255,255,0.25)" : "inset 0 0 0 1px rgba(255,250,235,0.5), 0 3px 0 rgba(94,60,28,0.2)", textAlign: "left", cursor: "pointer", animationDelay: `${0.15 + item.index * 0.12}s` }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <div style={{ width: 26, height: 26, borderRadius: 999, background: active ? "#1a1206" : "linear-gradient(135deg,#f0d68a,#b8902f)", color: active ? "#f0d68a" : "#1a1206", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, boxShadow: active ? "none" : "0 4px 10px rgba(212,177,94,0.35)", flexShrink: 0 }}>
-                      {item.index + 1}
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: active ? "#1a1206" : "#f4efe3", lineHeight: 1.4 }}>{item.h}</div>
+                    <div style={{ width: 26, height: 26, borderRadius: 999, background: active ? "#fff4d8" : "linear-gradient(135deg,#7bb45a,#4f8035)", color: active ? "#3f6e2f" : "#fff4d8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, boxShadow: active ? "none" : "0 2px 0 rgba(63,110,47,0.4)", flexShrink: 0 }}>{item.index + 1}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: active ? "#fff4d8" : "#3f2d1c", lineHeight: 1.4 }}>{item.h}</div>
                   </div>
-                  <div style={{ fontSize: 12, color: active ? "rgba(26,18,6,0.78)" : "var(--color-text-secondary)", lineHeight: 1.8 }}>
-                    {summarize(item.b)}
-                  </div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: active ? "rgba(26,18,6,0.9)" : "#d4b15e", marginTop: 10 }}>
-                    打开相关课时内容 →
-                  </div>
+                  <div style={{ fontSize: 12, color: active ? "rgba(255,250,235,0.85)" : "var(--color-text-secondary)", lineHeight: 1.8 }}>{summarize(item.b)}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: active ? "#fff4d8" : "#6e451f", marginTop: 10 }}>查看课件 →</div>
                 </button>
               );
             })}
@@ -1936,15 +1875,17 @@ function KnowledgeMindMap({ lessonTitle, chapterTitle, items = [], onNodeSelect 
   );
 }
 
-function LessonView({ lesson, ratings, setRating, scores, setScore }) {
+function LessonView({ lesson, ratings, setRating, scores, setScore, onOpenTutor }) {
   const [tab, setTab] = useState("learn");
   const [labOpen, setLabOpen] = useState(false);
   const [contentPageHint, setContentPageHint] = useState(null);
   const [bktVersion, setBktVersion] = useState(0);
   const [homeworkGuideOpen, setHomeworkGuideOpen] = useState(false);
   const [homeworkContactOpen, setHomeworkContactOpen] = useState(false);
+  const [villageDetailKp, setVillageDetailKp] = useState(null);
 
   const ExComponent = EXERCISE_COMPONENTS[lesson.ex];
+  const lessonRichKps = getKnowledgePointsForLesson(lesson.id);
   const pptLessonData = getPptLessonData(lesson.id);
   const contentItems = (pptLessonData?.knowledgePoints || []).map((item, index) => ({
     h: item.title || `知识点 ${index + 1}`,
@@ -1956,7 +1897,6 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
     { id: "content", label: "内容学习" },
     { id: "classroom", label: "课堂练习" },
     { id: "homework", label: "课后作业" },
-    { id: "tutor", label: "AI 导师" },
   ];
   const lessonKnowledgeSummary = useMemo(() => summarizeLessonKnowledge(getStudentProfile().studentId, lesson.id), [lesson.id, bktVersion]);
 
@@ -1980,21 +1920,11 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <Tag color="#3C3489" bg="#EEEDFE">{`第 ${lesson.n} 课`}</Tag>
+            <Tag color="#3f6e2f" bg="#e3efd6">{`第 ${lesson.n} 课`}</Tag>
             <Stars value={ratings[lesson.id] || 0} onChange={(v) => setRating(lesson.id, v)} size={16} />
           </div>
           <h2 style={{ fontSize: 24, fontWeight: 700, margin: "4px 0 0" }}>{lesson.t}</h2>
         </div>
-        <button
-          onClick={() => setTab("tutor")}
-          className="support-tile"
-          style={{ width: "min(240px, 100%)", textAlign: "left", padding: 14, flexShrink: 0 }}
-        >
-          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 6 }}>AI 导师</div>
-          <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>
-            围绕当前课时提问，获取概念讲解、作业帮助和错误订正。
-          </div>
-        </button>
       </div>
 
       <div className="chip-tabs">
@@ -2015,60 +1945,17 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
             lessonTitle={lesson.t}
             chapterTitle={pptLessonData?.chapter || ""}
             items={contentItems}
-            onNodeSelect={(index) => {
-              setContentPageHint(index);
-              setTab("content");
-            }}
+            onNodeSelect={(index) => { setContentPageHint(index); setTab("content"); }}
           />
-          {lesson.id === "L1" && (
+          {LESSON_HAS_INTERACTIVE.includes(lesson.id) && (
             <div className="section-card">
               <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>互动预习</div>
               <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
-                先用互动组件感受音高、频率和振幅，再进入内容学习复习课时 PPT。
+                先用互动组件动手感受本课概念，再进入内容学习与课堂练习。
               </div>
-              <InteractivePitchFrequencyWidgetCn />
-              <InteractiveVolumeAmplitudeWidgetCn />
+              <LessonInteractiveWidgets lessonId={lesson.id} />
             </div>
           )}
-          <div className="section-card">
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>预习计划</div>
-            <div style={{ display: "grid", gap: 10 }}>
-              <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-                先浏览导图中的四个主要节点，再打开完整课时 PPT，最后用课堂练习检查理解情况。
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
-                {[
-                  { no: "01", title: "浏览导图", desc: "把握课时结构", active: true },
-                  { no: "02", title: "打开内容", desc: "查看完整 PPT", active: false },
-                  { no: "03", title: "进入练习", desc: "检查薄弱点", active: false },
-                ].map((step) => (
-                  <div key={step.no} style={{ border: step.active ? "1px solid rgba(212,177,94,0.4)" : "1px solid rgba(212,177,94,0.14)", background: step.active ? "rgba(212,177,94,0.08)" : "rgba(255,255,255,0.04)", borderRadius: 14, padding: 12 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-tertiary)", marginBottom: 6 }}>{step.no}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{step.title}</div>
-                    <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.6 }}>{step.desc}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                <button onClick={() => setTab("content")} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #111111", background: "var(--gradient-accent)", color: "#1a1206", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                  打开课时内容
-                </button>
-                <button onClick={() => setTab("classroom")} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                  前往练习
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="section-card">
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>知识掌握摘要</div>
-            <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-              掌握较好的知识点：{lessonKnowledgeSummary.strong.map((item) => item.title).join(" / ") || "暂无稳定优势项"}
-              <br />
-              当前薄弱点：{lessonKnowledgeSummary.weak.map((item) => item.title).join(" / ") || "暂无"}
-              <br />
-              下一步建议：{getRecommendationFromSummary(lessonKnowledgeSummary)}
-            </div>
-          </div>
         </div>
       )}
 
@@ -2083,8 +1970,8 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
           {(scores[lesson.id] || 0) > 0 && (
             <div className="section-card" style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>得分</span>
-              <div style={{ flex: 1 }}><PBar v={scores[lesson.id]} max={100} color="#534AB7" /></div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#534AB7" }}>{scores[lesson.id]}%</span>
+              <div style={{ flex: 1 }}><PBar v={scores[lesson.id]} max={100} color="#5d8f46" /></div>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#5d8f46" }}>{scores[lesson.id]}%</span>
             </div>
           )}
           <LessonLearningWorkspace lesson={lesson} section="practice" showTabs={false} onBktChange={() => setBktVersion((prev) => prev + 1)} />
@@ -2108,14 +1995,14 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
             <button
               type="button"
               onClick={() => setHomeworkGuideOpen((prev) => !prev)}
-              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: homeworkGuideOpen ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)", color: homeworkGuideOpen ? "#1a1206" : "var(--color-text-primary)", cursor: "pointer" }}
+              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: homeworkGuideOpen ? "var(--gradient-accent)" : "rgba(94,60,28,0.07)", color: homeworkGuideOpen ? "#fdf6e3" : "var(--color-text-primary)", cursor: "pointer" }}
             >
               {homeworkGuideOpen ? "收起作业指南" : "查看作业指南"}
             </button>
             <button
               type="button"
               onClick={() => setHomeworkContactOpen((prev) => !prev)}
-              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: homeworkContactOpen ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)", color: homeworkContactOpen ? "#1a1206" : "var(--color-text-primary)", cursor: "pointer" }}
+              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(120,80,40,0.2)", background: homeworkContactOpen ? "var(--gradient-accent)" : "rgba(94,60,28,0.07)", color: homeworkContactOpen ? "#fdf6e3" : "var(--color-text-primary)", cursor: "pointer" }}
             >
               {homeworkContactOpen ? "收起支持说明" : "查看支持说明"}
             </button>
@@ -2146,7 +2033,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
             <div className="section-card">
               <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>支持说明</div>
               <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-                如果课堂练习、作业上传或 AI 导师出现问题，请先刷新页面并重新进入该课时。
+                如果课堂练习、作业上传或智能导师出现问题，请先刷新页面并重新进入该课时。
                 <br />
                 如果问题仍然存在，请记录课时名称、操作步骤和错误表现，便于教师跟进。
               </div>
@@ -2155,12 +2042,6 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
 
           <LessonLearningWorkspace lesson={lesson} section="homework" showTabs={false} onBktChange={() => setBktVersion((prev) => prev + 1)} />
         </div>
-      )}
-
-      {tab === "tutor" && (
-        <Suspense fallback={<div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>AI 导师加载中...</div>}>
-          <LazyAITutorV2 lessonId={lesson.id} lessonTitle={lesson.t} />
-        </Suspense>
       )}
 
       {tab === "lab" && (
@@ -2181,7 +2062,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
               </div>
             ) : (
               <div style={{ padding: 16, textAlign: "center", border: "1px dashed var(--color-border-secondary)", borderRadius: 8 }}>
-                <div style={{ fontSize: 12, color: "var(--color-text-tertiary)" }}>点击“打开”加载实验页面，建议使用 Chrome 浏览器。</div>
+                <div style={{ fontSize: 12, color: "var(--color-text-tertiary)" }}>点击“打开”加载实验页面，建议使用现代浏览器。</div>
               </div>
             )}
           </div>
@@ -2201,7 +2082,6 @@ function LessonView({ lesson, ratings, setRating, scores, setScore }) {
 /* Assessment */
 function LessonSupportLinksV2({ onOpen }) {
   const items = [
-    { id: "tutor", label: "AI 导师", desc: "围绕当前课时提问，获取有针对性的概念讲解。" },
     { id: "lab", label: "音乐创作实验室", desc: "打开延伸实验页面，探索音高、节奏和记谱。" },
   ];
 
