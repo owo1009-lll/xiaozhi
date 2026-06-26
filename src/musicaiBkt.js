@@ -264,15 +264,15 @@ export function summarizeLessonKnowledge(userId, lessonId) {
 export function getRecommendationFromSummary(summary) {
   const weak = summary.weak?.[0];
   if (!weak) {
-    return "Complete the pre-lesson preview and classroom practice first; the system will build a knowledge mastery profile over time.";
+    return "请先完成课前预习和课堂练习；系统会逐步建立你的知识掌握画像。";
   }
   if (weak.pL < 0.45) {
-    return `Review the pre-lesson map and PPT related to "${weak.title}", then ask the AI Tutor about it.`;
+    return `请先复习与“${weak.title}”相关的课前导图和 PPT，再向 AI 导师提问。`;
   }
   if (weak.pL < 0.75) {
-    return `Continue classroom practice and reinforce "${weak.title}" first.`;
+    return `请继续完成课堂练习，并优先强化“${weak.title}”。`;
   }
-  return "This lesson is relatively stable; move to the next lesson or integrated review.";
+  return "本课掌握相对稳定，可以进入下一课或综合复习。";
 }
 
 export function buildKnowledgeMirrorPayload(userId, lessonId) {

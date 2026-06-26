@@ -20,9 +20,9 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
   const responseSourceLabel = useMemo(() => {
     if (!responseMeta) return "";
     const modelUsed = String(responseMeta.modelUsed || "");
-    if (responseMeta.imageUploaded || /vl|vision/i.test(modelUsed)) return "Vision model";
-    if (/local-priority|fallback/i.test(modelUsed)) return "Local fallback";
-    if (modelUsed) return "Cloud model";
+    if (responseMeta.imageUploaded || /vl|vision/i.test(modelUsed)) return "视觉模型";
+    if (/local-priority|fallback/i.test(modelUsed)) return "本地兜底";
+    if (modelUsed) return "云端模型";
     return "";
   }, [responseMeta]);
 
@@ -31,16 +31,16 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
     b: item.subConcepts?.join("；") || "",
   }));
   const contextText = lessonId === "L12"
-    ? "This is an integrated diagnostic lesson. Connect the core knowledge points from Lessons 1-11, help the learner locate weak points, explain error causes, and suggest a review order and next steps."
+    ? "这是综合诊断课。请串联第 1-11 课核心知识点，帮助学习者定位薄弱点、解释错误原因，并给出复习顺序与下一步建议。"
     : contentSections.map((section) => `${section.h}: ${section.b}`).join("\n\n");
   const tutorSystem = lessonId === "L12"
-    ? `You are a university-level music theory instructor. Current lesson: ${lessonTitle}.\nAlways reply in clear, accurate, concise English.\nThis is an integrated diagnostic lesson. Do not recite all knowledge points one by one. Prioritize the diagnostic purpose, how to connect Lessons 1-11, how to locate weak points, and what to review next.\nLesson context:\n${contextText}`
-    : `You are a university-level music theory instructor. Current lesson: ${lessonTitle}.\nAlways reply in clear, accurate, concise English.\nLesson context:\n${contextText}`;
+    ? `你是一名大学乐理教师。当前课时：${lessonTitle}。\n请始终使用清晰、准确、简洁的中文回答。\n这是综合诊断课，不要逐条背诵所有知识点。优先说明诊断目的、如何串联第 1-11 课、如何定位薄弱点，以及下一步复习建议。\n课时背景：\n${contextText}`
+    : `你是一名大学乐理教师。当前课时：${lessonTitle}。\n请始终使用清晰、准确、简洁的中文回答。\n课时背景：\n${contextText}`;
 
   useEffect(() => {
     setMsgs([{
       role: "assistant",
-      text: `Hello, I am your AI Music Theory Tutor. Current lesson: ${lessonTitle}\n\nYou can ask me to:\n- Explain this lesson's core concepts\n- Clarify a specific knowledge point\n- Create a practice question\n- Show how these ideas apply in real music`,
+      text: `你好，我是你的 AI 乐理导师。当前课时：${lessonTitle}\n\n你可以让我：\n- 解释本课核心概念\n- 澄清某个具体知识点\n- 生成一道练习题\n- 说明这些知识如何用于真实音乐`,
     }]);
   }, [lessonId, lessonTitle]);
 
@@ -57,7 +57,7 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
     const file = event.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
-    setLoadingStage("Compressing image...");
+    setLoadingStage("正在压缩图片...");
     const dataUrl = await compressImageFileToDataUrl(file);
     setImageDataUrl(dataUrl);
     setImageName(file.name);
@@ -68,7 +68,7 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
   const send = useCallback(async () => {
     const text = input.trim();
     if ((!text && !imageDataUrl) || loading) return;
-    const nextMsgs = [...msgs, { role: "user", text: text || "Please explain using the image I uploaded.", imageDataUrl, imageName }];
+    const nextMsgs = [...msgs, { role: "user", text: text || "请根据我上传的图片进行讲解。", imageDataUrl, imageName }];
     setMsgs(nextMsgs);
     setInput("");
     setLoading(true);
@@ -76,15 +76,15 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
     imageStageTimerRef.current.forEach((timerId) => window.clearTimeout(timerId));
     imageStageTimerRef.current = [];
     if (imageDataUrl) {
-      setLoadingStage("Uploading and reading the score, question, or slide content in the image...");
+      setLoadingStage("正在上传并识别图片中的乐谱、题目或课件内容...");
       imageStageTimerRef.current.push(window.setTimeout(() => {
-        setLoadingStage("Combining the image with the current lesson to generate explanation, correction, and review advice...");
+        setLoadingStage("正在结合当前课时生成讲解、纠错和复习建议...");
       }, 2200));
       imageStageTimerRef.current.push(window.setTimeout(() => {
-        setLoadingStage("Image analysis usually takes longer than text-only questions. Please wait while processing continues...");
+        setLoadingStage("图片分析通常比纯文字问题更慢，请继续等待处理完成...");
       }, 6500));
     } else {
-      setLoadingStage("Preparing the question and generating an explanation...");
+      setLoadingStage("正在整理问题并生成讲解...");
     }
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), imageDataUrl ? 45000 : 18000);
@@ -107,12 +107,12 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
       });
       const json = await response.json();
       const replyText = response.ok
-        ? String(json?.text || "Request failed. Please try again later.").trim()
+        ? String(json?.text || "请求失败，请稍后重试。").trim()
         : String(
-            (json?.kind === "timeout" ? "AI Tutor response timed out. Try shortening the question or asking without an image first." : "")
-            || (json?.kind === "upstream_network" ? "The AI service network is unstable. Please try again later." : "")
+            (json?.kind === "timeout" ? "AI 导师响应超时。请先缩短问题，或先尝试不带图片提问。" : "")
+            || (json?.kind === "upstream_network" ? "AI 服务网络不稳定，请稍后重试。" : "")
             || json?.detail
-            || "The AI service is temporarily unavailable. Please try again later."
+            || "AI 服务暂时不可用，请稍后重试。"
           ).trim();
       setMsgs((prev) => [...prev, { role: "assistant", text: replyText }]);
       if (response.ok) {
@@ -128,15 +128,15 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
         appendTutorHistory(studentProfile.studentId, {
           lessonId,
           lessonTitle,
-          prompt: text || "Please explain using the image I uploaded.",
+          prompt: text || "请根据我上传的图片进行讲解。",
           reply: replyText,
           imageUploaded: Boolean(imageDataUrl),
         });
       }
     } catch (error) {
       const message = error?.name === "AbortError"
-        ? "AI Tutor response timed out. Text-only questions usually take 2 to 5 seconds; image questions can take longer. Please try again later."
-        : "Cannot connect to the AI service. Please confirm the backend is running or try again later.";
+        ? "AI 导师响应超时。纯文字问题通常需要 2-5 秒，图片问题可能更久，请稍后重试。"
+        : "无法连接 AI 服务。请确认后端正在运行，或稍后重试。";
       setMsgs((prev) => [...prev, { role: "assistant", text: message }]);
     } finally {
       window.clearTimeout(timeoutId);
@@ -150,17 +150,17 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: 460, border: "1px solid rgba(212,177,94,0.14)", borderRadius: 12, overflow: "hidden", background: "rgba(38,34,46,0.85)" }}>
       <div style={{ padding: "10px 14px", borderBottom: "1px solid rgba(212,177,94,0.14)", background: "rgba(255,255,255,0.05)" }}>
-        <div style={{ fontSize: 14, fontWeight: 700 }}>AI Music Theory Tutor</div>
+        <div style={{ fontSize: 14, fontWeight: 700 }}>AI 乐理导师</div>
         <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 4 }}>
-          {lessonTitle} - text-only questions usually take 2 to 5 seconds; images require compression, recognition, and lesson matching, so they take longer.
+          {lessonTitle} - 纯文字问题通常需要 2-5 秒；图片需要压缩、识别并匹配课时内容，因此耗时更长。
         </div>
         {responseMeta ? (
           <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 4 }}>
-            {responseMeta.cached ? "Cached response" : "Live generated response"}
-            {responseSourceLabel ? ` - Source: ${responseSourceLabel}` : ""}
+            {responseMeta.cached ? "缓存回答" : "实时生成回答"}
+            {responseSourceLabel ? ` - 来源：${responseSourceLabel}` : ""}
             {responseMeta.elapsedMs ? ` - ${responseMeta.elapsedMs} ms` : ""}
             {responseMeta.modelUsed ? ` - ${responseMeta.modelUsed}` : ""}
-            {responseMeta.retried ? " - automatically retried once" : ""}
+            {responseMeta.retried ? " - 已自动重试一次" : ""}
           </div>
         ) : null}
       </div>
@@ -168,25 +168,25 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
         {msgs.map((msg, index) => (
           <div key={`${msg.role}-${index}`} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
             <div style={{ maxWidth: "82%", padding: "10px 12px", borderRadius: 12, background: msg.role === "user" ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)", color: msg.role === "user" ? "#1a1206" : "var(--color-text-primary)", border: msg.role === "user" ? "none" : "1px solid rgba(255,255,255,0.08)", fontSize: 12, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>
-              {msg.imageDataUrl ? <img src={msg.imageDataUrl} alt={msg.imageName || "Uploaded image"} style={{ display: "block", maxWidth: 220, borderRadius: 10, marginBottom: 8 }} /> : null}
+              {msg.imageDataUrl ? <img src={msg.imageDataUrl} alt={msg.imageName || "已上传图片"} style={{ display: "block", maxWidth: 220, borderRadius: 10, marginBottom: 8 }} /> : null}
               {msg.text}
             </div>
           </div>
         ))}
-        {loading ? <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{loadingStage || "Thinking..."}</div> : null}
+        {loading ? <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{loadingStage || "思考中..."}</div> : null}
       </div>
       <div style={{ padding: 10, borderTop: "1px solid rgba(212,177,94,0.14)", background: "rgba(255,255,255,0.04)" }}>
         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePickImage} />
         <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handlePickImage} />
         {imageDataUrl ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: 8, borderRadius: 10, background: "rgba(38,34,46,0.85)", border: "1px solid rgba(212,177,94,0.14)" }}>
-            <img src={imageDataUrl} alt={imageName || "Preview"} style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8 }} />
-            <div style={{ flex: 1, minWidth: 0, fontSize: 11, color: "var(--color-text-secondary)" }}>{imageName || "Image selected"}</div>
-            <button onClick={() => { setImageDataUrl(""); setImageName(""); }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(212,177,94,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>Remove</button>
+            <img src={imageDataUrl} alt={imageName || "预览图"} style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8 }} />
+            <div style={{ flex: 1, minWidth: 0, fontSize: 11, color: "var(--color-text-secondary)" }}>{imageName || "已选择图片"}</div>
+            <button onClick={() => { setImageDataUrl(""); setImageName(""); }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(212,177,94,0.14)", background: "rgba(255,255,255,0.06)", cursor: "pointer" }}>移除</button>
           </div>
         ) : null}
         <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginBottom: 8, lineHeight: 1.6 }}>
-          Ask one short question first. With images, the system compresses the upload, recognizes the content, and combines it with the current lesson before answering.
+          建议先提出一个简短问题。若上传图片，系统会先压缩图片、识别内容，再结合当前课时回答。
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           <input
@@ -198,12 +198,12 @@ export default function AITutorV2({ lessonId, lessonTitle }) {
                 send();
               }
             }}
-            placeholder="Enter your question, or upload a photo and ask..."
+            placeholder="输入你的问题，或上传照片后提问..."
             style={{ flex: 1, padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", fontSize: 12, outline: "none" }}
           />
-          <button onClick={() => cameraInputRef.current?.click()} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: "pointer" }}>Camera</button>
-          <button onClick={() => fileInputRef.current?.click()} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: "pointer" }}>Gallery</button>
-          <button onClick={send} disabled={loading || (!input.trim() && !imageDataUrl)} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: loading || (!input.trim() && !imageDataUrl) ? "default" : "pointer" }}>Send</button>
+          <button onClick={() => cameraInputRef.current?.click()} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: "pointer" }}>拍照</button>
+          <button onClick={() => fileInputRef.current?.click()} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(38,34,46,0.85)", cursor: "pointer" }}>相册</button>
+          <button onClick={send} disabled={loading || (!input.trim() && !imageDataUrl)} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)", background: "var(--gradient-accent)", color: "#1a1206", cursor: loading || (!input.trim() && !imageDataUrl) ? "default" : "pointer" }}>发送</button>
         </div>
       </div>
     </div>

@@ -1,5 +1,3 @@
-import { ENGLISH_DEMO_ENABLED, ENGLISH_WEAK_KNOWLEDGE_ENHANCEMENTS } from "./englishDemoContent.js";
-
 const CHINESE_WEAK_KNOWLEDGE_ENHANCEMENTS = {
   L1_K1_pitchProperties: {
     explanation:
@@ -847,9 +845,7 @@ const CHINESE_WEAK_KNOWLEDGE_ENHANCEMENTS = {
   },
 };
 
-export const WEAK_KNOWLEDGE_ENHANCEMENTS = ENGLISH_DEMO_ENABLED
-  ? ENGLISH_WEAK_KNOWLEDGE_ENHANCEMENTS
-  : CHINESE_WEAK_KNOWLEDGE_ENHANCEMENTS;
+export const WEAK_KNOWLEDGE_ENHANCEMENTS = CHINESE_WEAK_KNOWLEDGE_ENHANCEMENTS;
 
 export function getWeakEnhancementsForLesson(knowledgePointIds = []) {
   return knowledgePointIds

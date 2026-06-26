@@ -65,7 +65,7 @@ export function Stars({ value = 0, onChange, size = 16 }) {
               lineHeight: 1,
               color: active ? "#e6c878" : "rgba(255,255,255,0.22)",
             }}
-            aria-label={`Rating ${star} star`}
+            aria-label={`评分 ${star} 星`}
           >
             ★
           </button>
@@ -91,7 +91,7 @@ export function FeedbackBar({ ok, msg, onNext }) {
       }}
     >
       <span style={{ fontSize: 12, color: ok ? "#7ee2a8" : "#f6a6a6", fontWeight: 600 }}>
-        {ok ? "Correct: " : "Needs revision: "}
+        {ok ? "回答正确：" : "需要修正："}
         {msg}
       </span>
       {onNext ? (
@@ -100,7 +100,7 @@ export function FeedbackBar({ ok, msg, onNext }) {
           onClick={onNext}
           style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)", cursor: "pointer", fontSize: 12 }}
         >
-          Next Question
+          下一题
         </button>
       ) : null}
     </div>
@@ -130,22 +130,22 @@ export function LessonCharts({ lessonId }) {
   return (
     <div style={{ display: "grid", gap: 12 }}>
       <div className="subtle-card" style={{ padding: 14 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Knowledge Distribution</div>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>知识点分布图</div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 8, minHeight: 124 }}>
           {bars.map((value, index) => (
             <div key={`${lessonId}-bar-${index}`} style={{ flex: 1, textAlign: "center" }}>
               <div style={{ height: 96, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
                 <div style={{ width: "100%", maxWidth: 34, height: `${value}%`, borderRadius: 10, background: "linear-gradient(180deg,#f0d68a,#b8902f)", boxShadow: "0 0 14px rgba(212,177,94,0.3)" }} />
               </div>
-              <div style={{ fontSize: 10, color: "var(--color-text-tertiary)", marginTop: 6 }}>{`Point ${index + 1}`}</div>
+              <div style={{ fontSize: 10, color: "var(--color-text-tertiary)", marginTop: 6 }}>{`知识点 ${index + 1}`}</div>
             </div>
           ))}
         </div>
       </div>
       <div className="subtle-card" style={{ padding: 14 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Learning Focus</div>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>学习重点提示</div>
         <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8 }}>
-          Use the chart to locate the main knowledge focus for this lesson. Review the pre-lesson map first, then complete classroom practice with the visual cue.
+          先通过图表定位本课主要知识重点，再查看课前导图，并结合课堂练习完成视觉化巩固。
         </div>
       </div>
     </div>
@@ -166,13 +166,13 @@ export function WeakPointExplanationCards({ items = [], titleMap = {} }) {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
             <div style={{ padding: 10, borderRadius: 12, background: "rgba(255,255,255,0.04)" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>Common Pitfalls</div>
+              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>易错点</div>
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, whiteSpace: "pre-line" }}>
                 {item.misunderstandings.map((line) => `• ${line}`).join("\n")}
               </div>
             </div>
             <div style={{ padding: 10, borderRadius: 12, background: "rgba(212,177,94,0.08)" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>Practice Handles</div>
+              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>做题抓手</div>
               <div style={{ fontSize: 11, color: "var(--color-text-secondary)", lineHeight: 1.8, whiteSpace: "pre-line" }}>
                 {item.practiceGuide.map((line) => `• ${line}`).join("\n")}
               </div>

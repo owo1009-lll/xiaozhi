@@ -12,29 +12,29 @@ export const HOMEWORK_METER_MAP = {
 };
 
 export const RHYTHM_SYMBOLS = [
-  { id: "whole", label: "Whole note", duration: 4, kind: "note" },
-  { id: "half", label: "Half note", duration: 2, kind: "note" },
-  { id: "quarter", label: "Quarter note", duration: 1, kind: "note" },
-  { id: "eighth", label: "Eighth note", duration: 0.5, kind: "note" },
-  { id: "sixteenth", label: "Sixteenth note", duration: 0.25, kind: "note" },
-  { id: "dotted-half", label: "Dotted half note", duration: 3, kind: "note" },
-  { id: "dotted-quarter", label: "Dotted quarter note", duration: 1.5, kind: "note" },
-  { id: "dotted-eighth", label: "Dotted eighth note", duration: 0.75, kind: "note" },
-  { id: "whole-rest", label: "Whole rest", duration: 4, kind: "rest" },
-  { id: "half-rest", label: "Half rest", duration: 2, kind: "rest" },
-  { id: "quarter-rest", label: "Quarter rest", duration: 1, kind: "rest" },
-  { id: "eighth-rest", label: "Eighth rest", duration: 0.5, kind: "rest" },
-  { id: "sixteenth-rest", label: "Sixteenth rest", duration: 0.25, kind: "rest" },
-  { id: "tie", label: "Tie", duration: 0, kind: "tie" },
+  { id: "whole", label: "全音符", duration: 4, kind: "note" },
+  { id: "half", label: "二分音符", duration: 2, kind: "note" },
+  { id: "quarter", label: "四分音符", duration: 1, kind: "note" },
+  { id: "eighth", label: "八分音符", duration: 0.5, kind: "note" },
+  { id: "sixteenth", label: "十六分音符", duration: 0.25, kind: "note" },
+  { id: "dotted-half", label: "附点二分音符", duration: 3, kind: "note" },
+  { id: "dotted-quarter", label: "附点四分音符", duration: 1.5, kind: "note" },
+  { id: "dotted-eighth", label: "附点八分音符", duration: 0.75, kind: "note" },
+  { id: "whole-rest", label: "全休止符", duration: 4, kind: "rest" },
+  { id: "half-rest", label: "二分休止符", duration: 2, kind: "rest" },
+  { id: "quarter-rest", label: "四分休止符", duration: 1, kind: "rest" },
+  { id: "eighth-rest", label: "八分休止符", duration: 0.5, kind: "rest" },
+  { id: "sixteenth-rest", label: "十六分休止符", duration: 0.25, kind: "rest" },
+  { id: "tie", label: "连音线", duration: 0, kind: "tie" },
 ];
 
 export const HOMEWORK_CHANNEL_LABELS = {
-  text: "Written explanation",
-  image: "Image upload",
-  rhythm: "Rhythm editor",
-  staff: "Staff correction",
-  piano: "Piano input",
-  voice: "Voice input",
+  text: "文字说明",
+  image: "图片上传",
+  rhythm: "节奏编辑器",
+  staff: "五线谱订正",
+  piano: "钢琴输入",
+  voice: "语音输入",
 };
 
 export const STAFF_ROWS = [
@@ -53,21 +53,21 @@ export const STAFF_ROWS = [
   { row: 12, label: "B3" },
 ];
 
-const BASE_EVALUATION_DIMENSIONS = ["Completion", "Accuracy", "Notation standard", "Clarity", "Submission quality"];
+const BASE_EVALUATION_DIMENSIONS = ["完成度", "准确性", "记谱规范", "表达清晰度", "提交质量"];
 
 const LESSON_HOMEWORK_MATRIX = {
-  L1: { channels: ["text", "image", "piano"], requiredAnyOf: ["text", "image", "piano"], helper: "This lesson focuses on pitch, frequency, and keyboard location.", evaluationType: "pitch", extraDimensions: ["Keyboard location", "Pitch judgment"] },
-  L2: { channels: ["text", "image"], requiredAnyOf: ["text", "image"], helper: "This lesson focuses on theoretical analysis and comparison.", evaluationType: "theory", extraDimensions: ["Concept understanding", "Analytical depth"] },
-  L3: { channels: ["text", "image", "staff"], requiredAnyOf: ["image", "staff"], helper: "This lesson focuses on clefs and staff reading/writing.", evaluationType: "staff", extraDimensions: ["Clef recognition", "Pitch placement", "Notation standard"] },
-  L4: { channels: ["text", "image", "rhythm"], requiredAnyOf: ["image", "rhythm"], helper: "This lesson focuses on notes, rests, and dotted values.", evaluationType: "rhythm", extraDimensions: ["Meter understanding", "Duration completeness", "Rhythm notation"] },
-  L5: { channels: ["text", "image", "staff"], requiredAnyOf: ["text", "image", "staff"], helper: "Ornament homework should combine score examples with written explanation.", evaluationType: "staff", extraDimensions: ["Ornament recognition", "Notation standard", "Score expression"] },
-  L6: { channels: ["text", "image"], requiredAnyOf: ["text", "image"], helper: "This lesson focuses on term understanding and score analysis.", evaluationType: "theory", extraDimensions: ["Term usage", "Analytical depth"] },
-  L7: { channels: ["text", "image"], requiredAnyOf: ["text", "image"], helper: "This lesson focuses on repeat and abbreviation sign pathways.", evaluationType: "theory", extraDimensions: ["Structural understanding", "Path judgment"] },
-  L8: { channels: ["text", "image", "voice"], requiredAnyOf: ["text", "image", "voice"], helper: "This lesson supports spoken term explanation and written organization.", evaluationType: "theory", extraDimensions: ["Term usage", "Clarity"] },
-  L9: { channels: ["text", "image", "rhythm"], requiredAnyOf: ["image", "rhythm"], helper: "This lesson focuses on rhythm design under a given meter.", evaluationType: "rhythm", extraDimensions: ["Meter understanding", "Duration completeness", "Accent pattern"] },
-  L10: { channels: ["text", "image", "rhythm"], requiredAnyOf: ["image", "rhythm"], helper: "This lesson focuses on duration grouping and tie notation.", evaluationType: "rhythm", extraDimensions: ["Grouping standard", "Tie use", "Rhythm notation"] },
-  L11: { channels: ["text", "image", "rhythm"], requiredAnyOf: ["image", "rhythm"], helper: "This lesson focuses on syncopation and accent displacement.", evaluationType: "rhythm", extraDimensions: ["Accent displacement", "Syncopation notation", "Rhythm notation"] },
-  L12: { channels: ["text", "image", "rhythm", "staff", "piano"], requiredAnyOf: ["text", "image", "rhythm", "staff", "piano"], helper: "This integrated review can combine several submission formats.", evaluationType: "mixed", extraDimensions: ["Integrated application", "Knowledge transfer", "Problem diagnosis"] },
+  L1: { channels: ["text", "image", "piano"], requiredAnyOf: ["text", "image", "piano"], helper: "本课重点检查音高、频率与键盘位置。", evaluationType: "pitch", extraDimensions: ["键盘位置", "音高判断"] },
+  L2: { channels: ["text", "image"], requiredAnyOf: ["text", "image"], helper: "本课重点检查理论分析与概念比较。", evaluationType: "theory", extraDimensions: ["概念理解", "分析深度"] },
+  L3: { channels: ["text", "image", "staff"], requiredAnyOf: ["image", "staff"], helper: "本课重点检查谱号与五线谱读写。", evaluationType: "staff", extraDimensions: ["谱号识别", "音高位置", "记谱规范"] },
+  L4: { channels: ["text", "image", "rhythm"], requiredAnyOf: ["image", "rhythm"], helper: "本课重点检查音符、休止符与附点时值。", evaluationType: "rhythm", extraDimensions: ["拍号理解", "时值完整性", "节奏记谱"] },
+  L5: { channels: ["text", "image", "staff"], requiredAnyOf: ["text", "image", "staff"], helper: "装饰音作业应结合乐谱示例与文字说明。", evaluationType: "staff", extraDimensions: ["装饰音识别", "记谱规范", "谱例表达"] },
+  L6: { channels: ["text", "image"], requiredAnyOf: ["text", "image"], helper: "本课重点检查术语理解与乐谱分析。", evaluationType: "theory", extraDimensions: ["术语使用", "分析深度"] },
+  L7: { channels: ["text", "image"], requiredAnyOf: ["text", "image"], helper: "本课重点检查反复与略写记号的演奏路径。", evaluationType: "theory", extraDimensions: ["结构理解", "路径判断"] },
+  L8: { channels: ["text", "image", "voice"], requiredAnyOf: ["text", "image", "voice"], helper: "本课支持口述术语解释与书面整理。", evaluationType: "theory", extraDimensions: ["术语使用", "表达清晰度"] },
+  L9: { channels: ["text", "image", "rhythm"], requiredAnyOf: ["image", "rhythm"], helper: "本课重点检查指定拍号下的节奏设计。", evaluationType: "rhythm", extraDimensions: ["拍号理解", "时值完整性", "强弱规律"] },
+  L10: { channels: ["text", "image", "rhythm"], requiredAnyOf: ["image", "rhythm"], helper: "本课重点检查音值组合与连音线记谱。", evaluationType: "rhythm", extraDimensions: ["组合规范", "连音线使用", "节奏记谱"] },
+  L11: { channels: ["text", "image", "rhythm"], requiredAnyOf: ["image", "rhythm"], helper: "本课重点检查切分节奏与重音移位。", evaluationType: "rhythm", extraDimensions: ["重音移位", "切分记谱", "节奏记谱"] },
+  L12: { channels: ["text", "image", "rhythm", "staff", "piano"], requiredAnyOf: ["text", "image", "rhythm", "staff", "piano"], helper: "综合复习可以组合多种提交形式。", evaluationType: "mixed", extraDimensions: ["综合应用", "知识迁移", "问题诊断"] },
 };
 
 export function normalizeRhythmEntry(entry = {}) {
@@ -129,8 +129,8 @@ export function getHomeworkRequirement(lessonId, lessonTitle) {
     channels: ["text", "image"],
     requiredAnyOf: ["text", "image"],
     evaluationType: "theory",
-    extraDimensions: ["Concept understanding", "Analytical depth"],
-    helper: `${lessonTitle} should be submitted as a written explanation or photographed work.`,
+    extraDimensions: ["概念理解", "分析深度"],
+    helper: `${lessonTitle} 可提交文字说明或拍照作业。`,
   };
 }
 
@@ -148,14 +148,14 @@ export function getRhythmValidation(rhythmSubmission) {
   normalizedSubmission.measures.forEach((measure = [], index) => {
     const beats = calculateMeasureDuration(measure);
     if (!measure.length) {
-      issues.push(`Measure ${index + 1} is still empty.`);
+      issues.push(`第 ${index + 1} 小节仍为空。`);
       return;
     }
-    if (beats < targetBeats) issues.push(`Measure ${index + 1} has too few beats.`);
-    if (beats > targetBeats) issues.push(`Measure ${index + 1} exceeds the meter.`);
+    if (beats < targetBeats) issues.push(`第 ${index + 1} 小节拍数不足。`);
+    if (beats > targetBeats) issues.push(`第 ${index + 1} 小节超出拍号要求。`);
     const lastItem = measure[measure.length - 1];
     if (lastItem?.tieToNext && index === normalizedSubmission.measures.length - 1) {
-      issues.push(`The final note in measure ${index + 1} has a tie but no following note.`);
+      issues.push(`第 ${index + 1} 小节最后一个音带有连音线，但后面没有被连接的音。`);
     }
   });
   return { complete: issues.length === 0, issues };
