@@ -58,10 +58,14 @@ export default function AITutorV2({ lessonId, lessonTitle, generalMode = false }
   const [responseMeta, setResponseMeta] = useState(null);
   const [imageDataUrl, setImageDataUrl] = useState("");
   const [imageName, setImageName] = useState("");
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [voiceListening, setVoiceListening] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState("");
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const imageStageTimerRef = useRef([]);
+  const speechRecognitionRef = useRef(null);
   const [typed, setTyped] = useState(0);
   const responseSourceLabel = useMemo(() => {
     if (!responseMeta) return "";
@@ -99,6 +103,12 @@ export default function AITutorV2({ lessonId, lessonTitle, generalMode = false }
   }, [msgs, typed]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    setVoiceSupported(Boolean(Recognition));
+  }, []);
+
+  useEffect(() => {
     const last = msgs[msgs.length - 1];
     if (!last || last.role !== "assistant") return undefined;
     const full = last.text || "";
@@ -116,7 +126,78 @@ export default function AITutorV2({ lessonId, lessonTitle, generalMode = false }
   useEffect(() => () => {
     imageStageTimerRef.current.forEach((timerId) => window.clearTimeout(timerId));
     imageStageTimerRef.current = [];
+    try { speechRecognitionRef.current?.stop(); } catch { /* ignore cleanup errors */ }
   }, []);
+
+  const stopVoiceInput = useCallback(() => {
+    try { speechRecognitionRef.current?.stop(); } catch { /* browser may already stop it */ }
+    setVoiceListening(false);
+  }, []);
+
+  const startVoiceInput = useCallback(() => {
+    if (loading) {
+      setVoiceStatus("小智老师正在回答，请稍后再语音输入。");
+      return;
+    }
+    if (voiceListening) {
+      stopVoiceInput();
+      return;
+    }
+    const Recognition = typeof window !== "undefined"
+      ? window.SpeechRecognition || window.webkitSpeechRecognition
+      : null;
+    if (!Recognition) {
+      setVoiceSupported(false);
+      setVoiceStatus("当前浏览器不支持语音识别，请改用文字输入。");
+      return;
+    }
+
+    let finalText = "";
+    let recognitionError = "";
+    const recognition = new Recognition();
+    recognition.lang = "zh-CN";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => {
+      setVoiceListening(true);
+      setVoiceStatus("正在听，请说出你的问题。");
+    };
+    recognition.onresult = (event) => {
+      let interimText = "";
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const transcript = event.results[index][0]?.transcript || "";
+        if (event.results[index].isFinal) {
+          finalText += transcript;
+        } else {
+          interimText += transcript;
+        }
+      }
+      const nextText = `${finalText}${interimText}`.trim();
+      if (nextText) setInput(nextText);
+    };
+    recognition.onerror = (event) => {
+      const message = event?.error === "not-allowed" || event?.error === "service-not-allowed"
+        ? "麦克风权限被拒绝，请在浏览器中允许麦克风。"
+        : "语音识别失败，请改用文字输入。";
+      recognitionError = message;
+      setVoiceStatus(message);
+      setVoiceListening(false);
+    };
+    recognition.onend = () => {
+      setVoiceListening(false);
+      setVoiceStatus(recognitionError || (finalText.trim() ? "已填入语音内容，确认后点击“说”。" : "语音识别已结束。"));
+      speechRecognitionRef.current = null;
+    };
+    speechRecognitionRef.current = recognition;
+    try {
+      recognition.start();
+    } catch {
+      speechRecognitionRef.current = null;
+      setVoiceListening(false);
+      setVoiceStatus("无法启动语音识别，请检查麦克风权限。");
+    }
+  }, [loading, stopVoiceInput, voiceListening]);
 
   const handlePickImage = useCallback(async (event) => {
     const file = event.target.files?.[0];
@@ -285,10 +366,28 @@ export default function AITutorV2({ lessonId, lessonTitle, generalMode = false }
             placeholder="和小智老师说点什么…"
             style={{ flex: 1, padding: "9px 12px", borderRadius: 10, border: "2px solid rgba(120,80,40,0.3)", fontSize: 13, outline: "none", background: "#fffaf0" }}
           />
-          <button onClick={() => cameraInputRef.current?.click()} title="拍照" style={{ padding: "8px 11px", borderRadius: 10, border: "2px solid rgba(120,80,40,0.3)", background: "#fffaf0", cursor: "pointer" }}>📷</button>
-          <button onClick={() => fileInputRef.current?.click()} title="相册" style={{ padding: "8px 11px", borderRadius: 10, border: "2px solid rgba(120,80,40,0.3)", background: "#fffaf0", cursor: "pointer" }}>🖼️</button>
+          <button
+            type="button"
+            onClick={voiceListening ? stopVoiceInput : startVoiceInput}
+            title={voiceListening ? "停止语音输入" : "语音输入"}
+            aria-label={voiceListening ? "停止语音输入" : "语音输入"}
+            style={{
+              padding: "8px 11px",
+              borderRadius: 10,
+              border: voiceListening ? "2px solid #3f6e2f" : "2px solid rgba(120,80,40,0.3)",
+              background: voiceListening ? "#e7f6dd" : "#fffaf0",
+              cursor: "pointer",
+            }}
+          >{voiceListening ? "■" : "🎙️"}</button>
+          <button type="button" onClick={() => cameraInputRef.current?.click()} title="拍照" style={{ padding: "8px 11px", borderRadius: 10, border: "2px solid rgba(120,80,40,0.3)", background: "#fffaf0", cursor: "pointer" }}>📷</button>
+          <button type="button" onClick={() => fileInputRef.current?.click()} title="相册" style={{ padding: "8px 11px", borderRadius: 10, border: "2px solid rgba(120,80,40,0.3)", background: "#fffaf0", cursor: "pointer" }}>🖼️</button>
           <button onClick={send} disabled={loading || (!input.trim() && !imageDataUrl)} style={{ padding: "9px 16px", borderRadius: 10, border: "2px solid #3f6e2f", background: "var(--gradient-accent)", color: "#fdf6e3", fontWeight: 700, cursor: loading || (!input.trim() && !imageDataUrl) ? "default" : "pointer" }}>说</button>
         </div>
+        {voiceStatus ? (
+          <div style={{ marginTop: 6, fontSize: 11, lineHeight: 1.5, color: voiceSupported ? "var(--color-text-secondary)" : "#9f4f1f" }}>
+            {voiceStatus}
+          </div>
+        ) : null}
       </div>
     </div>
   );
