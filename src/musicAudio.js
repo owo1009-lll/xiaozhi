@@ -187,6 +187,27 @@ export function playTone(freq, dur = 0.4, type = "piano", vol = 0.2) {
   o.stop(now + dur);
 }
 
+export function playNoise(dur = 0.7, vol = 0.16) {
+  const c = getAC();
+  if (!c) return;
+  if (c.state === "suspended") {
+    c.resume().catch(() => {});
+  }
+  const now = c.currentTime;
+  const buffer = c.createBuffer(1, Math.floor(c.sampleRate * dur), c.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1;
+  const source = c.createBufferSource();
+  const gain = c.createGain();
+  source.buffer = buffer;
+  gain.gain.setValueAtTime(vol, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  source.connect(gain);
+  gain.connect(c.destination);
+  source.start(now);
+  source.stop(now + dur);
+}
+
 export function nFreq(n, o) {
   return 440 * Math.pow(2, (NT.indexOf(n) - 9) / 12 + (o - 4));
 }

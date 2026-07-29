@@ -35,6 +35,7 @@ import {
 } from "./homeworkModel";
 import { LessonCharts, PBar, Stars, Tag, WeakPointExplanationCards } from "./uiBasics";
 import { BK, NT, WK, nFreq, playTone, unlockAudioSystem } from "./musicAudio";
+import { LessonRoute, LessonVisualBoard, hasLessonVisuals } from "./LessonVisuals";
 import {
   HomeworkEvaluationCard,
   HomeworkImageUploader,
@@ -274,7 +275,7 @@ function LessonLearningWorkspaceLegacy() {
   return null;
 }
 
-function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPageHint = null, onBktChange = null }) {
+function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPageHint = null, visualFocus = null, onBktChange = null }) {
   const pptLessonData = getPptLessonData(lesson.id);
   const studentProfile = useMemo(() => getStudentProfile(), []);
   const userId = studentProfile.studentId;
@@ -1081,7 +1082,11 @@ function LessonLearningWorkspace({ lesson, section, showTabs = true, contentPage
         ];
         return (
           <div className="section-stack">
-            <ContentOutline branches={branches} subtitle={`${branches.length} 个板块 · 点击展开`} />
+            {hasLessonVisuals(lesson.id) ? (
+              <LessonVisualBoard lessonId={lesson.id} onOpenSlide={(index) => setPptPageHint(index)} focus={visualFocus} />
+            ) : (
+              <ContentOutline branches={branches} subtitle={`${branches.length} 个板块 · 点击展开`} />
+            )}
             {pptLessonData && <PptContentEmbedFixed lessonId={lesson.id} pageHint={pptPageHint ?? contentPageHint} />}
           </div>
         );
@@ -1883,6 +1888,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore, onOpenTutor 
   const [homeworkGuideOpen, setHomeworkGuideOpen] = useState(false);
   const [homeworkContactOpen, setHomeworkContactOpen] = useState(false);
   const [villageDetailKp, setVillageDetailKp] = useState(null);
+  const [visualFocus, setVisualFocus] = useState(null);
 
   const ExComponent = EXERCISE_COMPONENTS[lesson.ex];
   const lessonRichKps = getKnowledgePointsForLesson(lesson.id);
@@ -1941,13 +1947,22 @@ function LessonView({ lesson, ratings, setRating, scores, setScore, onOpenTutor 
 
       {tab === "learn" && (
         <div className="section-stack">
-          <KnowledgeMindMap
-            lessonTitle={lesson.t}
-            chapterTitle={pptLessonData?.chapter || ""}
-            items={contentItems}
-            onNodeSelect={(index) => { setContentPageHint(index); setTab("content"); }}
-          />
-          {LESSON_HAS_INTERACTIVE.includes(lesson.id) && (
+          {hasLessonVisuals(lesson.id) ? (
+            <LessonRoute
+              lessonId={lesson.id}
+              chapterTitle={pptLessonData?.chapter || ""}
+              onSelect={(index) => { setVisualFocus({ index, nonce: Date.now() }); setTab("content"); }}
+            />
+          ) : (
+            <KnowledgeMindMap
+              lessonTitle={lesson.t}
+              chapterTitle={pptLessonData?.chapter || ""}
+              items={contentItems}
+              onNodeSelect={(index) => { setContentPageHint(index); setTab("content"); }}
+            />
+          )}
+          {/* lessons with visual cards already carry the hands-on parts inline */}
+          {!hasLessonVisuals(lesson.id) && LESSON_HAS_INTERACTIVE.includes(lesson.id) && (
             <div className="section-card">
               <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>互动预习</div>
               <div style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
@@ -1961,7 +1976,7 @@ function LessonView({ lesson, ratings, setRating, scores, setScore, onOpenTutor 
 
       {tab === "content" && (
         <div className="section-stack">
-          <LessonLearningWorkspace lesson={lesson} section="content" showTabs={false} contentPageHint={contentPageHint} onBktChange={() => setBktVersion((prev) => prev + 1)} />
+          <LessonLearningWorkspace lesson={lesson} section="content" showTabs={false} contentPageHint={contentPageHint} visualFocus={visualFocus} onBktChange={() => setBktVersion((prev) => prev + 1)} />
         </div>
       )}
 
