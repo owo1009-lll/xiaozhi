@@ -43,16 +43,21 @@ export async function unlockAudioSystem() {
     gain.connect(c.destination);
     source.start(0);
   } catch {}
-  await ensurePianoLoaded();
+  // load the samples in the background: the caller must not wait on the network
+  // before the first note, or the tap that granted playback is long gone
+  ensurePianoLoaded();
   if (!_htmlAudioUnlocked && typeof Audio !== "undefined") {
     try {
       const a = new Audio(PIANO_SAMPLES[0].url);
       a.preload = "auto";
       a.muted = true;
-      await a.play();
-      a.pause();
-      a.currentTime = 0;
-      _htmlAudioUnlocked = true;
+      a.play()
+        .then(() => {
+          a.pause();
+          a.currentTime = 0;
+          _htmlAudioUnlocked = true;
+        })
+        .catch(() => {});
     } catch {}
   }
   return c;
@@ -102,11 +107,12 @@ function playHtmlSample(freq, dur = 0.4, vol = 0.2) {
 }
 
 export function playTone(freq, dur = 0.4, type = "piano", vol = 0.2) {
-  if (type === "piano" && playHtmlSample(freq, dur, vol)) {
+  const c = getAC();
+  if (!c) {
+    // no Web Audio on this browser at all — HTML <audio> is the only option left
+    if (type === "piano") playHtmlSample(freq, dur, vol);
     return;
   }
-  const c = getAC();
-  if (!c) return;
   if (c.state === "suspended") {
     c.resume().catch(() => {});
   }

@@ -2127,6 +2127,13 @@ function validateKnowledgeStatesPayload(knowledgeStates, lessonId) {
     return ["知识点掌握状态必须是非空列表。"];
   }
 
+  // Use the same lesson→points mapping the client uses, so the review lesson
+  // (which legitimately draws its points from every other lesson) validates
+  // against what it is actually allowed to carry.
+  const allowedIds = lessonId
+    ? new Set(getKnowledgePointsForLesson(lessonId).map((point) => point.id))
+    : null;
+
   knowledgeStates.forEach((item, index) => {
     if (!item || typeof item !== "object") {
       errors.push(`knowledgeStates[${index}] must be an object.`);
@@ -2137,7 +2144,7 @@ function validateKnowledgeStatesPayload(knowledgeStates, lessonId) {
       errors.push(`knowledgeStates[${index}].id is invalid.`);
       return;
     }
-    if (lessonId && point.lessonId !== lessonId) {
+    if (allowedIds && allowedIds.size && !allowedIds.has(item.id)) {
       errors.push(`第 ${index + 1} 个知识点不属于课时 ${lessonId}。`);
     }
     if (!Number.isFinite(Number(item.pL)) || Number(item.pL) < 0 || Number(item.pL) > 1) {
